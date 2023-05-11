@@ -1,4 +1,4 @@
 #!/usr/bin/bash
 
-/usr/bin/python ./acticentral.py
+/usr/bin/python /home/actiserver/Acticentral/V2-Acticentral/cgi-bin/acticentral.py
 

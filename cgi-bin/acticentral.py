@@ -6,8 +6,6 @@ import paho.mqtt.client as mqtt
 from yattag import Doc
 
 CENTRAL_HOST    = "localhost"
-REPO_ROOT       = "/etc/actimetre/Repo"
-DATA_ROOT       = "/etc/actimetre/Data"
 UPLOAD_SIZE     = 1_000_000
 UPLOAD_HR       = 1     
 MAX_REPO_SIZE   = 10_000_000
@@ -17,12 +15,12 @@ LOG_SIZE_MAX    = 1_000_000
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
 
-REGISTRY        = "/etc/actimetre/Conf/registry.data"
-ACTIMETRES      = "/etc/actimetre/Conf/actimetres.data"
-ACTISERVERS     = "/etc/actimetre/Conf/actiservers.data"
-LOG_FILE        = "/etc/actimetre/Log/central.log"
-MQTT_TEXT       = "Acti"
-MQTT_LOG        = "Acti/Log"
+REPO_ROOT       = "/media/actimetre/Repo"
+DATA_ROOT       = "/media/actimetre/Data"
+REGISTRY        = "/etc/actimetre/registry.data"
+ACTIMETRES      = "/etc/actimetre/actimetres.data"
+ACTISERVERS     = "/etc/actimetre/actiservers.data"
+LOG_FILE        = "/etc/actimetre/central.log"
 
 ACTIM_REPORT_SECS = 15
 ACTIS_CHECK_SECS  = 15
@@ -157,16 +155,6 @@ class Actimetre:
             if len(portStr) > 1:
                 accumulator += portStr
         return accumulator
-
-    def log(self, now, logString, data=None):
-        longString = "{}: {}".format(prettyDate(now), logString)
-        if args['l']:
-            mqttClient.publish(MQTT_LOG, longString)
-        if data is not None:
-            logString += '\n' + str(data)
-        if args['e']:
-            print(logString)
-        printLog(logString)
 
 class Actiserver:
     def __init__(self, serverId=0, mac='.' * 12, ip='0.0.0.0', \
