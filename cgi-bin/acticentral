@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+/usr/bin/python ./acticentral.py
+

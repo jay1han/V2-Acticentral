@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="15" />
+    <style>
+      body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual;}
+      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse;}
+      td {padding:0.3em; border:1px solid black;}
+      .sub {text-align:center;}
+      th {padding:0.5em; border:1px solid black;}
+      .no-borders {border:0;}
+      div.list {text-indent:3em hanging;}
+      div.right {text-align:right;}
+      div.code {font-family:"Consolas", "Lucida Console", "Courier New", monospace;}
+      .totals {text-align:right;}
+      .small {text-align:right;font-size:0.8em;}
+      .center {text-align:center;}
+    </style>
+    <title>Actimetre Dashboard</title>
+  </head>
+
+  <body>
+    <h1>Actimetres</h1>
+    <form action="/bin/action.py">
+      <!--#include virtual="/bin/action.py?action=actimetre-html" onerror="error.html" -->
+    </form>
+    <h1>Servers</h1>
+      <!--#include virtual="/bin/action.py?action=actiservers-html" onerror="error.html" -->
+    <h1>Data</h1>
+      <!--#include virtual="/bin/action.py?action=data" onerror="error.html" -->
+    <footer>
+    <hr>
+    <p>All times in UTC</p>
+    </footer>
+  </body>
+</html>
