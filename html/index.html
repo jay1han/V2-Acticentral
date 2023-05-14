@@ -1,11 +1,13 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="15" />
+    <meta http-equiv="refresh" content="10" />
     <style>
       body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual;}
       table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse;}
       td {padding:0.3em; border:1px solid black;}
+      .green {color:green;}
+      .red {color:red;}
       .sub {text-align:center;}
       th {padding:0.5em; border:1px solid black;}
       .no-borders {border:0;}
@@ -21,11 +23,46 @@
 
   <body>
     <h1>Actimetres</h1>
-      <!--#include virtual="/bin/acticentral?action=actimetre-html" onerror="error.html" -->
+    <table>
+      <tr>
+	<th>Name</th>
+	<th>MAC</th>
+	<th>Type</th>
+	<th>Sensors</th>
+	<th>Server</th>
+	<th>Booted</th>
+	<th>Last update</th>
+	<th>Project</th>
+	<th>Repo files</th>
+      </tr>
+      <!--#include virtual="/bin/acticentral.py?action=actimetre-html" onerror="error.html" -->
+    </table>
+    
     <h1>Servers</h1>
-      <!--#include virtual="/bin/acticentral?action=actiservers-html" onerror="error.html" -->
-    <h1>Data</h1>
-      <!--#include virtual="/bin/acticentral?action=data" onerror="error.html" -->
+    <table>
+      <tr>
+	<th>Name</th>
+	<th>MAC</th>
+	<th>Actimetres</th>
+	<th>Started</th>
+	<th>Last update</th>
+      </tr>
+      <!--#include virtual="/bin/acticentral.py?action=actiserver-html" onerror="error.html" -->
+    </table>
+    
+    <h1>Projects</h1>
+    <table>
+      <tr>
+	<th>Title</th>
+	<th>Owner</th>
+	<th>Actimetres</th>
+	<th>Repo Size</th>
+	<th>Repo Files</th>
+      </tr>
+
+      <!--#include virtual="/bin/acticentral.py?action=project-html" onerror="error.html" -->
+    </table>
+    
     <footer>
     <hr>
     <p>All times in UTC</p>
