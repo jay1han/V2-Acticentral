@@ -32,8 +32,8 @@ ACTISERVERS     = "/etc/actimetre/actiservers.data"
 LOG_FILE        = "/etc/actimetre/central.log"
 ACTI_META       = "/etc/actimetre/meta.data"
 
-ACTIM_FAIL_SECS = 60 #10
-ACTIS_FAIL_SECS = 120 #20
+ACTIM_FAIL_SECS = 10
+ACTIS_FAIL_SECS = 20
 
 TIMEZERO = datetime(year=2020, month=1, day=1)
 
@@ -84,7 +84,9 @@ class Actimetre:
                 'lastSeen'  : self.lastSeen.strftime(TIMEFORMAT_FN),
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
                 'projectId' : self.projectId,
-                'sensorStr' : self.sensorStr
+                'sensorStr' : self.sensorStr,
+                'repoSize'  : self.repoSize,
+                'repoNums'  : self.repoNums
                 }
 
     def fromD(self, d):
@@ -101,6 +103,10 @@ class Actimetre:
             self.projectId  = int(d['projectId'])
         else:
             self.projectId = 0
+        if d.get('repoSize') is not None:
+            self.repoSize = int(d['repoSize'])
+        if d.get('repoNums') is not None:
+            self.repoNums = int(d['repoNums'])
         return self
 
     def update(self, newActim, now):
@@ -153,7 +159,7 @@ class Actiserver:
         return f"Actis{self.serverId:03d}"
 
 class Project:
-    def __init__(self, projectId=0, title="", owner="", actimetreList=[]):
+    def __init__(self, projectId=0, title="", owner="", actimetreList=set()):
         self.projectId     = projectId
         self.title         = title
         self.owner         = owner
@@ -165,25 +171,32 @@ class Project:
         return {'projectId'     : self.projectId,
                 'title'         : self.title,
                 'owner'         : self.owner,
-                'actimetreList' : self.actimetreList,
+                'repoSize'      : self.repoSize,
+                'repoNums'      : self.repoNums,
+                'actimetreList' : list(self.actimetreList),
                 }
 
     def fromD(self, d):
         self.projectId      = int(d['projectId'])
         self.title          = d['title']
         self.owner          = d['owner']
+        self.repoSize       = int(d['repoSize'])
+        self.repoNums       = int(d['repoNums'])
         if d.get('actimetreList') is not None:
-            self.actimetreList = d['actimetreList']
+            self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
         else:
-            self.actimetreList = []
+            self.actimetreList = set()
         return self
+
+    def addActim(self, a):
+        self.actimetreList.add(a.actimId)
 
 def loadData(filename):
     try:
         registry = open(filename, "r")
     except OSError:
         return {}
-    data = json.loads(registry.read())
+    data = json.load(registry)
     printLog(f"Loaded from {filename}\n" + json.dumps(data))
     registry.close()
     return data
@@ -194,7 +207,7 @@ def dumpData(filename, data):
     except OSError:
         pass
     with open(filename, "r+") as registry:
-        print(json.dumps(data), file=registry)
+        json.dump(data, registry)
     printLog(f"Dumped to {filename}\n" + json.dumps(data))
 
 pprinter = pprint.PrettyPrinter(indent=4, width=100, compact=True)
@@ -246,7 +259,7 @@ def repoStats():
     for a in Actimetres.values():
         a.repoSize = 0
         a.repoNums = 0
-        
+            
     for repoFile in os.scandir(REPO_ROOT):
         fileName = repoFile.name
         fileSize = repoFile.stat().st_size
@@ -263,13 +276,16 @@ def repoStats():
     for p in Projects.values():
         p.repoSize = 0
         p.repoNums = 0
-        
+            
     for a in Actimetres.values():
-        if a.projectId > 0 \
-           and Projects.get(a.projectId) is not None:
-            Projects[a.projectId].repoSize += a.repoSize
-            Projects[a.projectId].repoNums += a.repoNums
-        
+        if Projects.get(a.projectId) is None:
+            Projects[a.projectId] = Project(a.projectId, "Undefined", "Unknown")
+        Projects[a.projectId].addActim(a)
+        Projects[a.projectId].repoSize += a.repoSize
+        Projects[a.projectId].repoNums += a.repoNums
+
+    dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+    dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
     return (garbageSize, garbageNums)
 
 ## Dump list of Actimetres in HTML
@@ -282,27 +298,7 @@ def printSize(size, unit='MB', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
-def htmlActiservers():
-    print("Content-type: text/html\n\n")
-    doc, tag, text, line = Doc().ttl()
-
-    for s in Actiservers.values():
-        with tag('tr'):
-            line('td', s.serverName())
-            with tag('td'):   # make thin spaces
-                doc.asis('&thinsp;'.join([s.mac[0:2], s.mac[2:4], s.mac[4:6], s.mac[6:8], s.mac[8:10], s.mac[10:12]]))
-            with tag('td', klass='center'):
-                for a in s.actimetreList:
-                    line('div', Actimetres[a].actimName())
-            line('td', prettyDate(s.started))
-            if datetime.utcnow() - s.lastReport < timedelta(seconds=ACTIS_FAIL_SECS):
-                color = "green"
-            else: color = "red"
-            line('td', prettyDate(s.lastReport), klass=color)
-    print(doc.getvalue())
-    
 def htmlActimetres():
-    repoStats()
     print("Content-type: text/html\n\n")
     doc, tag, text, line = Doc().ttl()
 
@@ -322,16 +318,53 @@ def htmlActimetres():
                     color = "green"
                 else: color = "red"
                 line('td', prettyDate(a.lastReport), klass=color)
-                if a.projectId > 0:
-                    line('td', Projects[a.projectId].title)
-                else:
-                    line('td', '')
-                line('td', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
+                with tag('td'):
+                    line('div', Projects[a.projectId].title)
+                    with tag('div', klass="right"):
+                        line('button', "Change")
+                with tag('td'):
+                    line('div', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
+                    with tag('div', klass="right"):
+                        line('button', "Clear")
+    print(doc.getvalue())
+    
+def htmlActiservers():
+    print("Content-type: text/html\n\n")
+    doc, tag, text, line = Doc().ttl()
+
+    for s in Actiservers.values():
+        with tag('tr'):
+            line('td', s.serverName())
+            with tag('td'):   # make thin spaces
+                doc.asis('&thinsp;'.join([s.mac[0:2], s.mac[2:4], s.mac[4:6], s.mac[6:8], s.mac[8:10], s.mac[10:12]]))
+            with tag('td', klass='center'):
+                for a in s.actimetreList:
+                    line('div', Actimetres[a].actimName())
+            line('td', prettyDate(s.started))
+            if datetime.utcnow() - s.lastReport < timedelta(seconds=ACTIS_FAIL_SECS):
+                color = "green"
+            else: color = "red"
+            line('td', prettyDate(s.lastReport), klass=color)
     print(doc.getvalue())
     
 def htmlProjects():
     print("Content-type: text/html\n\n")
     doc, tag, text, line = Doc().ttl()
+
+    for p in Projects.values():
+        with tag('tr'):
+            line('td', p.title)
+            line('td', p.owner)
+            with tag('td', klass="center"):
+                for actimId in p.actimetreList:
+                    line('div', Actimetres[actimId].actimName())
+            with tag('td'):
+                line('div', str(p.repoNums) + " / " + printSize(p.repoSize, "GB", 1))
+                with tag('div', klass="right"):
+                    line('button', "Clear all")
+            with tag('td', klass="no-borders"):
+                line('button', "Set info")
+    
     print(doc.getvalue())
 
 ## Main
@@ -428,6 +461,10 @@ elif action == 'actimetre-off':
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
     plain("Ok")
+
+elif action == 'prepare-stats':
+    repoStats()
+    plain("")
 
 elif action == 'actimetre-html':
     htmlActimetres()

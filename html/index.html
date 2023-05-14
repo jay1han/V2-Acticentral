@@ -22,6 +22,7 @@
   </head>
 
   <body>
+    <!--#include virtual="/bin/acticentral.py?action=prepare-stats" onerror="error.html" -->
     <h1>Actimetres</h1>
     <table>
       <tr>
@@ -34,6 +35,7 @@
 	<th>Last update</th>
 	<th>Project</th>
 	<th>Repo files</th>
+	<th class="no-borders"></th>
       </tr>
       <!--#include virtual="/bin/acticentral.py?action=actimetre-html" onerror="error.html" -->
     </table>
@@ -56,12 +58,13 @@
 	<th>Title</th>
 	<th>Owner</th>
 	<th>Actimetres</th>
-	<th>Repo Size</th>
-	<th>Repo Files</th>
+	<th>Repo files</th>
+	<th class="no-borders"></th>
       </tr>
 
       <!--#include virtual="/bin/acticentral.py?action=project-html" onerror="error.html" -->
     </table>
+    <p><button>Create new project</button></p>
     
     <footer>
     <hr>
