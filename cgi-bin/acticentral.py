@@ -363,7 +363,7 @@ def htmlProjects():
                 with tag('div', klass="right"):
                     line('button', "Clear all")
             with tag('td', klass="no-borders"):
-                line('button', "Set info")
+                line('button', "Change info")
     
     print(doc.getvalue())
 
@@ -457,9 +457,9 @@ elif action == 'actimetre-off':
     a = Actimetres.get(actimId)
     if a is not None:
         a.bootTime = TIMEZERO
-        Actiservers[serverId].actimetreList.remove(actimId)
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        if a.actimId in Actiservers[serverId].actimetreList:
+            Actiservers[serverId].actimetreList.remove(actimId)
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
     plain("Ok")
 
 elif action == 'prepare-stats':
