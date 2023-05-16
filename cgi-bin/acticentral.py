@@ -15,8 +15,9 @@ try:
     with open("/etc/actimetre/actimetre.conf") as conf:
         namespace = globals()
         for line in conf:
-            key, value = map(str.strip, line.split('='))
-            namespace[key.upper()] = value
+            if line.strip() != "":
+                key, value = map(str.strip, line.split('='))
+                namespace[key.upper()] = value
 except FileNotFoundError: pass
 
 LOG_SIZE_MAX    = 1_000_000
