@@ -306,30 +306,32 @@ def htmlActimetres():
     print("Content-type: text/html\n\n")
     doc, tag, text, line = Doc().ttl()
 
-    with tag('tr'):
-        for actimId in sorted(Actimetres.keys()):
-            a = Actimetres[actimId]
-            with tag('tr'):
-                with tag('td'):
-                    doc.asis('Actim&shy;{:04d}'.format(actimId))
-                with tag('td'):
-                    doc.asis('&thinsp;'.join([a.mac[0:2], a.mac[2:4], a.mac[4:6], a.mac[6:8], a.mac[8:10], a.mac[10:12]]))
+    for actimId in sorted(Actimetres.keys()):
+        a = Actimetres[actimId]
+        with tag('tr'):
+            doc.asis('<form action="/bin/acticentral.py" method="get">')
+            doc.asis(f'<input type="hidden" name="actimId" value="{actimId}" />')
+            with tag('td'):
+                doc.asis('Actim&shy;{:04d}'.format(actimId))
+            with tag('td'):
+                doc.asis('&thinsp;'.join([a.mac[0:2], a.mac[2:4], a.mac[4:6], a.mac[6:8], a.mac[8:10], a.mac[10:12]]))
                 line('td', a.boardType, klass='center')
                 line('td', a.sensorStr, klass='center')
                 line('td', a.serverName(), klass='center')
                 line('td', prettyDate(a.bootTime))
-                if datetime.utcnow() - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
-                    color = "green"
-                else: color = "red"
-                line('td', prettyDate(a.lastReport), klass=color)
-                with tag('td'):
-                    line('div', Projects[a.projectId].title)
-                    with tag('div', klass="right"):
-                        line('button', "Change")
-                with tag('td'):
-                    line('div', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
-                    with tag('div', klass="right"):
-                        line('button', "Clear")
+            if datetime.utcnow() - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
+                color = "green"
+            else: color = "red"
+            line('td', prettyDate(a.lastReport), klass=color)
+            with tag('td'):
+                line('div', Projects[a.projectId].title)
+                with tag('div', klass="right"):
+                    line('button', "Change", type='submit', name='action', value='actim-change-project')
+            with tag('td'):
+                line('div', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
+                with tag('div', klass="right"):
+                    line('button', "Clear", type='submit', name='action', value='actim-clear-repo')
+        doc.asis('</form>')
     print(doc.getvalue())
     
 def htmlActiservers():
@@ -357,6 +359,8 @@ def htmlProjects():
 
     for p in Projects.values():
         with tag('tr'):
+            doc.asis('<form action="/bin/acticentral.py" method="get">')
+            doc.asis(f'<input type="hidden" name="projectId" value="{p.projectId}" />')
             line('td', p.title)
             line('td', p.owner)
             with tag('td', klass="center"):
@@ -365,9 +369,10 @@ def htmlProjects():
             with tag('td'):
                 line('div', str(p.repoNums) + " / " + printSize(p.repoSize, "GB", 1))
                 with tag('div', klass="right"):
-                    line('button', "Clear all")
+                    line('button', "Clear all", type='submit', name='action', value='project-clear-repo')
             with tag('td', klass="no-borders"):
-                line('button', "Change info")
+                line('button', "Change info", type='submit', name='action', value='project-change-info')
+            doc.asis('</form>')
     
     print(doc.getvalue())
 
@@ -478,6 +483,25 @@ elif action == 'actiserver-html':
 
 elif action == 'project-html':
     htmlProjects()
+
+elif action == 'actim-change-project':
+    actimId = int(args['actimId'][0])
+    plain(f"Change project affiliation for Actim{actimId:04d}")
+
+elif action == 'actim-clear-repo':
+    actimId = int(args['actimId'][0])
+    plain(f"Clear Repo files for Actim{actimId:04d}")
+
+elif action == 'project-clear-repo':
+    projectId = int(args['projectId'][0])
+    plain(f"Clear Repo files for Project {projectId}")
+
+elif action == 'project-change-info':
+    projectId = int(args['projectId'][0])
+    plain(f"Change info of Project {projectId}")
+
+elif action == 'create-project':
+    plain(f"Create a new project")
 
 # Fall-through, show index.html
 else:
