@@ -4,11 +4,11 @@ mkdir /etc/actimetre
 mkdir /media/actimetre
 mkdir /media/actimetre/Data
 mkdir /media/actimetre/Repo
+mkdir /var/www/cgi-bin
 
-cp actimetre.conf /etc/actimetre
-cp clear2.sh /etc/actimetre
+cp actimetre.conf clear2.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
-cp html/index.html error.html /var/www/html/
+cp html/index.html html/error.html /var/www/html/
 
 cd /etc/actimetre
 chown www-data:www-data . actimetre.conf
@@ -38,3 +38,5 @@ echo {} > /etc/actimetre/actimetres.data
 echo {} > /etc/actimetre/self.data
 echo {} > /etc/actimetre/meta.data
 rm -f /etc/actimetre/acticentral.pid
+
+chmod 666 *.log *.data *.lock *.conf

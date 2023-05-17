@@ -1,5 +1,6 @@
 #!/usr/bin/bash
 
+./killjava.sh
 echo > /etc/actimetre/server.log
 echo > /etc/actimetre/central.log
 echo > /etc/actimetre/acticentral.lock
