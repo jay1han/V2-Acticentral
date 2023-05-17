@@ -6,7 +6,7 @@ mkdir /media/actimetre/Data
 mkdir /media/actimetre/Repo
 mkdir /var/www/cgi-bin
 
-cp actimetre.conf clear2.sh /etc/actimetre
+cp actimetre.conf clear2.sh killjava.sh run.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/index.html html/error.html /var/www/html/
 
