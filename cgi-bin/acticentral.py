@@ -125,12 +125,13 @@ class Actimetre:
         return f"Actis{self.serverId:03d}"
 
 class Actiserver:
-    def __init__(self, serverId=0, mac='.' * 12, ip='0.0.0.0', \
+    def __init__(self, serverId=0, mac='.' * 12, ip='0.0.0.0', channel=999,\
                  started=TIMEZERO, lastReport=TIMEZERO, \
                  actimetreList=set()):
         self.serverId   = int(serverId)
         self.mac        = mac
         self.ip         = ip
+        self.channel    = int(channel)
         self.started    = started
         self.lastReport = lastReport
         self.actimetreList = actimetreList
@@ -139,6 +140,7 @@ class Actiserver:
         return {'serverId'  : self.serverId,
                 'mac'       : self.mac,
                 'ip'        : self.ip,
+                'channel'   : self.channel,
                 'started'   : self.started.strftime(TIMEFORMAT_FN),
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
                 'actimetreList': list(self.actimetreList)
@@ -148,6 +150,7 @@ class Actiserver:
         self.serverId   = int(d['serverId'])
         self.mac        = d['mac']
         self.ip         = d['ip']
+        self.channel    = int(d['channel'])
         self.started    = datetime.strptime(d['started'], TIMEFORMAT_FN)
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         if d.get('actimetreList') is not None:
@@ -336,8 +339,8 @@ def htmlActiservers():
     for s in Actiservers.values():
         with tag('tr'):
             line('td', s.serverName())
-            with tag('td'):   # make thin spaces
-                doc.asis('&thinsp;'.join([s.mac[0:2], s.mac[2:4], s.mac[4:6], s.mac[6:8], s.mac[8:10], s.mac[10:12]]))
+            line('td', s.ip)
+            line('td', str(s.channel), klass='center')
             with tag('td', klass='center'):
                 for a in s.actimetreList:
                     line('div', Actimetres[a].actimName())
