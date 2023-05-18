@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3.9
 
 import os, urllib.parse, re, subprocess, sys, http.client, collections, json, pprint, stat, time, fcntl
 from datetime import datetime, timedelta
