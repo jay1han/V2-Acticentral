@@ -5,28 +5,12 @@ from datetime import datetime, timedelta
 import paho.mqtt.client as mqtt
 from yattag import Doc
 
-CENTRAL_HOST    = "localhost"
-UPLOAD_SIZE     = 1_000_000
-UPLOAD_HR       = 1     
-MAX_REPO_SIZE   = 10_000_000
-MAX_REPO_HR     = 24
-
-try:
-    with open("/etc/actimetre/actimetre.conf") as conf:
-        namespace = globals()
-        for line in conf:
-            if line.strip() != "":
-                key, value = map(str.strip, line.split('='))
-                namespace[key.upper()] = value
-except FileNotFoundError: pass
-
 LOG_SIZE_MAX    = 1_000_000
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
 
-REPO_ROOT       = "/media/actimetre/Repo"
-DATA_ROOT       = "/media/actimetre/Data"
+REPO_ROOT       = "/media/actimetre"
 REGISTRY        = "/etc/actimetre/registry.data"
 ACTIMETRES      = "/etc/actimetre/actimetres.data"
 ACTISERVERS     = "/etc/actimetre/actiservers.data"
@@ -113,6 +97,7 @@ class Actimetre:
     def update(self, newActim, now):
         self.mac = newActim.mac
         self.boardType = newActim.boardType
+        self.serverId = newActim.serverId
         self.isDead = newActim.isDead
         self.bootTime = newActim.bootTime
         self.lastSeen = newActim.lastSeen
@@ -316,13 +301,16 @@ def htmlActimetres():
             with tag('td'):
                 doc.asis('&thinsp;'.join([a.mac[0:2], a.mac[2:4], a.mac[4:6], a.mac[6:8], a.mac[8:10], a.mac[10:12]]))
                 line('td', a.boardType, klass='center')
+            if datetime.utcnow() - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
                 line('td', a.sensorStr, klass='center')
                 line('td', a.serverName(), klass='center')
                 line('td', prettyDate(a.bootTime))
-            if datetime.utcnow() - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
-                color = "green"
-            else: color = "red"
-            line('td', prettyDate(a.lastReport), klass=color)
+                line('td', prettyDate(a.lastReport))
+            else:
+                line('td', "?", klass='center')
+                line('td', "?", klass='center')
+                line('td', "?", klass='center')
+                line('td', prettyDate(a.lastReport), klass="red")
             with tag('td'):
                 line('div', Projects[a.projectId].title)
                 with tag('div', klass="right"):
@@ -341,16 +329,20 @@ def htmlActiservers():
     for s in Actiservers.values():
         with tag('tr'):
             line('td', s.serverName())
-            line('td', s.ip)
-            line('td', str(s.channel), klass='center')
-            with tag('td', klass='center'):
-                for a in s.actimetreList:
-                    line('div', Actimetres[a].actimName())
-            line('td', prettyDate(s.started))
             if datetime.utcnow() - s.lastReport < timedelta(seconds=ACTIS_FAIL_SECS):
-                color = "green"
-            else: color = "red"
-            line('td', prettyDate(s.lastReport), klass=color)
+                line('td', s.ip)
+                line('td', str(s.channel), klass='center')
+                with tag('td', klass='center'):
+                    for a in s.actimetreList:
+                        line('div', Actimetres[a].actimName())
+                line('td', prettyDate(s.started))
+                line('td', prettyDate(s.lastReport))
+            else:
+                line('td', "?", klass='center')
+                line('td', '?', klass='center')
+                line('td', '?', klass='center')
+                line('td', '?', klass='center')
+                line('td', prettyDate(s.lastReport), klass="red")
     print(doc.getvalue())
     
 def htmlProjects():
