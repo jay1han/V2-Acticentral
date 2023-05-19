@@ -43,12 +43,13 @@ def prettyDate(dt):
 # Main class 
 
 class Actimetre:
-    def __init__(self, actimId=9999, mac='.' * 12, boardType='?', serverId=0, isDead=False, \
+    def __init__(self, actimId=9999, mac='.' * 12, boardType='?', version="", serverId=0, isDead=False, \
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
                  projectId = 0, sensorStr=""):
         self.actimId    = int(actimId)
         self.mac        = mac
         self.boardType  = boardType
+        self.version    = version
         self.serverId   = int(serverId)
         self.isDead     = isDead
         self.bootTime   = bootTime
@@ -63,6 +64,7 @@ class Actimetre:
         return {'actimId'   : self.actimId,
                 'mac'       : self.mac,
                 'boardType' : self.boardType,
+                'version'   : self.version,
                 'serverId'  : self.serverId,
                 'isDead'    : self.isDead,
                 'bootTime'  : self.bootTime.strftime(TIMEFORMAT_FN),
@@ -78,6 +80,7 @@ class Actimetre:
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
+        self.version    = d['version']
         self.serverId   = int(d['serverId'])
         self.isDead     = bool(d['isDead']=="true" or d['isDead']=="True")
         self.bootTime   = datetime.strptime(d['bootTime'], TIMEFORMAT_FN)
@@ -95,12 +98,13 @@ class Actimetre:
         return self
 
     def update(self, newActim, now):
-        self.mac = newActim.mac
+        self.mac       = newActim.mac
         self.boardType = newActim.boardType
-        self.serverId = newActim.serverId
-        self.isDead = newActim.isDead
-        self.bootTime = newActim.bootTime
-        self.lastSeen = newActim.lastSeen
+        self.version   = newActim.version
+        self.serverId  = newActim.serverId
+        self.isDead    = newActim.isDead
+        self.bootTime  = newActim.bootTime
+        self.lastSeen  = newActim.lastSeen
         self.sensorStr = newActim.sensorStr
 
     def actimName(self):
@@ -110,11 +114,13 @@ class Actimetre:
         return f"Actis{self.serverId:03d}"
 
 class Actiserver:
-    def __init__(self, serverId=0, mac='.' * 12, ip='0.0.0.0', channel=999,\
+    def __init__(self, serverId=0, mac='.' * 12, machine="Unknown", version="000", ip='0.0.0.0', channel=999,\
                  started=TIMEZERO, lastReport=TIMEZERO, \
                  actimetreList=set()):
         self.serverId   = int(serverId)
         self.mac        = mac
+        self.machine    = machine
+        self.version    = version
         self.ip         = ip
         self.channel    = int(channel)
         self.started    = started
@@ -124,6 +130,8 @@ class Actiserver:
     def toD(self):
         return {'serverId'  : self.serverId,
                 'mac'       : self.mac,
+                'machine'   : self.machine,
+                'version'   : self.version,
                 'ip'        : self.ip,
                 'channel'   : self.channel,
                 'started'   : self.started.strftime(TIMEFORMAT_FN),
@@ -134,6 +142,8 @@ class Actiserver:
     def fromD(self, d):
         self.serverId   = int(d['serverId'])
         self.mac        = d['mac']
+        self.machine    = d['machine']
+        self.version    = d['version']
         self.ip         = d['ip']
         self.channel    = int(d['channel'])
         self.started    = datetime.strptime(d['started'], TIMEFORMAT_FN)
@@ -300,13 +310,15 @@ def htmlActimetres():
                 doc.asis('Actim&shy;{:04d}'.format(actimId))
             with tag('td'):
                 doc.asis('&thinsp;'.join([a.mac[0:2], a.mac[2:4], a.mac[4:6], a.mac[6:8], a.mac[8:10], a.mac[10:12]]))
-                line('td', a.boardType, klass='center')
+            line('td', a.boardType, klass='center')
             if datetime.utcnow() - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
+                line('td', a.version, klass='center')
                 line('td', a.sensorStr, klass='center')
                 line('td', a.serverName(), klass='center')
                 line('td', prettyDate(a.bootTime))
                 line('td', prettyDate(a.lastReport))
             else:
+                line('td', "?", klass='center')
                 line('td', "?", klass='center')
                 line('td', "?", klass='center')
                 line('td', "?", klass='center')
@@ -329,7 +341,9 @@ def htmlActiservers():
     for s in Actiservers.values():
         with tag('tr'):
             line('td', s.serverName())
+            line('td', s.machine)
             if datetime.utcnow() - s.lastReport < timedelta(seconds=ACTIS_FAIL_SECS):
+                line('td', s.version, klass='center')
                 line('td', s.ip)
                 line('td', str(s.channel), klass='center')
                 with tag('td', klass='center'):
@@ -338,6 +352,7 @@ def htmlActiservers():
                 line('td', prettyDate(s.started))
                 line('td', prettyDate(s.lastReport))
             else:
+                line('td', "?", klass='center')
                 line('td', "?", klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
@@ -380,8 +395,10 @@ if action == 'actiserver':
     serverId = int(args['serverId'][0])
     ip = args['ip'][0]
     mac = args['mac'][0]
+    version = args['version'][0]
+    machine = args['machine'][0]
 
-    printLog(f"Actis{serverId}={mac} at {ip}")
+    printLog(f"Actis{serverId}={mac} '{machine}' V{version} at {ip}")
     thisServer = Actiserver().fromD(json.load(sys.stdin))
 
     if Actiservers.get(serverId) is not None:
@@ -398,6 +415,7 @@ elif action == 'actimetre-new':
     mac       = args['mac'][0]
     boardType = args['boardType'][0]
     serverId  = int(args['serverId'][0])
+    version   = args['version'][0]
     bootTime  = datetime.strptime(args['bootTime'][0], TIMEFORMAT_FN)
 
     thisServer = Actiservers.get(serverId)
@@ -422,7 +440,7 @@ elif action == 'actimetre-new':
         actimId = Registry[mac]
         printLog(f"Found known Actim{actimId:04d} for {mac}")
         
-    a = Actimetre(actimId, mac, boardType, serverId, bootTime=now, lastSeen=now, lastReport=now)
+    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=now, lastSeen=now, lastReport=now)
     printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
     
     thisServer.actimetreList.add(actimId)
