@@ -1,17 +1,11 @@
 #!/usr/bin/bash
 
 mkdir /etc/actimetre
-mkdir /media/actimetre
 mkdir /var/www/cgi-bin
 
 cp clearcentral.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/index.html html/error.html /var/www/html/
-
-cd /media/actimetre
-chown www-data:www-data .
-chmod 777 .
-rm -f /media/actimetre/*
 
 cd /var/www
 chown www-data:www-data html/index.html html/error.html cgi-bin/acticentral.py
