@@ -278,7 +278,7 @@ def repoStats():
             
     for a in Actimetres.values():
         if Projects.get(a.projectId) is None:
-            Projects[a.projectId] = Project(a.projectId, "Undefined", "Unknown")
+            Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
         Projects[a.projectId].addActim(a)
         Projects[a.projectId].repoSize += a.repoSize
         Projects[a.projectId].repoNums += a.repoNums
@@ -327,10 +327,7 @@ def htmlActimetres():
                 line('div', Projects[a.projectId].title)
                 with tag('div', klass="right"):
                     line('button', "Change", type='submit', name='action', value='actim-change-project')
-            with tag('td'):
-                line('div', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
-                with tag('div', klass="right"):
-                    line('button', "Clear", type='submit', name='action', value='actim-clear-repo')
+            line('td', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
         doc.asis('</form>')
     print(doc.getvalue())
     
@@ -373,16 +370,95 @@ def htmlProjects():
             with tag('td', klass="center"):
                 for actimId in p.actimetreList:
                     line('div', Actimetres[actimId].actimName())
-            with tag('td'):
-                line('div', str(p.repoNums) + " / " + printSize(p.repoSize, "GB", 1))
-                with tag('div', klass="right"):
-                    line('button', "Clear all", type='submit', name='action', value='project-clear-repo')
+            line('td', str(p.repoNums) + " / " + printSize(p.repoSize, "GB", 1))
             with tag('td', klass="no-borders"):
-                line('button', "Change info", type='submit', name='action', value='project-change-info')
+                if p.projectId != 0:
+                    with tag('div'):
+                        line('button', "Change info", type='submit', name='action', value='project-change-info')
+                    with tag('div'):
+                        line('button', "Remove", type='submit', name='action', value='remove-project')
             doc.asis('</form>')
     
     print(doc.getvalue())
 
+def projectChangeInfo(projectId):
+    print("Content-type: text/html\n\n")
+
+    with open("/var/www/html/formProject.html") as form:
+        print(form.read()\
+              .replace("{projectTitle}", Projects[projectId].title)\
+              .replace("{projectOwner}", Projects[projectId].owner)\
+              .replace("{projectId}", str(projectId)))
+
+def actimChangeProject(actimId):
+    print("Content-type: text/html\n\n")
+
+    htmlProjectList = ""
+    for p in Projects.values():
+        htmlProjectList += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
+        if p.projectId == Actimetres[actimId].projectId:
+            htmlProjectList += ' checked="true"'
+        htmlProjectList += f'><label for="{p.projectId}">{p.title} ({p.owner})</label><br>\n'
+
+    with open("/var/www/html/formActim.html") as form:
+        print(form.read()\
+              .replace("{actimId}", str(actimId))\
+              .replace("{actimName}", Actimetres[actimId].actimName())\
+              .replace("{htmlProjectList}", htmlProjectList))
+
+def removeProject(projectId):
+    printLog(f"Remove project with data: {Projects[projectId].title}, {Projects[projectId].owner}")
+
+    if projectId != 0:
+        for a in Projects[projectId].actimetreList:
+            Actimetres[a].projectId = 0
+        del Projects[projectId]
+        dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+    print("Location:\\index.html\n\n")
+
+def processForm(formId):
+    if formId == 'project-change-info':
+        projectId = int(args['projectId'][0])
+        title = args['title'][0]
+        owner = args['owner'][0]
+        printLog(f"Setting project {projectId} data: {title}, {owner}")
+        
+        if title != "" and owner != "":
+            Projects[projectId].title = title
+            Projects[projectId].owner = owner
+            dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        print("Location:\\index.html\n\n")
+
+    elif formId == 'actim-change-project':
+        actimId = int(args['actimId'][0])
+        projectId = int(args['projectId'][0])
+        oldProject = Actimetres[actimId].projectId
+        printLog(f"Changing {actimId} from {oldProject} to {projectId}")
+
+        Projects[oldProject].actimetreList.remove(actimId)
+        Projects[projectId].actimetreList.add(actimId)
+        Actimetres[actimId].projectId = projectId
+        dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        print("Location:\\index.html\n\n")
+
+    elif formId == 'create-project':
+        title = args['title'][0]
+        owner = args['owner'][0]
+        printLog(f"Create new project with data: {title}, {owner}")
+        
+        if title != "" and owner != "":
+            projectId = 1
+            while projectId in set(Projects.keys()):
+                projectId += 1
+            Projects[projectId] = Project(projectId, title, owner)
+            dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        print("Location:\\index.html\n\n")
+
+    else:
+        print("Location:\\index.html\n\n")
+    
 ## Main
 
 def plain(text=''):
@@ -492,26 +568,27 @@ elif action == 'project-html':
 
 elif action == 'actim-change-project':
     actimId = int(args['actimId'][0])
-    plain(f"Change project affiliation for Actim{actimId:04d}")
-
-elif action == 'actim-clear-repo':
-    actimId = int(args['actimId'][0])
-    plain(f"Clear Repo files for Actim{actimId:04d}")
-
-elif action == 'project-clear-repo':
-    projectId = int(args['projectId'][0])
-    plain(f"Clear Repo files for Project {projectId}")
+    actimChangeProject(actimId)
 
 elif action == 'project-change-info':
     projectId = int(args['projectId'][0])
-    plain(f"Change info of Project {projectId}")
+    projectChangeInfo(projectId)
 
 elif action == 'create-project':
-    plain(f"Create a new project")
+    print("Location:\\formCreate.html\n\n")
+
+elif action == 'remove-project':
+    projectId = int(args['projectId'][0])
+    removeProject(projectId)
+
+elif action == 'submit':
+    formId = args['formId'][0]
+    printLog(f"Submitted form {formId}")
+    processForm(formId)
 
 # Fall-through, show index.html
 else:
-    print("Location:\\\n\n")
+    print("Location:\\index.html\n\n")
 
 #Release Mutex
 lock.close()
