@@ -346,9 +346,9 @@ def htmlActiservers():
                 line('td', s.version, klass='center')
                 line('td', s.ip)
                 line('td', str(s.channel), klass='center')
-                with tag('td', klass='center'):
+                with tag('td'):
                     for a in s.actimetreList:
-                        line('div', Actimetres[a].actimName())
+                        line('div', f"{Actimetres[a].actimName()} ({Actimetres[a].sensorStr})")
                 line('td', prettyDate(s.started))
                 line('td', prettyDate(s.lastReport))
             else:
@@ -393,12 +393,8 @@ now = datetime.utcnow()
 
 if action == 'actiserver':
     serverId = int(args['serverId'][0])
-    ip = args['ip'][0]
-    mac = args['mac'][0]
-    version = args['version'][0]
-    machine = args['machine'][0]
 
-    printLog(f"Actis{serverId}={mac} '{machine}' V{version} at {ip}")
+    printLog(f"Actis{serverId} alive")
     thisServer = Actiserver().fromD(json.load(sys.stdin))
 
     if Actiservers.get(serverId) is not None:
