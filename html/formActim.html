@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Actimetre</title>
+  </head>
+  <body>
+    <h1>Actimetre information</h1>
+    <p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
+
+    <p>Actimetre named <b>{actimName}</b> is currently attached to the following project:</p>
+    
+    <form action="/bin/test.py" method="get" target="_parent">
+      <input type="hidden" name="actimId" value="{actimId}" />
+      <input type="hidden" name="formId" value="actim-change-project" />
+      
+      {htmlProjectList}
+
+      <p>
+      <button type="submit" name="action" value="submit">Confirm</button>
+      <button type="submit" name="action" value="cancel">Cancel</button>
+      </p>
+      <p><button type="submit" name="action" value="create-project">Create a new Project</button></p>
+    </form>
+  </body>
+</html>
