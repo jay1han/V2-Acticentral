@@ -98,7 +98,6 @@ class Actimetre:
         return self
 
     def update(self, newActim, now):
-        self.mac       = newActim.mac
         self.boardType = newActim.boardType
         self.version   = newActim.version
         self.serverId  = newActim.serverId
@@ -114,14 +113,12 @@ class Actimetre:
         return f"Actis{self.serverId:03d}"
 
 class Actiserver:
-    def __init__(self, serverId=0, mac='.' * 12, machine="Unknown", version="000", ip='0.0.0.0', channel=999,\
+    def __init__(self, serverId=0, machine="Unknown", version="000", channel=0,\
                  started=TIMEZERO, lastReport=TIMEZERO, \
                  actimetreList=set()):
         self.serverId   = int(serverId)
-        self.mac        = mac
         self.machine    = machine
         self.version    = version
-        self.ip         = ip
         self.channel    = int(channel)
         self.started    = started
         self.lastReport = lastReport
@@ -129,10 +126,8 @@ class Actiserver:
 
     def toD(self):
         return {'serverId'  : self.serverId,
-                'mac'       : self.mac,
                 'machine'   : self.machine,
                 'version'   : self.version,
-                'ip'        : self.ip,
                 'channel'   : self.channel,
                 'started'   : self.started.strftime(TIMEFORMAT_FN),
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
@@ -141,10 +136,8 @@ class Actiserver:
 
     def fromD(self, d):
         self.serverId   = int(d['serverId'])
-        self.mac        = d['mac']
         self.machine    = d['machine']
         self.version    = d['version']
-        self.ip         = d['ip']
         self.channel    = int(d['channel'])
         self.started    = datetime.strptime(d['started'], TIMEFORMAT_FN)
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
@@ -341,15 +334,16 @@ def htmlActiservers():
             line('td', s.machine)
             if datetime.utcnow() - s.lastReport < timedelta(seconds=ACTIS_FAIL_SECS):
                 line('td', s.version, klass='center')
-                line('td', s.ip)
-                line('td', str(s.channel), klass='center')
+                if s.channel != 0:
+                    line('td', str(s.channel), klass='center')
+                else:
+                    line('td', "Unknown", klass='center')
                 with tag('td'):
                     for a in s.actimetreList:
                         line('div', f"{Actimetres[a].actimName()} ({Actimetres[a].sensorStr})")
                 line('td', prettyDate(s.started))
                 line('td', prettyDate(s.lastReport))
             else:
-                line('td', "?", klass='center')
                 line('td', "?", klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
