@@ -367,9 +367,9 @@ def htmlProjects():
             doc.asis(f'<input type="hidden" name="projectId" value="{p.projectId}" />')
             line('td', p.title)
             line('td', p.owner)
-            with tag('td', klass="center"):
+            with tag('td'):
                 for actimId in p.actimetreList:
-                    line('div', Actimetres[actimId].actimName())
+                    line('div', f'{Actimetres[actimId].actimName()} ({Actimetres[actimId].sensorStr})')
             line('td', str(p.repoNums) + " / " + printSize(p.repoSize, "GB", 1))
             with tag('td', klass="no-borders"):
                 if p.projectId != 0:
