@@ -1,8 +1,7 @@
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <meta http-equiv="refresh" content="10" />
-    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>    
     <style>
       body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual;}
       table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse;}
@@ -30,6 +29,7 @@
 	<th>Name</th>
 	<th>MAC</th>
 	<th>Type</th>
+	<th>Version</th>
 	<th>Sensors</th>
 	<th>Server</th>
 	<th>Booted</th>
@@ -45,6 +45,8 @@
     <table>
       <tr>
 	<th>Name</th>
+	<th>Hardware</th>
+	<th>Version</th>
 	<th>IP</th>
 	<th>WiFi channel</th>
 	<th>Actimetres</th>
@@ -68,14 +70,14 @@
     </table>
     
     <form action="/bin/acticentral.py" method="get">
-      <p><button type="submit" name="action" value="create-project">Create new project</button></p>
+      <p><button type="submit" name="action" value="create-project">Create a new project</button></p>
     </form>
     
     <hr>
     <table width="100%" style="border:0">
       <tr style="border:0">
 	<td style="border:0">All times in UTC</td>
-	<td style="border:0;text-align:right">Acticentral V1.9</td>
+	<td style="border:0;text-align:right">Acticentral v192</td>
       </tr>
     </table>
   </body>

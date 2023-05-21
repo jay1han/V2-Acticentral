@@ -1,0 +1,26 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Project</title>
+  </head>
+  <body>
+    <h1>Project information</h1>
+    <p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
+    
+    <form action="/bin/acticentral.py" method="get" target="_parent">
+      <input type="hidden" name="projectId" value="{projectId}" />
+      <input type="hidden" name="formId" value="project-change-info" />
+
+      <h3>Project Title</h3>
+
+      <p><input id="title" type="text" name="title" value="{projectTitle}"></p>
+	
+      <h3>Project Owner</h3>
+      
+      <p><input id="owner" type="text" name="owner" value="{projectOwner}"></p>
+
+      <button type="submit" name="action" value="submit">Submit</button>
+      <button type="submit" name="action" value="cancel">Cancel</button>
+    </form>
+  </body>
+</html>

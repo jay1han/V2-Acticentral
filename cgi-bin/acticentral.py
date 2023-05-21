@@ -43,12 +43,13 @@ def prettyDate(dt):
 # Main class 
 
 class Actimetre:
-    def __init__(self, actimId=9999, mac='.' * 12, boardType='?', serverId=0, isDead=False, \
+    def __init__(self, actimId=9999, mac='.' * 12, boardType='?', version="", serverId=0, isDead=False, \
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
                  projectId = 0, sensorStr=""):
         self.actimId    = int(actimId)
         self.mac        = mac
         self.boardType  = boardType
+        self.version    = version
         self.serverId   = int(serverId)
         self.isDead     = isDead
         self.bootTime   = bootTime
@@ -63,6 +64,7 @@ class Actimetre:
         return {'actimId'   : self.actimId,
                 'mac'       : self.mac,
                 'boardType' : self.boardType,
+                'version'   : self.version,
                 'serverId'  : self.serverId,
                 'isDead'    : self.isDead,
                 'bootTime'  : self.bootTime.strftime(TIMEFORMAT_FN),
@@ -78,6 +80,7 @@ class Actimetre:
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
+        self.version    = d['version']
         self.serverId   = int(d['serverId'])
         self.isDead     = bool(d['isDead']=="true" or d['isDead']=="True")
         self.bootTime   = datetime.strptime(d['bootTime'], TIMEFORMAT_FN)
@@ -95,12 +98,13 @@ class Actimetre:
         return self
 
     def update(self, newActim, now):
-        self.mac = newActim.mac
+        self.mac       = newActim.mac
         self.boardType = newActim.boardType
-        self.serverId = newActim.serverId
-        self.isDead = newActim.isDead
-        self.bootTime = newActim.bootTime
-        self.lastSeen = newActim.lastSeen
+        self.version   = newActim.version
+        self.serverId  = newActim.serverId
+        self.isDead    = newActim.isDead
+        self.bootTime  = newActim.bootTime
+        self.lastSeen  = newActim.lastSeen
         self.sensorStr = newActim.sensorStr
 
     def actimName(self):
@@ -110,11 +114,13 @@ class Actimetre:
         return f"Actis{self.serverId:03d}"
 
 class Actiserver:
-    def __init__(self, serverId=0, mac='.' * 12, ip='0.0.0.0', channel=999,\
+    def __init__(self, serverId=0, mac='.' * 12, machine="Unknown", version="000", ip='0.0.0.0', channel=999,\
                  started=TIMEZERO, lastReport=TIMEZERO, \
                  actimetreList=set()):
         self.serverId   = int(serverId)
         self.mac        = mac
+        self.machine    = machine
+        self.version    = version
         self.ip         = ip
         self.channel    = int(channel)
         self.started    = started
@@ -124,6 +130,8 @@ class Actiserver:
     def toD(self):
         return {'serverId'  : self.serverId,
                 'mac'       : self.mac,
+                'machine'   : self.machine,
+                'version'   : self.version,
                 'ip'        : self.ip,
                 'channel'   : self.channel,
                 'started'   : self.started.strftime(TIMEFORMAT_FN),
@@ -134,6 +142,8 @@ class Actiserver:
     def fromD(self, d):
         self.serverId   = int(d['serverId'])
         self.mac        = d['mac']
+        self.machine    = d['machine']
+        self.version    = d['version']
         self.ip         = d['ip']
         self.channel    = int(d['channel'])
         self.started    = datetime.strptime(d['started'], TIMEFORMAT_FN)
@@ -268,7 +278,7 @@ def repoStats():
             
     for a in Actimetres.values():
         if Projects.get(a.projectId) is None:
-            Projects[a.projectId] = Project(a.projectId, "Undefined", "Unknown")
+            Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
         Projects[a.projectId].addActim(a)
         Projects[a.projectId].repoSize += a.repoSize
         Projects[a.projectId].repoNums += a.repoNums
@@ -300,8 +310,9 @@ def htmlActimetres():
                 doc.asis('Actim&shy;{:04d}'.format(actimId))
             with tag('td'):
                 doc.asis('&thinsp;'.join([a.mac[0:2], a.mac[2:4], a.mac[4:6], a.mac[6:8], a.mac[8:10], a.mac[10:12]]))
-                line('td', a.boardType, klass='center')
+            line('td', a.boardType, klass='center')
             if datetime.utcnow() - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
+                line('td', a.version, klass='center')
                 line('td', a.sensorStr, klass='center')
                 line('td', a.serverName(), klass='center')
                 line('td', prettyDate(a.bootTime))
@@ -310,15 +321,13 @@ def htmlActimetres():
                 line('td', "?", klass='center')
                 line('td', "?", klass='center')
                 line('td', "?", klass='center')
+                line('td', "?", klass='center')
                 line('td', prettyDate(a.lastReport), klass="red")
             with tag('td'):
                 line('div', Projects[a.projectId].title)
                 with tag('div', klass="right"):
                     line('button', "Change", type='submit', name='action', value='actim-change-project')
-            with tag('td'):
-                line('div', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
-                with tag('div', klass="right"):
-                    line('button', "Clear", type='submit', name='action', value='actim-clear-repo')
+            line('td', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
         doc.asis('</form>')
     print(doc.getvalue())
     
@@ -329,15 +338,18 @@ def htmlActiservers():
     for s in Actiservers.values():
         with tag('tr'):
             line('td', s.serverName())
+            line('td', s.machine)
             if datetime.utcnow() - s.lastReport < timedelta(seconds=ACTIS_FAIL_SECS):
+                line('td', s.version, klass='center')
                 line('td', s.ip)
                 line('td', str(s.channel), klass='center')
-                with tag('td', klass='center'):
+                with tag('td'):
                     for a in s.actimetreList:
-                        line('div', Actimetres[a].actimName())
+                        line('div', f"{Actimetres[a].actimName()} ({Actimetres[a].sensorStr})")
                 line('td', prettyDate(s.started))
                 line('td', prettyDate(s.lastReport))
             else:
+                line('td', "?", klass='center')
                 line('td', "?", klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
@@ -355,19 +367,98 @@ def htmlProjects():
             doc.asis(f'<input type="hidden" name="projectId" value="{p.projectId}" />')
             line('td', p.title)
             line('td', p.owner)
-            with tag('td', klass="center"):
-                for actimId in p.actimetreList:
-                    line('div', Actimetres[actimId].actimName())
             with tag('td'):
-                line('div', str(p.repoNums) + " / " + printSize(p.repoSize, "GB", 1))
-                with tag('div', klass="right"):
-                    line('button', "Clear all", type='submit', name='action', value='project-clear-repo')
+                for actimId in p.actimetreList:
+                    line('div', f'{Actimetres[actimId].actimName()} ({Actimetres[actimId].sensorStr})')
+            line('td', str(p.repoNums) + " / " + printSize(p.repoSize, "GB", 1))
             with tag('td', klass="no-borders"):
-                line('button', "Change info", type='submit', name='action', value='project-change-info')
+                if p.projectId != 0:
+                    with tag('div'):
+                        line('button', "Change info", type='submit', name='action', value='project-change-info')
+                    with tag('div'):
+                        line('button', "Remove", type='submit', name='action', value='remove-project')
             doc.asis('</form>')
     
     print(doc.getvalue())
 
+def projectChangeInfo(projectId):
+    print("Content-type: text/html\n\n")
+
+    with open("/var/www/html/formProject.html") as form:
+        print(form.read()\
+              .replace("{projectTitle}", Projects[projectId].title)\
+              .replace("{projectOwner}", Projects[projectId].owner)\
+              .replace("{projectId}", str(projectId)))
+
+def actimChangeProject(actimId):
+    print("Content-type: text/html\n\n")
+
+    htmlProjectList = ""
+    for p in Projects.values():
+        htmlProjectList += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
+        if p.projectId == Actimetres[actimId].projectId:
+            htmlProjectList += ' checked="true"'
+        htmlProjectList += f'><label for="{p.projectId}">{p.title} ({p.owner})</label><br>\n'
+
+    with open("/var/www/html/formActim.html") as form:
+        print(form.read()\
+              .replace("{actimId}", str(actimId))\
+              .replace("{actimName}", Actimetres[actimId].actimName())\
+              .replace("{htmlProjectList}", htmlProjectList))
+
+def removeProject(projectId):
+    printLog(f"Remove project with data: {Projects[projectId].title}, {Projects[projectId].owner}")
+
+    if projectId != 0:
+        for a in Projects[projectId].actimetreList:
+            Actimetres[a].projectId = 0
+        del Projects[projectId]
+        dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+    print("Location:\\index.html\n\n")
+
+def processForm(formId):
+    if formId == 'project-change-info':
+        projectId = int(args['projectId'][0])
+        title = args['title'][0]
+        owner = args['owner'][0]
+        printLog(f"Setting project {projectId} data: {title}, {owner}")
+        
+        if title != "" and owner != "":
+            Projects[projectId].title = title
+            Projects[projectId].owner = owner
+            dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        print("Location:\\index.html\n\n")
+
+    elif formId == 'actim-change-project':
+        actimId = int(args['actimId'][0])
+        projectId = int(args['projectId'][0])
+        oldProject = Actimetres[actimId].projectId
+        printLog(f"Changing {actimId} from {oldProject} to {projectId}")
+
+        Projects[oldProject].actimetreList.remove(actimId)
+        Projects[projectId].actimetreList.add(actimId)
+        Actimetres[actimId].projectId = projectId
+        dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        print("Location:\\index.html\n\n")
+
+    elif formId == 'create-project':
+        title = args['title'][0]
+        owner = args['owner'][0]
+        printLog(f"Create new project with data: {title}, {owner}")
+        
+        if title != "" and owner != "":
+            projectId = 1
+            while projectId in set(Projects.keys()):
+                projectId += 1
+            Projects[projectId] = Project(projectId, title, owner)
+            dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        print("Location:\\index.html\n\n")
+
+    else:
+        print("Location:\\index.html\n\n")
+    
 ## Main
 
 def plain(text=''):
@@ -378,10 +469,8 @@ now = datetime.utcnow()
 
 if action == 'actiserver':
     serverId = int(args['serverId'][0])
-    ip = args['ip'][0]
-    mac = args['mac'][0]
 
-    printLog(f"Actis{serverId}={mac} at {ip}")
+    printLog(f"Actis{serverId} alive")
     thisServer = Actiserver().fromD(json.load(sys.stdin))
 
     if Actiservers.get(serverId) is not None:
@@ -398,6 +487,7 @@ elif action == 'actimetre-new':
     mac       = args['mac'][0]
     boardType = args['boardType'][0]
     serverId  = int(args['serverId'][0])
+    version   = args['version'][0]
     bootTime  = datetime.strptime(args['bootTime'][0], TIMEFORMAT_FN)
 
     thisServer = Actiservers.get(serverId)
@@ -422,7 +512,7 @@ elif action == 'actimetre-new':
         actimId = Registry[mac]
         printLog(f"Found known Actim{actimId:04d} for {mac}")
         
-    a = Actimetre(actimId, mac, boardType, serverId, bootTime=now, lastSeen=now, lastReport=now)
+    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=now, lastSeen=now, lastReport=now)
     printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
     
     thisServer.actimetreList.add(actimId)
@@ -478,26 +568,27 @@ elif action == 'project-html':
 
 elif action == 'actim-change-project':
     actimId = int(args['actimId'][0])
-    plain(f"Change project affiliation for Actim{actimId:04d}")
-
-elif action == 'actim-clear-repo':
-    actimId = int(args['actimId'][0])
-    plain(f"Clear Repo files for Actim{actimId:04d}")
-
-elif action == 'project-clear-repo':
-    projectId = int(args['projectId'][0])
-    plain(f"Clear Repo files for Project {projectId}")
+    actimChangeProject(actimId)
 
 elif action == 'project-change-info':
     projectId = int(args['projectId'][0])
-    plain(f"Change info of Project {projectId}")
+    projectChangeInfo(projectId)
 
 elif action == 'create-project':
-    plain(f"Create a new project")
+    print("Location:\\formCreate.html\n\n")
+
+elif action == 'remove-project':
+    projectId = int(args['projectId'][0])
+    removeProject(projectId)
+
+elif action == 'submit':
+    formId = args['formId'][0]
+    printLog(f"Submitted form {formId}")
+    processForm(formId)
 
 # Fall-through, show index.html
 else:
-    print("Location:\\\n\n")
+    print("Location:\\index.html\n\n")
 
 #Release Mutex
 lock.close()
