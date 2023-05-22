@@ -22,8 +22,6 @@ ACTIS_FAIL_SECS = 20
 
 TIMEZERO = datetime(year=2020, month=1, day=1)
 
-Frequencies = [50, 100, 1, 200]
-
 def printLog(text=''):
     try:
         if os.stat(LOG_FILE).st_size > LOG_SIZE_MAX:
@@ -47,7 +45,7 @@ def prettyDate(dt):
 class Actimetre:
     def __init__(self, actimId=9999, mac='.' * 12, boardType='?', version="", serverId=0, isDead=False, \
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
-                 projectId = 0, sensorStr="", runningFrequency = 0):
+                 projectId = 0, sensorStr="", runningFrequency = 50):
         self.actimId    = int(actimId)
         self.mac        = mac
         self.boardType  = boardType
@@ -316,7 +314,7 @@ def htmlActimetres():
             if datetime.utcnow() - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
                 line('td', a.version, klass='center')
                 line('td', a.sensorStr, klass='center')
-                line('td', f"{Frequencies[a.runningFrequency]}Hz", klass='center')
+                line('td', f"{a.runningFrequency}Hz", klass='center')
                 line('td', a.serverName(), klass='center')
                 line('td', prettyDate(a.bootTime))
                 line('td', prettyDate(a.lastReport))
