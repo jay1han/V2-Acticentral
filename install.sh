@@ -5,7 +5,7 @@ mkdir /var/www/cgi-bin
 
 cp clearcentral.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
-cp html/index.html html/error.html /var/www/html/
+cp html/*.html /var/www/html/
 
 cd /var/www
 chown www-data:www-data html/index.html html/error.html cgi-bin/acticentral.py
