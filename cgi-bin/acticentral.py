@@ -120,13 +120,14 @@ class Actimetre:
         return f"Actis{self.serverId:03d}"
 
 class Actiserver:
-    def __init__(self, serverId=0, machine="Unknown", version="000", channel=0,\
+    def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", \
                  started=TIMEZERO, lastReport=TIMEZERO, \
                  actimetreList=set()):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
         self.channel    = int(channel)
+        self.ip         = ip
         self.started    = started
         self.lastReport = lastReport
         self.actimetreList = actimetreList
@@ -136,6 +137,7 @@ class Actiserver:
                 'machine'   : self.machine,
                 'version'   : self.version,
                 'channel'   : self.channel,
+                'ip'        : self.ip,
                 'started'   : self.started.strftime(TIMEFORMAT_FN),
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
                 'actimetreList': list(self.actimetreList)
@@ -146,6 +148,7 @@ class Actiserver:
         self.machine    = d['machine']
         self.version    = d['version']
         self.channel    = int(d['channel'])
+        self.ip         = d['ip']
         self.started    = datetime.strptime(d['started'], TIMEFORMAT_FN)
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         if d.get('actimetreList') is not None:
@@ -341,6 +344,7 @@ def htmlActiservers():
         with tag('tr'):
             line('td', s.serverName())
             line('td', s.machine)
+            line('td', s.ip)
             if datetime.utcnow() - s.lastReport < timedelta(seconds=ACTIS_FAIL_SECS):
                 line('td', s.version, klass='center')
                 if s.channel != 0:
@@ -353,6 +357,7 @@ def htmlActiservers():
                 line('td', prettyDate(s.started))
                 line('td', prettyDate(s.lastReport))
             else:
+                line('td', "?", klass='center')
                 line('td', "?", klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
