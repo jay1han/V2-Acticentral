@@ -358,7 +358,6 @@ def htmlActiservers():
                 line('td', prettyDate(s.lastReport))
             else:
                 line('td', "?", klass='center')
-                line('td', "?", klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
