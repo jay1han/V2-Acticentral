@@ -10,7 +10,6 @@ LOG_SIZE_MAX    = 1_000_000
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
 
-REPO_ROOT       = "/media/actimetre"
 REGISTRY        = "/etc/actimetre/registry.data"
 ACTIMETRES      = "/etc/actimetre/actimetres.data"
 ACTISERVERS     = "/etc/actimetre/actiservers.data"
@@ -45,7 +44,8 @@ def prettyDate(dt):
 class Actimetre:
     def __init__(self, actimId=9999, mac='.' * 12, boardType='?', version="", serverId=0, isDead=False, \
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
-                 projectId = 0, sensorStr="", frequency = 50, rating = 0.0):
+                 projectId = 0, sensorStr="", frequency = 50, rating = 0.0,\
+                 repoSize = 0):
         self.actimId    = int(actimId)
         self.mac        = mac
         self.boardType  = boardType
@@ -59,9 +59,7 @@ class Actimetre:
         self.sensorStr  = sensorStr
         self.frequency  = frequency
         self.rating     = rating
-        
-        self.repoSize   = 0
-        self.repoNums   = 0
+        self.repoSize   = repoSize
 
     def toD(self):       
         return {'actimId'   : self.actimId,
@@ -77,9 +75,7 @@ class Actimetre:
                 'sensorStr' : self.sensorStr,
                 'frequency' : self.frequency,
                 'rating'    : self.rating,
-                
                 'repoSize'  : self.repoSize,
-                'repoNums'  : self.repoNums
                 }
 
     def fromD(self, d):
@@ -99,11 +95,7 @@ class Actimetre:
             self.projectId = 0
         self.frequency  = int(d['frequency'])
         self.rating     = float(d['rating'])
-            
-        if d.get('repoSize') is not None:
-            self.repoSize = int(d['repoSize'])
-        if d.get('repoNums') is not None:
-            self.repoNums = int(d['repoNums'])
+        self.repoSize = int(d['repoSize'])
         return self
 
     def update(self, newActim, now):
@@ -116,6 +108,7 @@ class Actimetre:
         self.sensorStr = newActim.sensorStr
         self.frequency = newActim.frequency
         self.rating    = newActim.rating
+        self.repoSize  = newActim.repoSize
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
@@ -168,14 +161,12 @@ class Project:
         self.owner         = owner
         self.actimetreList = actimetreList
         self.repoSize      = 0
-        self.repoNums      = 0
 
     def toD(self):
         return {'projectId'     : self.projectId,
                 'title'         : self.title,
                 'owner'         : self.owner,
                 'repoSize'      : self.repoSize,
-                'repoNums'      : self.repoNums,
                 'actimetreList' : list(self.actimetreList),
                 }
 
@@ -184,7 +175,6 @@ class Project:
         self.title          = d['title']
         self.owner          = d['owner']
         self.repoSize       = int(d['repoSize'])
-        self.repoNums       = int(d['repoNums'])
         if d.get('actimetreList') is not None:
             self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
         else:
@@ -251,45 +241,17 @@ Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(A
 Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(ACTI_META).items()}
 
-garbageSize = 0
-garbageNums = 0
-
 def repoStats():
-    global garbageSize, garbageNums
-    garbageSize = 0
-    garbageNums = 0
-
-    for a in Actimetres.values():
-        a.repoSize = 0
-        a.repoNums = 0
-            
-    for repoFile in os.scandir(REPO_ROOT):
-        fileName = repoFile.name
-        fileSize = repoFile.stat().st_size
-        sensorName = fileName[:12]
-        actimId = int(fileName[5:9])
-        sensorId = fileName[10:12]
-        if Actimetres.get(actimId) is None:
-            garbageSize += fileSize
-            garbageNums += 1
-        else:
-            Actimetres[actimId].repoSize += fileSize
-            Actimetres[actimId].repoNums += 1
-
     for p in Projects.values():
         p.repoSize = 0
-        p.repoNums = 0
             
     for a in Actimetres.values():
         if Projects.get(a.projectId) is None:
             Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
         Projects[a.projectId].addActim(a)
         Projects[a.projectId].repoSize += a.repoSize
-        Projects[a.projectId].repoNums += a.repoNums
 
-    dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
-    return (garbageSize, garbageNums)
 
 ## Dump list of Actimetres in HTML
 
@@ -335,7 +297,7 @@ def htmlActimetres():
                 line('div', Projects[a.projectId].title)
                 with tag('div', klass="right"):
                     line('button', "Change", type='submit', name='action', value='actim-change-project')
-            line('td', str(a.repoNums) + " / " + printSize(a.repoSize, "GB", 1))
+            line('td', printSize(a.repoSize, "GB", 1), klass="right")
         doc.asis('</form>')
     print(doc.getvalue())
     
@@ -378,7 +340,7 @@ def htmlProjects():
             with tag('td'):
                 for actimId in p.actimetreList:
                     line('div', f'{Actimetres[actimId].actimName()} ({Actimetres[actimId].sensorStr})')
-            line('td', str(p.repoNums) + " / " + printSize(p.repoSize, "GB", 1))
+            line('td', printSize(p.repoSize, "GB", 1), klass="right")
             with tag('td', klass="no-borders"):
                 if p.projectId != 0:
                     with tag('div'):
