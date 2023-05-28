@@ -8,8 +8,8 @@ cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/*.html /var/www/html/
 
 cd /var/www
-chown www-data:www-data html/actimetre.html html/error.html cgi-bin/acticentral.py
-chmod 775 html/actimetre.html cgi-bin/acticentral.py
+chown www-data:www-data html/*.html cgi-bin/acticentral.py
+chmod 775 html/index.html cgi-bin/acticentral.py
 
 cd /etc/actimetre
 chown www-data:www-data .
