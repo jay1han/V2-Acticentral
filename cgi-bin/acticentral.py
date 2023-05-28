@@ -125,14 +125,13 @@ class Actimetre:
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", \
-                 started=TIMEZERO, lastReport=TIMEZERO, \
+                 lastReport=TIMEZERO, \
                  actimetreList=set()):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
         self.channel    = int(channel)
         self.ip         = ip
-        self.started    = started
         self.lastReport = lastReport
         self.actimetreList = actimetreList
 
@@ -142,7 +141,6 @@ class Actiserver:
                 'version'   : self.version,
                 'channel'   : self.channel,
                 'ip'        : self.ip,
-                'started'   : self.started.strftime(TIMEFORMAT_FN),
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
                 'actimetreList': list(self.actimetreList)
                 }
@@ -153,7 +151,6 @@ class Actiserver:
         self.version    = d['version']
         self.channel    = int(d['channel'])
         self.ip         = d['ip']
-        self.started    = datetime.strptime(d['started'], TIMEFORMAT_FN)
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         if d.get('actimetreList') is not None:
             self.actimetreList = set([int(a) for a in d['actimetreList']])
@@ -322,7 +319,7 @@ def htmlActimetres():
                 line('td', a.version, klass='center')
                 line('td', a.sensorStr, klass='center')
                 line('td', f"{a.frequency}Hz", klass='center')
-                line('td', "{:.2f}".format(100.0 * a.rating) , klass='center')
+                line('td', "{:.3f}%".format(100.0 * a.rating) , klass='center')
                 line('td', a.serverName(), klass='center')
                 line('td', prettyDate(a.bootTime))
                 line('td', prettyDate(a.lastReport))
@@ -360,10 +357,8 @@ def htmlActiservers():
                 with tag('td'):
                     for a in s.actimetreList:
                         line('div', f"{Actimetres[a].actimName()} ({Actimetres[a].sensorStr})")
-                line('td', prettyDate(s.started))
                 line('td', prettyDate(s.lastReport))
             else:
-                line('td', "?", klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
@@ -485,10 +480,6 @@ if action == 'actiserver':
 
     printLog(f"Actis{serverId} alive")
     thisServer = Actiserver().fromD(json.load(sys.stdin))
-
-    if Actiservers.get(serverId) is not None:
-        thisServer.started = Actiservers[serverId].started
-
     thisServer.lastReport = now
     
     Actiservers[serverId] = thisServer
@@ -505,7 +496,7 @@ elif action == 'actimetre-new':
 
     thisServer = Actiservers.get(serverId)
     if thisServer is None:
-        thisServer = Actiserver(serverId, ip=ip, started=now, lastReport=now)
+        thisServer = Actiserver(serverId, ip=ip, lastReport=now)
         Actiservers[serverId] = thisServer
     else:
         thisServer.lastReport = now
