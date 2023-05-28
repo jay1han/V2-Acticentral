@@ -1,0 +1,5 @@
+#!/usr/bin/bash
+
+echo "Location: http://www.actimetre.fr/"
+echo
+echo

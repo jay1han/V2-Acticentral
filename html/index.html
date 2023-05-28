@@ -1,0 +1,84 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="refresh" content="10" />
+    <style>
+      body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual; margin-left:50px; margin-right:50px;}
+      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse;}
+      td {padding:0.3em; border:1px solid black;}
+      .green {color:green;}
+      .red {color:red;}
+      .sub {text-align:center;}
+      th {padding:0.5em; border:1px solid black;}
+      .no-borders {border:0;}
+      div.list {text-indent:3em hanging;}
+      div.right {text-align:right;}
+      div.code {font-family:"Consolas", "Lucida Console", "Courier New", monospace;}
+      .totals {text-align:right;}
+      .small {text-align:right;font-size:0.8em;}
+      .center {text-align:center;}
+    </style>
+    <title>Actimetre Dashboard</title>
+  </head>
+
+  <body>
+    <!--#include virtual="/bin/acticentral.py?action=prepare-stats" onerror="error.html" -->
+    <h1>Actimetres</h1>
+    <table>
+      <tr>
+	<th>Name</th>
+	<th>MAC</th>
+	<th>Type</th>
+	<th>Version</th>
+	<th>Sensors</th>
+	<th>Frequency</th>
+	<th>Missing</th>
+	<th>Server</th>
+	<th>Booted</th>
+	<th>Last update</th>
+	<th>Project</th>
+	<th>Data files</th>
+      </tr>
+      <!--#include virtual="/bin/acticentral.py?action=actimetre-html" onerror="error.html" -->
+    </table>
+    
+    <h1>Servers</h1>
+    <table>
+      <tr>
+	<th>Name</th>
+	<th>Hardware</th>
+	<th>Address</th>
+	<th>Version</th>
+	<th>WiFi channel</th>
+	<th>Actimetres</th>
+	<th>Last update</th>
+      </tr>
+      <!--#include virtual="/bin/acticentral.py?action=actiserver-html" onerror="error.html" -->
+    </table>
+    
+    <h1>Projects</h1>
+    <table>
+      <tr>
+	<th>Title</th>
+	<th>Owner</th>
+	<th>Actimetres</th>
+	<th>Data files</th>
+	<th class="no-borders"></th>
+      </tr>
+
+      <!--#include virtual="/bin/acticentral.py?action=project-html" onerror="error.html" -->
+    </table>
+    
+    <form action="/bin/acticentral.py" method="get">
+      <p><button type="submit" name="action" value="create-project">Create a new project</button></p>
+    </form>
+    
+    <hr>
+    <table width="100%" style="border:0">
+      <tr style="border:0">
+	<td style="border:0">All times in UTC</td>
+	<td style="border:0;text-align:right">Acticentral v198</td>
+      </tr>
+    </table>
+  </body>
+</html>
