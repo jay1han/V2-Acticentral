@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
-import os, urllib.parse, re, subprocess, sys, http.client, collections, json, pprint, stat, time, fcntl
+import os, urllib.parse, sys, http.client, collections, json, fcntl
 from datetime import datetime, timedelta
-import paho.mqtt.client as mqtt
 from yattag import Doc
+os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
+import matplotlib, numpy
+import matplotlib.pyplot as pyplot
 
 LOG_SIZE_MAX    = 1_000_000
 
@@ -15,11 +17,14 @@ ACTIMETRES      = "/etc/actimetre/actimetres.data"
 ACTISERVERS     = "/etc/actimetre/actiservers.data"
 LOG_FILE        = "/etc/actimetre/central.log"
 ACTI_META       = "/etc/actimetre/meta.data"
+HISTORY_DIR     = "/etc/actimetre/history"
+IMAGES_DIR      = "/var/www/html/images"
 
 ACTIM_FAIL_SECS = 10
 ACTIS_FAIL_SECS = 20
 
-TIMEZERO = datetime(year=2020, month=1, day=1)
+TIMEZERO     = datetime(year=2020, month=1, day=1)
+REDRAW_TIME  = timedelta(minutes=5)
 
 def printLog(text=''):
     try:
@@ -38,8 +43,6 @@ def prettyDate(dt):
         return '?'
     else:
         return dt.strftime(TIMEFORMAT_DISP)
-
-# Main class 
 
 class Actimetre:
     def __init__(self, actimId=9999, mac='.' * 12, boardType='?', version="", serverId=0, isDead=False, \
@@ -60,6 +63,7 @@ class Actimetre:
         self.frequency  = frequency
         self.rating     = rating
         self.repoSize   = repoSize
+        self.lastDrawn  = TIMEZERO
 
     def toD(self):       
         return {'actimId'   : self.actimId,
@@ -95,10 +99,37 @@ class Actimetre:
             self.projectId = 0
         self.frequency  = int(d['frequency'])
         self.rating     = float(d['rating'])
+            
         self.repoSize = int(d['repoSize'])
         return self
 
+    def drawActimetre(now):
+        if now - self.lastDrawn > REDRAW_TIME:
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:03d}.hist", "r") as history:
+                timeline = []
+                frequencies = []
+                for line in history:
+                    time, part, freq = line.partition(':')
+                    timeline.append(datetime.strptime(time.strip(), TIMEFORMAT_FN))
+                    frequencies.append(int(freq))
+
+            zero = [0 for i in range(len(timeline))]
+            fig, ax = plot.subplots(figsize=(5,1))
+            ax.set_axis_off()
+            ax.plot(timeline, frequencies, drawstyle="steps-post", color="black", linewidth="1", solid_joinstyle="miter")
+            ax.plot(timeline, zero, color="red", linewidth="1")
+            plot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.png", format='png', bbox_inches="tight", pad_inches=0)
+            plot.close()
+            self.lastDrawn = now
+
+    def addFreqEvent(now, frequency):
+        with open(f"{HISTORY_DIR}/Actim{self.actimId:03d}.hist", "a") as history:
+            print(now.strftime(TIMEFORMAT_FN), ':', frequency, sep='', file=history)
+        self.drawActimetre(now)
+
     def update(self, newActim, now):
+        if self.isDead:
+            self.addFreqEvent(now, newActim.frequency)
         self.boardType = newActim.boardType
         self.version   = newActim.version
         self.serverId  = newActim.serverId
@@ -203,10 +234,6 @@ def dumpData(filename, data):
         json.dump(data, registry)
     printLog(f"Dumped to {filename}\n" + json.dumps(data))
 
-pprinter = pprint.PrettyPrinter(indent=4, width=100, compact=True)
-
-## Parse CGI query string -> action holds the verb
-
 qs = os.environ['QUERY_STRING']
 printLog(qs)
 
@@ -216,12 +243,8 @@ if 'action' in args.keys():
 else:
     action = ''
 
-## Mutex lock
-
 lock = open("/etc/actimetre/acticentral.lock", "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
-
-## The Registry: it's all in the shared library actilib.py
 
 Registry = {}
 statinfo = os.stat(REGISTRY)
@@ -253,8 +276,6 @@ def repoStats():
 
     dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
 
-## Dump list of Actimetres in HTML
-
 def printSize(size, unit='MB', precision=0):
     if unit == 'GB':
         inUnits = size / 1000000000
@@ -263,12 +284,13 @@ def printSize(size, unit='MB', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
-def htmlActimetres():
+def htmlActimetres(now):
     print("Content-type: text/html\n\n")
     doc, tag, text, line = Doc().ttl()
 
     for actimId in sorted(Actimetres.keys()):
         a = Actimetres[actimId]
+        drawActimetreMaybe(actimId, now)
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}" />')
@@ -292,12 +314,12 @@ def htmlActimetres():
                 line('td', "?", klass='center')
                 line('td', "?", klass='center')
                 line('td', "?", klass='center')
-                line('td', prettyDate(a.lastReport), klass="red")
+                line('td', prettyDate(a.lastReport), klass='red')
             with tag('td'):
                 line('div', Projects[a.projectId].title)
-                with tag('div', klass="right"):
+                with tag('div', klass='right'):
                     line('button', "Change", type='submit', name='action', value='actim-change-project')
-            line('td', printSize(a.repoSize, "GB", 1), klass="right")
+            line('td', printSize(a.repoSize, 'GB', 1), klass='right')
         doc.asis('</form>')
     print(doc.getvalue())
     
@@ -324,7 +346,7 @@ def htmlActiservers():
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
                 line('td', '?', klass='center')
-                line('td', prettyDate(s.lastReport), klass="red")
+                line('td', prettyDate(s.lastReport), klass='red')
     print(doc.getvalue())
     
 def htmlProjects():
@@ -340,7 +362,7 @@ def htmlProjects():
             with tag('td'):
                 for actimId in p.actimetreList:
                     line('div', f'{Actimetres[actimId].actimName()} ({Actimetres[actimId].sensorStr})')
-            line('td', printSize(p.repoSize, "GB", 1), klass="right")
+            line('td', printSize(p.repoSize, 'GB', 1), klass='right')
             with tag('td', klass="no-borders"):
                 if p.projectId != 0:
                     with tag('div'):
@@ -429,8 +451,6 @@ def processForm(formId):
     else:
         print("Location:\\index.html\n\n")
     
-## Main
-
 def plain(text=''):
     print("Content-type: text/plain\n\n")
     print(text)
@@ -478,7 +498,7 @@ elif action == 'actimetre-new':
         actimId = Registry[mac]
         printLog(f"Found known Actim{actimId:04d} for {mac}")
         
-    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=now, lastSeen=now, lastReport=now)
+    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=now, lastSeen=now, lastReport=now, isDead=true)
     printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
     
     thisServer.actimetreList.add(actimId)
@@ -514,9 +534,12 @@ elif action == 'actimetre-off':
     a = Actimetres.get(actimId)
     if a is not None:
         a.bootTime = TIMEZERO
+        a.isDead = true
+        addFreqEvent(actimId, 0)
         if a.actimId in Actiservers[serverId].actimetreList:
             Actiservers[serverId].actimetreList.remove(actimId)
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     plain("Ok")
 
 elif action == 'prepare-stats':
@@ -524,7 +547,7 @@ elif action == 'prepare-stats':
     plain("")
 
 elif action == 'actimetre-html':
-    htmlActimetres()
+    htmlActimetres(now)
 
 elif action == 'actiserver-html':
     htmlActiservers()
@@ -552,9 +575,7 @@ elif action == 'submit':
     printLog(f"Submitted form {formId}")
     processForm(formId)
 
-# Fall-through, show index.html
 else:
     print("Location:\\index.html\n\n")
 
-#Release Mutex
 lock.close()
