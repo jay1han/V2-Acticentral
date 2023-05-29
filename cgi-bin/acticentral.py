@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, urllib.parse, sys, http.client, collections, json, fcntl
+import os, urllib.parse, sys, json, fcntl
 from datetime import datetime, timedelta
 
 LOG_SIZE_MAX    = 1_000_000
@@ -102,7 +102,6 @@ class Actimetre:
     def drawGraph(self, now):
         if now - self.lastDrawn > REDRAW_TIME:
             os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
-            import matplotlib, numpy
             import matplotlib.pyplot as pyplot
             
             with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
