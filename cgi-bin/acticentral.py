@@ -2,10 +2,6 @@
 
 import os, urllib.parse, sys, http.client, collections, json, fcntl
 from datetime import datetime, timedelta
-from yattag import Doc
-os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
-import matplotlib, numpy
-import matplotlib.pyplot as pyplot
 
 LOG_SIZE_MAX    = 1_000_000
 
@@ -64,6 +60,7 @@ class Actimetre:
         self.rating     = rating
         self.repoSize   = repoSize
         self.lastDrawn  = TIMEZERO
+        self.graphSince = TIMEZERO
 
     def toD(self):       
         return {'actimId'   : self.actimId,
@@ -93,19 +90,25 @@ class Actimetre:
         self.lastSeen   = datetime.strptime(d['lastSeen'], TIMEFORMAT_FN)
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         self.sensorStr  = d['sensorStr']
+        self.frequency  = int(d['frequency'])
+        self.rating     = float(d['rating'])
+        self.repoSize   = int(d['repoSize'])
         if d.get('projectId') is not None:
             self.projectId  = int(d['projectId'])
         else:
             self.projectId = 0
-        self.frequency  = int(d['frequency'])
-        self.rating     = float(d['rating'])
-            
-        self.repoSize = int(d['repoSize'])
         return self
 
-    def drawActimetre(now):
+    def drawGraph(self, now):
         if now - self.lastDrawn > REDRAW_TIME:
-            with open(f"{HISTORY_DIR}/Actim{self.actimId:03d}.hist", "r") as history:
+            os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
+            import matplotlib, numpy
+            import matplotlib.pyplot as pyplot
+            
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
+                self.graphSince = history.readline().partition(':')[0]
+                
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
                 timeline = []
                 frequencies = []
                 for line in history:
@@ -113,31 +116,39 @@ class Actimetre:
                     timeline.append(datetime.strptime(time.strip(), TIMEFORMAT_FN))
                     frequencies.append(int(freq))
 
-            zero = [0 for i in range(len(timeline))]
-            fig, ax = plot.subplots(figsize=(5,1))
+            timeline.append(now)
+            frequencies.append(self.frequency)
+            zero = [0   for i in range(len(timeline))]
+            cent = [100 for i in range(len(timeline))]
+            fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
             ax.set_axis_off()
+            ax.plot(timeline, cent, color="green", linewidth="0.5")
+            ax.text(now, 10,  " 10", family="sans-serif", stretch="condensed", va="center", color="black", in_layout=True)
+            ax.text(now, 30,  " 30", family="sans-serif", stretch="condensed", va="center", color="black", in_layout=True)
+            ax.text(now, 50,  " 50", family="sans-serif", stretch="condensed", va="center", color="black", in_layout=True)
+            ax.text(now, 100, "100", family="sans-serif", stretch="condensed", va="center", color="black", in_layout=True)
             ax.plot(timeline, frequencies, drawstyle="steps-post", color="black", linewidth="1", solid_joinstyle="miter")
             ax.plot(timeline, zero, color="red", linewidth="1")
-            plot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.png", format='png', bbox_inches="tight", pad_inches=0)
-            plot.close()
+            pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
+            pyplot.close()
             self.lastDrawn = now
 
-    def addFreqEvent(now, frequency):
-        with open(f"{HISTORY_DIR}/Actim{self.actimId:03d}.hist", "a") as history:
-            print(now.strftime(TIMEFORMAT_FN), ':', frequency, sep='', file=history)
-        self.drawActimetre(now)
+    def addFreqEvent(self, now, frequency):
+        with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "a") as history:
+            print(now.strftime(TIMEFORMAT_FN), ':', frequency, sep="", file=history)
+        self.drawGraph(now)
 
     def update(self, newActim, now):
-        if self.isDead:
+        if self.frequency != newActim.frequency:
             self.addFreqEvent(now, newActim.frequency)
+        self.isDead    = False
+        self.frequency = newActim.frequency
         self.boardType = newActim.boardType
         self.version   = newActim.version
         self.serverId  = newActim.serverId
-        self.isDead    = newActim.isDead
         self.bootTime  = newActim.bootTime
         self.lastSeen  = newActim.lastSeen
         self.sensorStr = newActim.sensorStr
-        self.frequency = newActim.frequency
         self.rating    = newActim.rating
         self.repoSize  = newActim.repoSize
 
@@ -290,7 +301,7 @@ def htmlActimetres(now):
 
     for actimId in sorted(Actimetres.keys()):
         a = Actimetres[actimId]
-        drawActimetreMaybe(actimId, now)
+        a.drawGraph(now)
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}" />')
@@ -305,8 +316,15 @@ def htmlActimetres(now):
                 line('td', f"{a.frequency}Hz", klass='center')
                 line('td', "{:.3f}%".format(100.0 * a.rating) , klass='center')
                 line('td', a.serverName(), klass='center')
-                line('td', prettyDate(a.bootTime))
-                line('td', prettyDate(a.lastReport))
+                with tag('td', klass='health'):
+                    with tag('div', klass='center'):
+                        if a.graphSince == TIMEZERO:
+                            text("Since ?")
+                        else:
+                            text("Since " + a.graphSince.strftime(TIMEFORMAT_DISP))
+                        line('button', "Reload", type='submit', name='action', value='actim-reload-graph')
+                    with tag('div', klass='center'):
+                        doc.asis(f'<img alt="Actim{actimId:04d} health" src="/images/Actim{actimId:04d}.svg">\n')
             else:
                 line('td', "?", klass='center')
                 line('td', "?", klass='center')
@@ -498,7 +516,8 @@ elif action == 'actimetre-new':
         actimId = Registry[mac]
         printLog(f"Found known Actim{actimId:04d} for {mac}")
         
-    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=now, lastSeen=now, lastReport=now, isDead=true)
+    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=now, lastSeen=now, lastReport=now)
+    a.addFreqEvent(now, 0)
     printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
     
     thisServer.actimetreList.add(actimId)
@@ -518,7 +537,7 @@ elif action == 'actimetre':
         Actimetres[actimId] = newActim
     else:
         a.update(newActim, now)
-    a.lastReport = now
+    Actimetres[actimId].lastReport = now
     dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
 
     if not actimId in thisServer.actimetreList:
@@ -534,26 +553,14 @@ elif action == 'actimetre-off':
     a = Actimetres.get(actimId)
     if a is not None:
         a.bootTime = TIMEZERO
-        a.isDead = true
+        a.isDead = True
         addFreqEvent(actimId, 0)
+        a.frequency = 0
         if a.actimId in Actiservers[serverId].actimetreList:
             Actiservers[serverId].actimetreList.remove(actimId)
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     plain("Ok")
-
-elif action == 'prepare-stats':
-    repoStats()
-    plain("")
-
-elif action == 'actimetre-html':
-    htmlActimetres(now)
-
-elif action == 'actiserver-html':
-    htmlActiservers()
-
-elif action == 'project-html':
-    htmlProjects()
 
 elif action == 'actim-change-project':
     actimId = int(args['actimId'][0])
@@ -575,7 +582,22 @@ elif action == 'submit':
     printLog(f"Submitted form {formId}")
     processForm(formId)
 
+elif action == 'prepare-stats':
+    repoStats()
+    plain("")
+
 else:
-    print("Location:\\index.html\n\n")
+    from yattag import Doc
+    if action == 'actimetre-html':
+        htmlActimetres(now)
+
+    elif action == 'actiserver-html':
+        htmlActiservers()
+
+    elif action == 'project-html':
+        htmlProjects()
+
+    else:
+        print("Location:\\index.html\n\n")
 
 lock.close()
