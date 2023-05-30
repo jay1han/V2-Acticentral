@@ -382,8 +382,6 @@ def htmlActimetres(now):
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}" />')
             with tag('td'):
                 doc.asis('Actim&shy;{:04d}'.format(actimId))
-            with tag('td'):
-                doc.asis('&thinsp;'.join([a.mac[0:2], a.mac[2:4], a.mac[4:6], a.mac[6:8], a.mac[8:10], a.mac[10:12]]))
             line('td', a.boardType, klass='center')
             if now - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
                 line('td', a.version, klass='center')
