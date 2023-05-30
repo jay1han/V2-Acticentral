@@ -209,6 +209,8 @@ class Actimetre:
         self.frequency = newActim.frequency
         self.boardType = newActim.boardType
         self.version   = newActim.version
+        if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
+            self.addFreqEvent(newActim.bootTime, 0)
         self.serverId  = newActim.serverId
         self.bootTime  = newActim.bootTime
         self.lastSeen  = newActim.lastSeen
