@@ -1,7 +1,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta http-equiv="refresh" content="10" />
+    <meta http-equiv="refresh" content="15" />
     <style>
       body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual; margin-left:50px; margin-right:50px;}
       table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse;}
@@ -17,13 +17,14 @@
       .totals {text-align:right;}
       .small {text-align:right;font-size:0.8em;}
       .center {text-align:center;}
-      img.health {height:50px; width:250px;}
+      .wide {width:100%;}
+      .health {height:50px; width:250px;}
     </style>
     <title>Actimetre Dashboard</title>
   </head>
 
   <body>
-    <!--#include virtual="/bin/acticentral.py?action=prepare-stats" onerror="error.html" -->
+    <!--#include virtual="/bin/acticentral.py?action=prepare-stats" -->
     <h1>Actimetres</h1>
     <table>
       <tr>
@@ -39,7 +40,7 @@
 	<th>Project</th>
 	<th>Data size</th>
       </tr>
-      <!--#include virtual="/bin/acticentral.py?action=actimetre-html" onerror="error.html" -->
+      <!--#include virtual="/actimetres.html" -->
     </table>
     
     <h1>Servers</h1>
@@ -53,7 +54,7 @@
 	<th>Actimetres</th>
 	<th>Last update</th>
       </tr>
-      <!--#include virtual="/bin/acticentral.py?action=actiserver-html" onerror="error.html" -->
+      <!--#include virtual="/actiservers.html" -->
     </table>
     
     <h1>Projects</h1>
@@ -66,19 +67,15 @@
 	<th class="no-borders"></th>
       </tr>
 
-      <!--#include virtual="/bin/acticentral.py?action=project-html" onerror="error.html" -->
+      <!--#include virtual="/projects.html" -->
     </table>
     
     <form action="/bin/acticentral.py" method="get">
       <p><button type="submit" name="action" value="create-project">Create a new project</button></p>
     </form>
     
-    <hr>
-    <table width="100%" style="border:0">
-      <tr style="border:0">
-	<td style="border:0">All times in UTC</td>
-	<td style="border:0;text-align:right">Acticentral v198</td>
-      </tr>
-    </table>
+    <hr width="100%">
+    <div style="float:left">All times in UTC</div>
+    <div style="float:right">Acticentral v199</div>
   </body>
 </html>

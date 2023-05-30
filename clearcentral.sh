@@ -4,6 +4,5 @@ echo > /etc/actimetre/central.log
 echo > /etc/actimetre/acticentral.lock
 echo {} > /etc/actimetre/actiservers.data
 echo {} > /etc/actimetre/actimetres.data
-echo {} > /etc/actimetre/meta.data
 rm -f /etc/actimetre/history/Actim*.hist
 
