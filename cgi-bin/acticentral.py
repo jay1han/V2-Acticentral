@@ -146,8 +146,8 @@ class Actimetre:
         ax.text(now, 5, "  30", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.text(now, 7, "  50", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.text(now, 10, "100", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.plot(timeline, frequencies, drawstyle="steps-post", color="black", linewidth=1, solid_joinstyle="miter")
-        ax.plot(timeline, zero, drawstyle="steps-post", color="red", linewidth=1, solid_joinstyle="miter")
+        ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1, solid_joinstyle="miter")
+        ax.plot(timeline, zero, ds="steps-post", c="red", lw=1, solid_joinstyle="miter")
         pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
         pyplot.close()
         
@@ -161,9 +161,9 @@ class Actimetre:
         ax.text(now, 5, "  30", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.text(now, 7, "  50", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.text(now, 10, "100", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.plot(timeline, frequencies, drawstyle="steps-post", color="black", linewidth=1, solid_joinstyle="miter")
-        ax.plot(timeline, zero, drawstyle="steps-post", color="red", linewidth=1, solid_joinstyle="miter")
-        pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}-large.svg", format='svg', bbox_inches="tight", pad_inches=0)
+        ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1, solid_joinstyle="miter")
+        ax.plot(timeline, zero, ds="steps-post", c="red", lw=1, solid_joinstyle="miter")
+        pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}-large.svg", format='svg', bbox_inches="tight", pad_inches=0.5)
         pyplot.close()
         
         self.lastDrawn = now
@@ -203,14 +203,14 @@ class Actimetre:
         self.drawGraph(now)
 
     def update(self, newActim, now):
+        if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
+            self.addFreqEvent(newActim.bootTime, 0)
         if self.frequency != newActim.frequency:
             self.addFreqEvent(now, newActim.frequency)
         self.isDead    = False
         self.frequency = newActim.frequency
         self.boardType = newActim.boardType
         self.version   = newActim.version
-        if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
-            self.addFreqEvent(newActim.bootTime, 0)
         self.serverId  = newActim.serverId
         self.bootTime  = newActim.bootTime
         self.lastSeen  = newActim.lastSeen
@@ -383,7 +383,7 @@ def htmlActimetres(now):
             with tag('td'):
                 doc.asis('Actim&shy;{:04d}'.format(actimId))
             line('td', a.boardType, klass='center')
-            if now - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS):
+            if now - a.lastReport < timedelta(seconds=ACTIM_FAIL_SECS) and a.frequency != 0:
                 line('td', a.version, klass='center')
                 line('td', a.sensorStr, klass='center')
                 line('td', f"{a.frequency}Hz", klass='center')
