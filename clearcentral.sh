@@ -6,3 +6,5 @@ echo {} > /etc/actimetre/actiservers.data
 echo {} > /etc/actimetre/actimetres.data
 rm -f /etc/actimetre/history/Actim*.hist
 
+ls -lRA
+

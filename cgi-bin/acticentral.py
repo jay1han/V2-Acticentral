@@ -17,14 +17,19 @@ HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
 
 ACTIM_FAIL_SECS = 10
-ACTIS_FAIL_SECS = 20
+ACTIS_FAIL_SECS = 30
 
 TIMEZERO     = datetime(year=2023, month=1, day=1)
 REDRAW_TIME  = timedelta(minutes=5)
-#GRAPH_SPAN   = timedelta(days=7)
-#GRAPH_CULL   = timedelta(days=6)
-GRAPH_SPAN   = timedelta(minutes=10)
-GRAPH_CULL   = timedelta(minutes=5)
+REFRESH_TIME = timedelta(seconds=15)
+GRAPH_SPAN   = timedelta(days=7)
+GRAPH_CULL   = timedelta(days=6)
+FREQ_SCALE   = {0:0, 10:2, 30:5, 50:7, 100:10}
+
+def scaleFreq(origFreq):
+    for limit, scale in FREQ_SCALE.items():
+        if origFreq <= limit:
+            return scale
 
 def printLog(text=''):
     try:
@@ -125,25 +130,42 @@ class Actimetre:
             timeline = []
             frequencies = []
             for line in history:
-                time, part, freq = line.partition(':')
-                timeline.append(datetime.strptime(time.strip(), TIMEFORMAT_FN))
-                frequencies.append(int(freq))
+                timeStr, part, freqStr = line.partition(':')
+                timeline.append(datetime.strptime(timeStr.strip(), TIMEFORMAT_FN))
+                freq = scaleFreq(int(freqStr))
+                frequencies.append(freq)
 
         timeline.append(now)
-        frequencies.append(self.frequency)
-        zero = [0   for i in range(len(timeline))]
-        cent = [100 for i in range(len(timeline))]
+        frequencies.append(scaleFreq(self.frequency))
+
+        zero = [0 for i in range(len(timeline))]
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
-        ax.plot(timeline, cent, color="green", linewidth="0.5", linestyle="--")
-        ax.text(now, 10,  " 10", family="sans-serif", stretch="condensed", va="center", color="black", in_layout=True)
-        ax.text(now, 30,  " 30", family="sans-serif", stretch="condensed", va="center", color="black", in_layout=True)
-        ax.text(now, 50,  " 50", family="sans-serif", stretch="condensed", va="center", color="black", in_layout=True)
-        ax.text(now, 100, "100", family="sans-serif", stretch="condensed", va="center", color="black", in_layout=True)
-        ax.plot(timeline, frequencies, drawstyle="steps-post", color="black", linewidth="1", solid_joinstyle="miter")
-        ax.plot(timeline, zero, color="red", linewidth="1", linestyle="--")
+        ax.set_ylim(bottom=-1, top=12)
+        ax.text(now, 2, "  10", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, 5, "  30", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, 7, "  50", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, 10, "100", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.plot(timeline, frequencies, drawstyle="steps-post", color="black", linewidth=1, solid_joinstyle="miter")
+        ax.plot(timeline, zero, drawstyle="steps-post", color="red", linewidth=1, solid_joinstyle="miter")
         pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
         pyplot.close()
+        
+        fig, ax = pyplot.subplots(figsize=(10.0,1.0), dpi=150.0)
+        ax.set_frame_on(False)
+        ax.set_ylim(bottom=-1, top=12)
+        ax.get_yaxis().set_visible(False)
+        ax.xaxis_date()
+        pyplot.grid(True, 'both', 'x', linestyle='--', linewidth=0.5)
+        ax.text(now, 2, "  10", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, 5, "  30", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, 7, "  50", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, 10, "100", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.plot(timeline, frequencies, drawstyle="steps-post", color="black", linewidth=1, solid_joinstyle="miter")
+        ax.plot(timeline, zero, drawstyle="steps-post", color="red", linewidth=1, solid_joinstyle="miter")
+        pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}-large.svg", format='svg', bbox_inches="tight", pad_inches=0)
+        pyplot.close()
+        
         self.lastDrawn = now
 
         if now - self.graphSince >= GRAPH_SPAN:
@@ -322,21 +344,23 @@ Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTI
 Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(ACTI_META).items()}
 
 def repoStats(now):
-    for p in Projects.values():
-        p.repoSize = 0
+    metaFile = os.stat(ACTI_META)
+    if now - datetime.fromtimestamp(metaFile.st_mtime) > REFRESH_TIME:
+        for p in Projects.values():
+            p.repoSize = 0
 
-    save = False
-    for a in Actimetres.values():
-        if a.drawGraphMaybe(now):
-            save = True
-        if Projects.get(a.projectId) is None:
-            Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
-        Projects[a.projectId].addActim(a)
-        Projects[a.projectId].repoSize += a.repoSize
+        save = False
+        for a in Actimetres.values():
+            if a.drawGraphMaybe(now):
+                save = True
+            if Projects.get(a.projectId) is None:
+                Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
+            Projects[a.projectId].addActim(a)
+            Projects[a.projectId].repoSize += a.repoSize
 
-    if save:
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
+        if save:
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        dumpData(ACTI_META, {int(p.projectId):p.toD() for p in Projects.values()})
 
 def printSize(size, unit='MB', precision=0):
     if unit == 'GB':
@@ -378,7 +402,7 @@ def htmlActimetres(now):
                     text("Since " + a.graphSince.strftime(TIMEFORMAT_DISP) + " ")
                 doc.asis('<button type="submit" name="action" value="actim-reload-graph">&#x27f3;</button>')
                 with tag('div'):
-                    doc.asis(f'<img alt="Actim{actimId:04d} health" src="/images/Actim{actimId:04d}.svg" height="50px" width="250px">\n')
+                    doc.asis(f'<a href="/images/Actim{actimId:04d}-large.svg"><img alt="Actim{actimId:04d} health" src="/images/Actim{actimId:04d}.svg" class="health"></a>\n')
             with tag('td'):
                 line('div', Projects[a.projectId].title)
                 with tag('div', klass='right'):
@@ -525,14 +549,12 @@ now = datetime.utcnow()
 
 if action == 'actiserver':
     serverId = int(args['serverId'][0])
-
-    printLog(f"Actis{serverId} alive")
-    thisServer = Actiserver().fromD(json.load(sys.stdin))
-    thisServer.lastReport = now
-    
-    Actiservers[serverId] = thisServer
-    dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-
+    if serverId != 0:
+        printLog(f"Actis{serverId} alive")
+        thisServer = Actiserver().fromD(json.load(sys.stdin))
+        thisServer.lastReport = now
+        Actiservers[serverId] = thisServer
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
     plain(json.dumps(Registry))
 
 elif action == 'actimetre-new':
@@ -565,7 +587,6 @@ elif action == 'actimetre-new':
         printLog(f"Found known Actim{actimId:04d} for {mac}")
         
     a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=now, lastSeen=now, lastReport=now)
-    a.addFreqEvent(now, 0)
     printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
     
     thisServer.actimetreList.add(actimId)
