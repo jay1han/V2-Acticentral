@@ -9,7 +9,7 @@ chmod 777 /etc/matplotlib
 
 cp clear*.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
-cp html/*.html /var/www/html/
+cp html/*.html html/*.svg /var/www/html/
 
 cd /var/www
 chown www-data:www-data html html/images html/*.html cgi-bin/acticentral.py
