@@ -1,4 +1,6 @@
 #!/usr/bin/bash
 
-echo {} > /etc/actimetre/registry.data
-echo {} > /etc/actimetre/meta.data
+cd /etc/actimetre
+rm -f history/Actim*.hist
+echo {} > registry.data
+echo {} > projects.data

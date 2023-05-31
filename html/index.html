@@ -4,14 +4,16 @@
     <meta http-equiv="refresh" content="15" />
     <style>
       body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual; margin-left:50px; margin-right:50px;}
-      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse;}
+      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse; text-align:center;}
       td {padding:0.3em; border:1px solid black;}
       th {padding:0.5em; border:1px solid black;}
-      .red {color:red;}
       .no-borders {border:0;}
       .right {text-align:right;}
-      .center {text-align:center;}
-      .health {height:50px; width:250px;}
+      .left {text-align:left;}
+      .health {height:50px; width:250px; font-size:90%;}
+      .small {font-size:80%;}
+      .dead {color:red;}
+      .retire {color:grey; font-style:italic}
     </style>
     <title>Actimetre Dashboard</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
@@ -23,15 +25,12 @@
     <table>
       <tr>
 	<th>Name</th>
-	<th>Type</th>
-	<th>Version</th>
+	<th>Type<br>Version</th>
 	<th>Sensors</th>
-	<th>Frequency</th>
 	<th>Missing</th>
-	<th>Server</th>
 	<th>Health</th>
 	<th>Project</th>
-	<th>Data size</th>
+	<th>Data<br>size</th>
       </tr>
       <!--#include virtual="/actimetres.html" -->
     </table>
@@ -41,9 +40,7 @@
       <tr>
 	<th>Name</th>
 	<th>Hardware</th>
-	<th>Address</th>
-	<th>Version</th>
-	<th>WiFi channel</th>
+	<th>Version<br>Channel</th>
 	<th>Actimetres</th>
 	<th>Last update</th>
       </tr>
@@ -69,6 +66,7 @@
     
     <hr width="100%">
     <div style="float:left">All times in UTC</div>
-    <div style="float:right">Acticentral v199</div>
+    <div style="float:right"><img height="20px" src="/actimetre.svg" style="vertical-align:middle">
+      <a href="/acknowledgments.html">Acticentral v200</a></div>
   </body>
 </html>

@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style>
+      body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif;}
+      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse; }
+      td {padding:0.3em; border:1px solid black;}
+    </style>
+    <title>Retire {actimName}</title>
+    <link rel="icon" type="image/svg" href="/actimetre.svg">
+  </head>
+  <body>
+    <h1>Retire {actimName}</h1>
+    <p style="font-size:x-large; color:red;">WARNING! This will forget this Actimetre and remove all historical data.</p>
+    <p>There is no enforced access control. Please make sure you're managing your own project's Actimetres only.</p>
+    <p>Please make sure you have backed up the data from the repository and cleaned it up.</p>
+    <table>
+      <tr>
+        <td>MAC Address</td><td>{mac}</td>
+      </tr>
+      <tr>
+        <td>Board Type</td><td>{boardType}</td>
+      </tr>
+      <tr>
+        <td>Project</td><td>{projectTitle}</td>
+      </tr>
+      <tr>
+        <td>Data size</td><td>{repoSize}</td>
+      </tr>
+    </table>
+    
+    <form action="/bin/acticentral.py" method="get" target="_parent">
+      <input type="hidden" name="formId" value="retire-actim"/>
+      <input type="hidden" name="actimId" value="{actimId}"/>
+
+      <h3>To Confirm</h3>
+      <p>Enter {owner} below to confirm</p>
+      <p><input id="title" type="text" name="owner" value=""></p>
+
+      <button type="submit" name="action" value="cancel">Cancel</button>
+      <button type="submit" name="action" value="submit">Confirm</button>
+    </form>
+  </body>
+</html>

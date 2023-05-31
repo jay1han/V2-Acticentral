@@ -1,0 +1,91 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <style>
+      body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual; }
+      h4 {margin-left:1em;}
+      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse;}
+      td {padding:0.3em; border:1px solid black;}
+      th {padding:0.5em; border:1px solid black;}
+      .red {color:red;}
+      .no-borders {border:0;}
+      .right {text-align:right;}
+      .center {text-align:center;}
+      .health {height:50px; width:250px;}
+    </style>
+    <title>Actimetre Dashboard</title>
+    <link rel="icon" type="image/svg" href="/actimetre.svg">
+  </head>
+
+  <body>
+    <div style="float:right"><img height="200px" width="200px" src="/actimetre.svg"></div>
+    <h1>Acknowledgment</h1>
+    <p>Actimetre System makes use of the following hardware and software components.</p>
+
+    <h2>Actimetre</h2>
+    <h4>Hardware</h4>
+    <ul>
+      <li><a href="https://www.wemos.cc/en/latest/s2/s2_mini.html">S2 mini</a> and
+        <a href="https://www.wemos.cc/en/latest/s3/s3_mini.html">S3 mini</a> boards by
+        <a href="https://lolin.aliexpress.com/store/1331105">LOLIN</a>
+      <li>Based on the <a href="https://www.espressif.com/en/products/socs/esp32-s2">ESP32-S2</a> and
+        <a href="https://www.espressif.com/en/products/socs/esp32-s3">ESP32-S3</a> chips manufactured by
+        <a href="https://www.espressif.com/">Espressif Systems</a>
+      <li>Sensor breakout board GY-521 based on
+        <a href="https://invensense.tdk.com/products/motion-tracking/6-axis/mpu-6050/">MPU-6050</a> by
+        <a href="https://invensense.tdk.com/">Invensense</a>, a
+        <a href="https://www.tdk.com/en/index.html">TDK</a> company
+    </ul>
+    <h4>Software</h4>
+    <ul>
+      <li><a href="https://www.arduino.cc/en/software">Arduino IDE</a> with Espressif's
+        <a href="https://docs.espressif.com/projects/arduino-esp32/en/latest/index.html">ESP32 Arduino Core</a>
+    </ul>
+
+    <h2>Actiserver</h2>
+    <h4>Hardware</h4>
+    <ul>
+      <li>amd64 based Ubuntu 22.04 system with RTL88x2AU/BU WiFi chip on USB,
+        with drivers from <a href="https://github.com/cilynx/rtl88x2bu">cilynx</a> and
+        <a href="https://github.com/morrownr/8812au-20210629">morrownr</a>
+        <br><i>or</i>
+      <li>ARM based Debian Bullseye or Ubuntu 22.04 system with on-board WiFi support<br>.
+        Tested on Raspberry Pi 3, Pi 4, <a href="https://www.raspberrypi.com/products/compute-module-4/">Compute Module 4</a>;
+        <a href="https://wiki.friendlyelec.com/wiki/index.php/NanoPi_NEO3">NanoPi Neo3</a>;
+        <a href="http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-Zero-2.html">OrangePi Zero 2W</a>.
+    </ul>
+    <h4>Software</h4>
+    <ul>
+      <li>OpenJDK-17 running Kotlin code written on
+        <a href="https://www.jetbrains.com/idea/">IntelliJ IDEA</a>
+      <li>Uses the <a href="https://github.com/davidepianca98/KMQTT">KMQTT</a> library by Davide Pianca
+      <li>On Raspberry hardware, the
+        <a href="https://github.com/asebak/embeddedlinux-jvmdebugger-intellij">Embedded Linux JVM Debugger</a> plug-in
+        by <i>asebak</i> was used
+    </ul>
+
+    <h2>Acticentral</h2>
+    <p>Acticentral is really independent of hardware.
+      It was tested on various single-board computers, Linux PCs, and AWS Lightsail.</p>
+    <h4>Software</h4>
+    <ul>
+      <li><a href="https://httpd.apache.org/">Apache2</a> for HTTP
+      <li><a href="https://www.python.org/">Python3</a> for the main script
+      <li><a href="https://matplotlib.org/">Matplotlib</a> for graphs
+      <li><a href="https://www.yattag.org/">Yattag</a> for HTML generation with Python
+      <li>Eclipse <a href="https://mosquitto.org/">Mosquitto</a> as MQTT broker
+    </ul>
+
+    <h2>Generic software</h2>
+    <ul>
+      <li><a href="https://www.gnu.org/software/emacs/">GNU Emacs</a> for code editing
+      <li><a href="http://www.9bis.net/kitty/#!index.md">KiTTY</a> as SSH client of choice
+      <li><a href="https://github.com/jay1han">Github</a> for version management
+    </ul>
+
+    <hr>
+    <p>If you are interested in industrial/commercial applications, please send email to
+      <a href="mailto:jayhan.name@gmail.com">jayhan.name@gmail.com</a></p>
+
+  </body>
+</html>

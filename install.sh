@@ -24,10 +24,8 @@ echo > central.log
 echo > acticentral.lock
 echo {} > actiservers.data
 echo {} > actimetres.data
-echo {} > meta.data
 rm -f acticentral.pid
-rm -f history/Actim*.hist
 chmod 666 *.log *.data *.lock
 
-echo Please run /etc/actimetre/clearregistry.sh if you want to erase everything
+echo Please run /etc/actimetre/clearregistry.sh if you want to erase the rest (Registry, History, and Projects)
 

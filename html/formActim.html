@@ -1,13 +1,17 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Actimetre</title>
+    <style>
+      body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif;}
+    </style>
+    <title>{actimName}</title>
+    <link rel="icon" type="image/svg" href="/actimetre.svg">
   </head>
   <body>
-    <h1>Actimetre information</h1>
+    <h1>{actimName} information</h1>
     <p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
 
-    <p>Actimetre named <b>{actimName}</b> is currently attached to the following project:</p>
+    <p>The Actimetre named <b>{actimName}</b> is currently attached to the following project. Please select a different one if you want to change it.</p>
     
     <form action="/bin/acticentral.py" method="get" target="_parent">
       <input type="hidden" name="actimId" value="{actimId}" />
