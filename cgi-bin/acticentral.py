@@ -227,6 +227,7 @@ class Actimetre:
         redraw = False
         if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
             self.addFreqEvent(newActim.bootTime, 0)
+            self.frequency = 0
             redraw = True
         if self.frequency != newActim.frequency:
             self.addFreqEvent(now, newActim.frequency)
