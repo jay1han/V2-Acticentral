@@ -15,6 +15,7 @@ LOG_FILE        = "/etc/actimetre/central.log"
 PROJECTS        = "/etc/actimetre/projects.data"
 HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
+HTML_DIR        = "/var/www/html"
 
 ACTIM_FAIL_TIME = timedelta(seconds=10)
 ACTIM_RETIRE_P  = timedelta(days=7)
@@ -441,6 +442,7 @@ def htmlActimetres(now):
                 if a.graphSince == TIMEZERO:
                     text("? ")
                 else:
+                    doc.asis("&#x25be; ")
                     text(a.graphSince.strftime(TIMEFORMAT_DISP) + " ")
                 doc.asis('<button type="submit" name="action" value="actim-reload-graph">&#x27f3;</button>\n')
                 with tag('div'):
@@ -455,7 +457,7 @@ def htmlActimetres(now):
                     doc.asis('<br>(?)')
         doc.asis('</form>\n')
 
-    with open("/var/www/html/actimetres.html", "w") as html:
+    with open(f"{HTML_DIR}/actimetres.html", "w") as html:
         print(doc.getvalue(), file=html)
     
 def htmlActiservers(now):
@@ -495,7 +497,7 @@ def htmlActiservers(now):
                             doc.asis("&nbsp;")
                             line('span', Actimetres[a].sensorStr, klass='small')
             line('td', prettyDate(s.lastReport), klass=alive)
-    with open("/var/www/html/actiservers.html", "w") as html:
+    with open(f"{HTML_DIR}/actiservers.html", "w") as html:
         print(doc.getvalue(), file=html)
     
 def htmlProjects(now):
@@ -522,13 +524,13 @@ def htmlProjects(now):
                         line('button', "Remove", type='submit', name='action', value='remove-project')
             doc.asis('</form>')
     
-    with open("/var/www/html/projects.html", "w") as html:
+    with open(f"{HTML_DIR}/projects.html", "w") as html:
         print(doc.getvalue(), file=html)
 
 def projectChangeInfo(projectId):
     print("Content-type: text/html\n\n")
 
-    with open("/var/www/html/formProject.html") as form:
+    with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{projectTitle}", Projects[projectId].title)\
               .replace("{projectOwner}", Projects[projectId].owner)\
@@ -544,7 +546,7 @@ def actimChangeProject(actimId):
             htmlProjectList += ' checked="true"'
         htmlProjectList += f'><label for="{p.projectId}">{p.title} ({p.owner})</label><br>\n'
 
-    with open("/var/www/html/formActim.html") as form:
+    with open(f"{HTML_DIR}/formActim.html") as form:
         print(form.read()\
               .replace("{actimId}", str(actimId))\
               .replace("{actimName}", Actimetres[actimId].actimName())\
@@ -569,7 +571,7 @@ def retireActim(actimId):
         ownerStr = 'the name of the owner'
     else:
         ownerStr = '"CONFIRM"'
-    with open("/var/www/html/formRetire.html") as form:
+    with open(f"{HTML_DIR}/formRetire.html") as form:
         print(form.read()\
               .replace("{actimId}", str(actimId))\
               .replace("{actimName}", a.actimName())\
@@ -807,6 +809,8 @@ elif action == 'submit':
 
 elif action == 'prepare-stats':
     from yattag import Doc
+    with open(f"{HTML_DIR}/updated.html", "w") as updated:
+        print(now.strftime(TIMEFORMAT_DISP), file=updated)
     repoStats(now)
     htmlActimetres(now)
     htmlActiservers(now)
