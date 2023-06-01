@@ -154,6 +154,7 @@ class Actimetre:
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
         ax.set_ylim(bottom=-1, top=12)
+        ax.axvline(timeline[0], 0, 0.95, lw=1.0, c="blue", marker="^", markevery=[1], ms=5.0, mfc="blue")
         ax.text(now, FSCALE[10], "   10", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.text(now, FSCALE[30], "   30", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.text(now, FSCALE[50], "   50", family="sans-serif", stretch="condensed", ha="left", va="center")
@@ -163,7 +164,6 @@ class Actimetre:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
         else:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
-        ax.axvline(timeline[0], 0, 0.95, lw=1.0, c="blue", marker="^", markevery=[1], ms=5.0)
         pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
         pyplot.close()
         
@@ -475,7 +475,7 @@ def htmlActimetres(now):
                         doc.asis(f'<a href="/images/Actim{actimId:04d}-large.svg"><img src="/images/Actim{actimId:04d}.svg" class="health"></a>\n')
                         
             with tag('td'):
-                line('div', Projects[a.projectId].title)
+                line('div', Projects[a.projectId].title, klass='left')
                 with tag('div', klass='right'):
                     line('button', "Change", type='submit', name='action', value='actim-change-project')
             with tag('td', klass='right'):
@@ -531,7 +531,7 @@ def htmlProjects(now):
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="projectId" value="{p.projectId}" />')
-            line('td', p.title)
+            line('td', p.title, klass='left')
             line('td', p.owner)
             with tag('td', klass='left'):
                 for actimId in p.actimetreList:
@@ -540,9 +540,9 @@ def htmlProjects(now):
             line('td', printSize(p.repoSize), klass='right')
             with tag('td', klass="no-borders"):
                 if p.projectId != 0:
-                    with tag('div'):
-                        line('button', "Change info", type='submit', name='action', value='project-change-info')
-                    with tag('div'):
+                    with tag('div', klass='left'):
+                        line('button', "Edit", type='submit', name='action', value='project-change-info')
+                    with tag('div', klass='left'):
                         line('button', "Remove", type='submit', name='action', value='remove-project')
             doc.asis('</form>')
     
