@@ -149,20 +149,21 @@ class Actimetre:
 
         timeline.append(now)
         frequencies.append(scaleFreq(self.frequency))
-        zero = [0 for i in range(len(timeline))]
+        freq = [scaleFreq(self.frequency) for i in range(len(timeline))]
 
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
         ax.set_ylim(bottom=-1, top=12)
-        ax.text(now, FSCALE[10], "  10", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.text(now, FSCALE[30], "  30", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.text(now, FSCALE[50], "  50", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.text(now, FSCALE[100], "100", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1, solid_joinstyle="miter")
+        ax.text(now, FSCALE[10], "   10", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, FSCALE[30], "   30", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, FSCALE[50], "   50", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, FSCALE[100], " 100", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
         if self.isDead:
-            ax.plot(timeline[-2:], zero[-2:], ds="steps-post", c="red", lw=1)
+            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
         else:
-            ax.plot(timeline[markIndex:], zero[markIndex:], ds="steps-post", c="green", lw=1, ls="--")
+            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
+        ax.axvline(timeline[0], 0, 0.95, lw=1.0, c="blue", marker="^", markevery=[1], ms=5.0)
         pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
         pyplot.close()
         
@@ -173,19 +174,19 @@ class Actimetre:
         ax.xaxis_date()
         pyplot.grid(True, 'both', 'x', ls='--', lw=0.5)
         ax.axhline(           0,  c="grey", ls="--", lw=0.5)
-        ax.text(now, FSCALE[10], "  10", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, FSCALE[10], "   10", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.axhline(  FSCALE[10],  c="grey", ls="--", lw=0.5)
-        ax.text(now, FSCALE[30], "  30", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, FSCALE[30], "   30", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.axhline(  FSCALE[30],  c="grey", ls="--", lw=0.5)
-        ax.text(now, FSCALE[50], "  50", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, FSCALE[50], "   50", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.axhline(  FSCALE[50],  c="grey", ls="--", lw=0.5)
-        ax.text(now, FSCALE[100], "100", family="sans-serif", stretch="condensed", ha="left", va="center")
+        ax.text(now, FSCALE[100], " 100", family="sans-serif", stretch="condensed", ha="left", va="center")
         ax.axhline(  FSCALE[100], c="grey", ls="--", lw=0.5)
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
         if self.isDead:
-            ax.plot(timeline[-2:], zero[-2:], ds="steps-post", c="red", lw=1)
+            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=2.0)
         else:
-            ax.plot(timeline[markIndex:], zero[markIndex:], ds="steps-post", c="green", lw=1, ls="--")
+            ax.plot(timeline[markIndex:], freq[markIndex:], ds="steps-post", c="green", lw=2.0)
         pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}-large.svg", format='svg', bbox_inches="tight", pad_inches=0.5)
         pyplot.close()
         
@@ -251,6 +252,15 @@ class Actimetre:
 
     def serverName(self):
         return f"Actis{self.serverId:03d}"
+
+    def htmlInfo(self):
+        if self.isDead or self.frequency == 0:
+            return f'<span class="dead">(dead)</span>'
+        else:
+            return f'{self.sensorStr}@{self.frequency}Hz'
+        
+    def htmlCartouche(self):
+        return f'{self.actimName()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", \
@@ -389,22 +399,24 @@ def repoStats(now):
 
 def printSize(size, unit='', precision=0):
     if unit == '':
-        if size > 1_000_000_000:
+        if size >= 1_000_000_000:
             unit = 'GB'
-            if size > 10_000_000_000:
+            if size >= 10_000_000_000:
                 precision = 1
             else:
                 precision = 2
         else:
             unit = 'MB'
-            if size > 10_000_000:
+            if size >= 100_000_000:
+                precision = 0
+            elif size >= 10_000_000:
                 precision = 1
             else:
                 precision = 2
     if unit == 'GB':
-        inUnits = size / 1000000000
+        inUnits = size / 1_000_000_000
     else:
-        inUnits = size / 1000000
+        inUnits = size / 1_000_000
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
@@ -440,9 +452,8 @@ def htmlActimetres(now):
                 
             with tag('td', klass=f'health {alive} left'):
                 if a.graphSince == TIMEZERO:
-                    text("? ")
+                    text('? ')
                 else:
-                    doc.asis("&#x25be; ")
                     text(a.graphSince.strftime(TIMEFORMAT_DISP) + " ")
                 doc.asis('<button type="submit" name="action" value="actim-reload-graph">&#x27f3;</button>\n')
                 with tag('div'):
@@ -492,10 +503,8 @@ def htmlActiservers(now):
             else:
                 with tag('td', klass='left'):
                     for a in s.actimetreList:
-                        with tag('div'):
-                            text(Actimetres[a].actimName())
-                            doc.asis("&nbsp;")
-                            line('span', Actimetres[a].sensorStr, klass='small')
+                        with tag ('div'):
+                            doc.asis(Actimetres[a].htmlCartouche())
             line('td', prettyDate(s.lastReport), klass=alive)
     with open(f"{HTML_DIR}/actiservers.html", "w") as html:
         print(doc.getvalue(), file=html)
@@ -512,9 +521,7 @@ def htmlProjects(now):
             with tag('td', klass='left'):
                 for actimId in p.actimetreList:
                     with tag('div'):
-                        text(Actimetres[actimId].actimName())
-                        doc.asis('&nbsp;')
-                        line('span', Actimetres[actimId].sensorStr, klass='small')
+                        doc.asis(Actimetres[actimId].htmlCartouche())
             line('td', printSize(p.repoSize), klass='right')
             with tag('td', klass="no-borders"):
                 if p.projectId != 0:
@@ -550,18 +557,25 @@ def actimChangeProject(actimId):
         print(form.read()\
               .replace("{actimId}", str(actimId))\
               .replace("{actimName}", Actimetres[actimId].actimName())\
+              .replace("{actimInfo}", Actimetres[actimId].htmlInfo())\
               .replace("{htmlProjectList}", htmlProjectList))
 
 def removeProject(projectId):
-    printLog(f"Remove project with data: {Projects[projectId].title}, {Projects[projectId].owner}")
+    print("Content-type: text/html\n\n")
 
-    if projectId != 0:
-        for a in Projects[projectId].actimetreList:
-            Actimetres[a].projectId = 0
-        del Projects[projectId]
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    print("Location:\\index.html\n\n")
+    actimList = ""
+    if len(Projects[projectId].actimetreList) == 0:
+        actimList = "(no Actimetres assigned to this project)\n"
+    else:
+        actimList = ""
+        for a in [Actimetres[actimId] for actimId in Projects[projectId].actimetreList]:
+            actimList += f'<li>{a.htmlCartouche()}</li>\n'
+            
+    with open(f"{HTML_DIR}/formRemove.html") as form:
+        print(form.read()\
+              .replace("{projectId}", str(projectId))\
+              .replace("{projectTitle}", Projects[projectId].title)\
+              .replace("{actimetreList}", actimList))
 
 def retireActim(actimId):
     print("Content-type: text/html\n\n")
@@ -652,6 +666,16 @@ def processForm(formId):
             try:
                 os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
             except FileNotFoundError: pass
+        print("Location:\\index.html\n\n")
+
+    elif formId == 'remove-project':
+        projectId = int(args['projectId'][0])
+        if projectId != 0:
+            for a in Projects[projectId].actimetreList:
+                Actimetres[a].projectId = 0
+            del Projects[projectId]
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
         print("Location:\\index.html\n\n")
 
     else:

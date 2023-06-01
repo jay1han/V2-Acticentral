@@ -6,26 +6,28 @@
       .small {font-size:80%;}
       .dead {color:red;}
     </style>
-    <title>{actimName}</title>
+    <title>{projectTitle}</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
   </head>
   <body>
-    <h1>{actimName} information</h1>
+    <h1>Remove <u>{projectTitle}</u></h1>
     <p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
+    <p>This project uses the following Actimetres. By removing the project, these Actimetres will become unassigned.</p>
 
-    <p>The Actimetre named <b>{actimName}</b>&nbsp;<span class="small">{actimInfo}</span> is currently attached to the following project. Please select a different one if you want to change it.</p>
+    <ul>
+      {actimetreList}
+    </ul>
     
     <form action="/bin/acticentral.py" method="get" target="_parent">
-      <input type="hidden" name="actimId" value="{actimId}" />
-      <input type="hidden" name="formId" value="actim-change-project" />
-      
-      {htmlProjectList}
+      <input type="hidden" name="formId" value="remove-project" />
+      <input type="hidden" name="projectId" value="{projectId}" />
 
-      <p>
-      <button type="submit" name="action" value="submit">Confirm</button>
+      <h3>To Confirm</h3>
+      <p>Enter the name of the project owner below to confirm</p>
+      <p><input id="title" type="text" name="owner" value=""></p>
+
       <button type="submit" name="action" value="cancel">Cancel</button>
-      </p>
-      <p><button type="submit" name="action" value="create-project">Create a new Project</button></p>
+      <button type="submit" name="action" value="submit">Confirm</button>
     </form>
   </body>
 </html>
