@@ -20,7 +20,7 @@ HTML_DIR        = "/var/www/html"
 ACTIM_FAIL_TIME = timedelta(seconds=10)
 ACTIM_RETIRE_P  = timedelta(days=7)
 ACTIS_FAIL_TIME = timedelta(seconds=30)
-ACTIS_RETIRE_P  = timedelta(days=1)
+ACTIS_RETIRE_P  = timedelta(days=7)
 
 TIMEZERO     = datetime(year=2023, month=1, day=1)
 REDRAW_TIME  = timedelta(minutes=5)
@@ -262,6 +262,16 @@ class Actimetre:
     def htmlCartouche(self):
         return f'{self.actimName()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
 
+    def uptime(self, now):
+        up = now - self.bootTime
+        days = up // timedelta(days=1)
+        hours = (up % timedelta(days=1)) // timedelta(hours=1)
+        minutes = (up % timedelta(hours=1)) // timedelta(minutes=1)
+        if up > timedelta(days=1):
+            return f'{days}d{hours}h'
+        else:
+            return f'{hours}h{minutes}m'
+
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", \
                  lastReport=TIMEZERO, \
@@ -449,23 +459,28 @@ def htmlActimetres(now):
             else: 
                 line('td', "?")
                 line('td', "?")
-                
-            with tag('td', klass=f'health {alive} left'):
-                if a.graphSince == TIMEZERO:
-                    text('? ')
-                else:
-                    text(a.graphSince.strftime(TIMEFORMAT_DISP) + " ")
-                doc.asis('<button type="submit" name="action" value="actim-reload-graph">&#x27f3;</button>\n')
-                with tag('div'):
-                    doc.asis(f'<a href="/images/Actim{actimId:04d}-large.svg"><img src="/images/Actim{actimId:04d}.svg" class="health"></a>\n')
+
+            if alive == 'retire':
+                line('td', 'No data', klass='health retire')
+            else:
+                with tag('td', klass=f'health {alive} left'):
+                    if a.graphSince == TIMEZERO:
+                        text('? ')
+                    else:
+                        text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
+                    doc.asis('<button type="submit" name="action" value="actim-reload-graph">&#x27f3;</button>\n')
+                    if a.bootTime != TIMEZERO:
+                        doc.asis(f'<span class="up">up {a.uptime(now)}</span>')
+                    with tag('div'):
+                        doc.asis(f'<a href="/images/Actim{actimId:04d}-large.svg"><img src="/images/Actim{actimId:04d}.svg" class="health"></a>\n')
+                        
             with tag('td'):
                 line('div', Projects[a.projectId].title)
                 with tag('div', klass='right'):
                     line('button', "Change", type='submit', name='action', value='actim-change-project')
             with tag('td', klass='right'):
                 text(printSize(a.repoSize))
-                if alive != '':
-                    doc.asis('<br>(?)')
+                if alive != '': doc.asis('<br>(?)')
         doc.asis('</form>\n')
 
     with open(f"{HTML_DIR}/actimetres.html", "w") as html:
