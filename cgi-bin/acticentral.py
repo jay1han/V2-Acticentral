@@ -510,7 +510,8 @@ def htmlActimetres(now):
 def htmlActiservers(now):
     doc, tag, text, line = Doc().ttl()
 
-    for s in Actiservers.values():
+    for i in sorted(Actiservers.keys()):
+        s = Actiservers[i]
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="serverId" value="{s.serverId}" />')
