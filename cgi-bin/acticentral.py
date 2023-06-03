@@ -17,10 +17,12 @@ HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
 HTML_DIR        = "/var/www/html"
 
-ACTIM_FAIL_TIME = timedelta(seconds=10)
+ACTIM_FAIL_TIME = timedelta(seconds=15)
 ACTIM_RETIRE_P  = timedelta(days=7)
+ACTIM_HIDE_P    = timedelta(days=1)
 ACTIS_FAIL_TIME = timedelta(seconds=30)
 ACTIS_RETIRE_P  = timedelta(days=7)
+ACTIS_HIDE_P    = timedelta(days=1)
 
 TIMEZERO     = datetime(year=2023, month=1, day=1)
 
@@ -37,7 +39,6 @@ def printLog(text=''):
         print(text, file=logfile, end=end)
 
 REDRAW_TIME  = timedelta(minutes=1)
-REFRESH_TIME = timedelta(seconds=15)
 GRAPH_SPAN   = timedelta(days=7)
 GRAPH_CULL   = timedelta(days=6)
 FSCALE       = {10:2, 30:4, 50:7, 100:10}
@@ -423,6 +424,8 @@ def repoStats(now):
 
     save = False
     for a in Actimetres.values():
+        if now - a.lastReport > ACTIM_HIDE_P:
+            continue
         if a.drawGraphMaybe(now):
             save = True
         if Projects.get(a.projectId) is None:
@@ -442,6 +445,8 @@ def repoStats(now):
 
     for actimId in sorted(Actimetres.keys()):
         a = Actimetres[actimId]
+        if now - a.lastReport > ACTIM_HIDE_P:
+            continue
         with tag('tr'):
             alive = ''
             doc.asis('<form action="/bin/acticentral.py" method="get">')
@@ -497,8 +502,10 @@ def repoStats(now):
 
     doc, tag, text, line = Doc().ttl()
 
-    for i in sorted(Actiservers.keys()):
-        s = Actiservers[i]
+    for serverId in sorted(Actiservers.keys()):
+        s = Actiservers[serverId]
+        if now - s.lastReport > ACTIM_HIDE_P:
+            continue
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="serverId" value="{s.serverId}" />')
@@ -538,7 +545,10 @@ def repoStats(now):
 
     doc, tag, text, line = Doc().ttl()
 
-    for p in Projects.values():
+    for projectId in sorted(Projects.keys()):
+        p = Projects[projectId]
+        if len(p.actimetreList) == 0:
+            continue
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="projectId" value="{p.projectId}" />')
@@ -546,8 +556,9 @@ def repoStats(now):
             line('td', p.owner)
             with tag('td', klass='left'):
                 for actimId in p.actimetreList:
-                    with tag('div'):
-                        doc.asis(Actimetres[actimId].htmlCartouche())
+                    if Actimetres.get(actimId) is not None:
+                        with tag('div'):
+                            doc.asis(Actimetres[actimId].htmlCartouche())
             line('td', printSize(p.repoSize), klass='right')
             with tag('td', klass="no-borders"):
                 if p.projectId != 0:

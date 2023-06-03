@@ -1,12 +1,5 @@
 #!/usr/bin/bash
 
-mkdir /etc/actimetre
-mkdir /etc/actimetre/history
-mkdir /var/www/cgi-bin
-mkdir /var/www/html/images
-mkdir /etc/matplotlib
-chmod 777 /etc/matplotlib
-
 cp clear*.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/*.html html/*.svg /var/www/html/
@@ -22,8 +15,6 @@ chmod 777 . *.sh history
 
 echo > central.log
 echo > acticentral.lock
-echo {} > actiservers.data
-echo {} > actimetres.data
 rm -f acticentral.pid
 chmod 666 *.log *.data *.lock
 
