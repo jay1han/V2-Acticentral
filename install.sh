@@ -27,5 +27,11 @@ echo {} > actimetres.data
 rm -f acticentral.pid
 chmod 666 *.log *.data *.lock
 
-echo Please run /etc/actimetre/clearregistry.sh if you want to erase the rest (Registry, History, and Projects)
+sudo systemctl stop acticentral.timer
+cp acticentral.service /etc/systemd/system/
+cp acticentral.timer /etc/systemd/system/
 
+sudo systemctl enable acticentral.timer
+sudo systemctl start acticentral.timer
+
+echo "Please run /etc/actimetre/clearregistry.sh if you want to erase the rest (Registry, History, and Projects)"

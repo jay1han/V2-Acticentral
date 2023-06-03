@@ -1,0 +1,10 @@
+[Unit]
+Description=Refreshes Acticentral data
+Wants=acticentral.timer
+
+[Service]
+Type=oneshot
+ExecStart=/var/www/cgi-bin/acticentral.py prepare-stats
+
+[Install]
+WantedBy=multi-user.target

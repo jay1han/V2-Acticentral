@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import os, urllib.parse, sys, json, fcntl
+import os, sys, json, fcntl
 from datetime import datetime, timedelta
 
 LOG_SIZE_MAX    = 1_000_000
@@ -23,18 +23,6 @@ ACTIS_FAIL_TIME = timedelta(seconds=30)
 ACTIS_RETIRE_P  = timedelta(days=7)
 
 TIMEZERO     = datetime(year=2023, month=1, day=1)
-REDRAW_TIME  = timedelta(minutes=5)
-REFRESH_TIME = timedelta(seconds=15)
-GRAPH_SPAN   = timedelta(days=7)
-GRAPH_CULL   = timedelta(days=6)
-FSCALE       = {10:2, 30:4, 50:7, 100:10}
-
-def scaleFreq(origFreq):
-    if origFreq == 0:
-        return 0
-    for limit, scale in FSCALE.items():
-        if origFreq <= limit:
-            return scale
 
 def printLog(text=''):
     try:
@@ -48,17 +36,23 @@ def printLog(text=''):
             end = '\n'
         print(text, file=logfile, end=end)
 
-def prettyDate(dt):
-    if dt == TIMEZERO:
-        return '?'
-    else:
-        return dt.strftime(TIMEFORMAT_DISP)
+REDRAW_TIME  = timedelta(minutes=1)
+REFRESH_TIME = timedelta(seconds=15)
+GRAPH_SPAN   = timedelta(days=7)
+GRAPH_CULL   = timedelta(days=6)
+FSCALE       = {10:2, 30:4, 50:7, 100:10}
+
+def scaleFreq(origFreq):
+    if origFreq == 0:
+        return 0
+    for limit, scale in FSCALE.items():
+        if origFreq <= limit:
+            return scale
 
 class Actimetre:
-    def __init__(self, actimId=9999, mac='.' * 12, boardType='?', version="", serverId=0, isDead=True, \
+    def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=True, \
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
-                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0,\
-                 repoSize = 0):
+                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0, repoSize = 0):
         self.actimId    = int(actimId)
         self.mac        = mac
         self.boardType  = boardType
@@ -359,73 +353,6 @@ def dumpData(filename, data):
     with open(filename, "r+") as registry:
         json.dump(data, registry)
 
-def sendSESEmail(now, recipient, subject, text):
-    content = f"""\
-    Event: {subject}
-    At {now.strftime(TIMEFORMAT_DISP)}
-
-    {text}
-
-    For more information, please visit www.actimetre.fr
-    """
-    data = { \
-        'Content': { 'Simple': { 'Body'   : { 'Text': { 'Data': content } }, \
-                                 'Subject': { 'Data': subject } } }, \
-        'Destination': { 'ToAddresses': [recipient] }, \
-        'FromEmailAddress': 'acticentral@actimetre.fr', \
-        'ReplyToAddresses': ['manager@actimetre.fr'] }
-
-    pass
-
-qs = os.environ['QUERY_STRING']
-printLog(qs)
-
-args = urllib.parse.parse_qs(qs, keep_blank_values=True)
-if 'action' in args.keys():
-    action = args['action'][0]
-else:
-    action = ''
-
-lock = open("/etc/actimetre/acticentral.lock", "w+")
-fcntl.lockf(lock, fcntl.LOCK_EX)
-
-Registry = {}
-statinfo = os.stat(REGISTRY)
-with open(REGISTRY, "r") as registry:
-    try:
-        Registry = json.load(registry)
-    except JSONDecodeError:
-        pass
-    
-def saveRegistry():
-    os.truncate(REGISTRY, 0)
-    with open(REGISTRY, "r+") as registry:
-        json.dump(Registry, registry)
-    printLog("Saved Registry " + str(Registry))
-
-Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
-Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
-Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
-
-def repoStats(now):
-    metaFile = os.stat(PROJECTS)
-    if now - datetime.fromtimestamp(metaFile.st_mtime) > REFRESH_TIME:
-        for p in Projects.values():
-            p.repoSize = 0
-
-        save = False
-        for a in Actimetres.values():
-            if a.drawGraphMaybe(now):
-                save = True
-            if Projects.get(a.projectId) is None:
-                Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
-            Projects[a.projectId].addActim(a)
-            Projects[a.projectId].repoSize += a.repoSize
-
-        if save:
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-
 def printSize(size, unit='', precision=0):
     if unit == '':
         if size >= 1_000_000_000:
@@ -449,21 +376,82 @@ def printSize(size, unit='', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
-def htmlActimetres(now):
+def sendEmail(now, recipient, subject, text):
+    content = f"""\
+    Event: {subject}
+    At {now.strftime(TIMEFORMAT_DISP)}
+
+    {text}
+
+    For more information, please visit www.actimetre.fr
+    """
+    data = { \
+        'Content': { 'Simple': { 'Body'   : { 'Text': { 'Data': content } }, \
+                                 'Subject': { 'Data': subject } } }, \
+        'Destination': { 'ToAddresses': [recipient] }, \
+        'FromEmailAddress': 'acticentral@actimetre.fr', \
+        'ReplyToAddresses': ['manager@actimetre.fr'] }
+
+    pass
+
+def saveRegistry():
+    os.truncate(REGISTRY, 0)
+    with open(REGISTRY, "r+") as registry:
+        json.dump(Registry, registry)
+    printLog("Saved Registry " + str(Registry))
+
+lock = open("/etc/actimetre/acticentral.lock", "w+")
+fcntl.lockf(lock, fcntl.LOCK_EX)
+
+Registry = {}
+with open(REGISTRY, "r") as registry:
+    try:
+        Registry = json.load(registry)
+    except JSONDecodeError:
+        pass
+    
+Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
+Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+if Projects.get(0) is None:
+    Projects[0] = Project(0, "Not assigned", "No owner")
+    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+
+def repoStats(now):
+    for p in Projects.values():
+        p.repoSize = 0
+
+    save = False
+    for a in Actimetres.values():
+        if a.drawGraphMaybe(now):
+            save = True
+        if Projects.get(a.projectId) is None:
+            Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
+        Projects[a.projectId].addActim(a)
+        Projects[a.projectId].repoSize += a.repoSize
+
+    if save:
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+
+    with open(f"{HTML_DIR}/updated.html", "w") as updated:
+        print(now.strftime(TIMEFORMAT_DISP), file=updated)
+    from yattag import Doc, indent
+
     doc, tag, text, line = Doc().ttl()
 
     for actimId in sorted(Actimetres.keys()):
         a = Actimetres[actimId]
         with tag('tr'):
+            alive = ''
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}"/>')
-            if now - a.lastReport < ACTIM_FAIL_TIME and a.frequency != 0:
-                alive = ''
-            elif now - a.lastReport > ACTIM_RETIRE_P:
+            alive = ''
+            if now - a.lastReport > ACTIM_RETIRE_P:
                 alive = 'retire'
-            else:
+            elif now - a.lastReport > ACTIM_FAIL_TIME or a.frequency == 0:
                 alive = 'dead'
-                
+
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}<br>'.format(actimId))
                 if alive == 'retire':
@@ -494,7 +482,7 @@ def htmlActimetres(now):
                         line('span', f'up {a.uptime(now)}', klass='up')
                     with tag('div'):
                         doc.asis(f'<a href="/images/Actim{actimId:04d}-large.svg"><img src="/images/Actim{actimId:04d}.svg" class="health"></a>\n')
-                        
+
             with tag('td'):
                 line('div', Projects[a.projectId].title, klass='left')
                 with tag('div', klass='right'):
@@ -505,9 +493,8 @@ def htmlActimetres(now):
         doc.asis('</form>\n')
 
     with open(f"{HTML_DIR}/actimetres.html", "w") as html:
-        print(doc.getvalue(), file=html)
-    
-def htmlActiservers(now):
+        print(indent(doc.getvalue()), file=html)
+
     doc, tag, text, line = Doc().ttl()
 
     for i in sorted(Actiservers.keys()):
@@ -521,7 +508,7 @@ def htmlActiservers(now):
                 alive = 'retire'
             else:
                 alive = 'dead'
-                
+
             with tag('td', klass=alive):
                 text(s.serverName())
                 if alive == 'retire':
@@ -542,11 +529,13 @@ def htmlActiservers(now):
                     for a in s.actimetreList:
                         with tag ('div'):
                             doc.asis(Actimetres[a].htmlCartouche())
-            line('td', prettyDate(s.lastReport), klass=alive)
+            if s.lastReport == TIMEZERO:
+                line('td', "?", klass=alive)
+            else:
+                line('td', s.lastReport.strftime(TIMEFORMAT_DISP), klass=alive)
     with open(f"{HTML_DIR}/actiservers.html", "w") as html:
-        print(doc.getvalue(), file=html)
-    
-def htmlProjects(now):
+        print(indent(doc.getvalue()), file=html)
+
     doc, tag, text, line = Doc().ttl()
 
     for p in Projects.values():
@@ -567,10 +556,10 @@ def htmlProjects(now):
                     with tag('div', klass='left'):
                         line('button', "Remove", type='submit', name='action', value='remove-project')
             doc.asis('</form>')
-    
-    with open(f"{HTML_DIR}/projects.html", "w") as html:
-        print(doc.getvalue(), file=html)
 
+    with open(f"{HTML_DIR}/projects.html", "w") as html:
+        print(indent(doc.getvalue()), file=html)
+    
 def projectChangeInfo(projectId):
     print("Content-type: text/html\n\n")
 
@@ -726,6 +715,24 @@ def plain(text=''):
 
 now = datetime.utcnow()
 
+import argparse
+cmdparser = argparse.ArgumentParser()
+cmdparser.add_argument('action', default='', nargs='?')
+cmdargs = cmdparser.parse_args()
+if cmdargs.action == 'prepare-stats':
+    repoStats(now)
+    sys.exit(0)
+
+import urllib.parse
+qs = os.environ['QUERY_STRING']
+printLog(qs)
+
+args = urllib.parse.parse_qs(qs, keep_blank_values=True)
+if 'action' in args.keys():
+    action = args['action'][0]
+else:
+    action = ''
+
 if action == 'actiserver':
     serverId = int(args['serverId'][0])
     if serverId != 0:
@@ -809,7 +816,6 @@ elif action == 'actimetre':
                 save = True
     if save:
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-
     plain("Ok")
 
 elif action == 'actimetre-off':
@@ -830,13 +836,12 @@ elif action == 'actimetre-off':
 
         if Projects.get(a.projectId) is not None \
            and Projects[a.projectId].email != "":
-            sendSESEmail(now, Projects[a.projectId].email,\
-                         f'{a.actimName()} died',\
-                         f'{a.actimName()}\nType {a.boardType}\nMAC {a.mac}\n' +\
-                         f'Connected to Actis{a.serverId:03d}\nSensors {a.sensorStr}\nRunning at {a.frequency}Hz\n' +\
-                         f'Latest uptime {a.uptime(now)}\nMissing rate {a.rating:.3f}%\n' +\
-                         f'Total data size {printSize(a.repoSize)}\n')
-
+            sendEmail(now, Projects[a.projectId].email,\
+                      f'{a.actimName()} died',\
+                      f'{a.actimName()}\nType {a.boardType}\nMAC {a.mac}\n' +\
+                      f'Connected to Actis{a.serverId:03d}\nSensors {a.sensorStr}\nRunning at {a.frequency}Hz\n' +\
+                      f'Latest uptime {a.uptime(now)}\nMissing rate {a.rating:.3f}%\n' +\
+                      f'Total data size {printSize(a.repoSize)}\n')
     plain("Ok")
 
 elif action == 'actim-change-project':
@@ -879,16 +884,6 @@ elif action == 'submit':
     formId = args['formId'][0]
     printLog(f"Submitted form {formId}")
     processForm(formId)
-
-elif action == 'prepare-stats':
-    from yattag import Doc
-    with open(f"{HTML_DIR}/updated.html", "w") as updated:
-        print(now.strftime(TIMEFORMAT_DISP), file=updated)
-    repoStats(now)
-    htmlActimetres(now)
-    htmlActiservers(now)
-    htmlProjects(now)
-    plain("")
 
 else:
     print("Location:\\index.html\n\n")
