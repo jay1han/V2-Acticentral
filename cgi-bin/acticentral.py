@@ -27,9 +27,11 @@ REDRAW_TIME  = timedelta(minutes=5)
 REFRESH_TIME = timedelta(seconds=15)
 GRAPH_SPAN   = timedelta(days=7)
 GRAPH_CULL   = timedelta(days=6)
-FSCALE       = {0:0, 10:2, 30:4, 50:7, 100:10}
+FSCALE       = {10:2, 30:4, 50:7, 100:10}
 
 def scaleFreq(origFreq):
+    if origFreq == 0:
+        return 0
     for limit, scale in FSCALE.items():
         if origFreq <= limit:
             return scale
@@ -109,8 +111,6 @@ class Actimetre:
         self.repoSize   = int(d['repoSize'])
         if d.get('projectId') is not None:
             self.projectId  = int(d['projectId'])
-        else:
-            self.projectId = 0
         if d.get('lastDrawn') is not None:
             self.lastDrawn = datetime.strptime(d['lastDrawn'], TIMEFORMAT_FN)
         if d.get('graphSince') is not None:
@@ -155,10 +155,14 @@ class Actimetre:
         ax.set_axis_off()
         ax.set_ylim(bottom=-1, top=12)
         ax.axvline(timeline[0], 0, 0.95, lw=1.0, c="blue", marker="^", markevery=[1], ms=5.0, mfc="blue")
-        ax.text(now, FSCALE[10], "   10", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.text(now, FSCALE[30], "   30", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.text(now, FSCALE[50], "   50", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.text(now, FSCALE[100], " 100", family="sans-serif", stretch="condensed", ha="left", va="center")
+        for real, drawn in FSCALE.items():
+            if self.frequency == real:
+                c = 'green'
+                w = 'bold'
+            else:
+                c = 'black'
+                w = 'regular'
+            ax.text(now, drawn, f"{real:4d}", family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
         if self.isDead:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
@@ -174,14 +178,15 @@ class Actimetre:
         ax.xaxis_date()
         pyplot.grid(True, 'both', 'x', ls='--', lw=0.5)
         ax.axhline(           0,  c="grey", ls="--", lw=0.5)
-        ax.text(now, FSCALE[10], "   10", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.axhline(  FSCALE[10],  c="grey", ls="--", lw=0.5)
-        ax.text(now, FSCALE[30], "   30", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.axhline(  FSCALE[30],  c="grey", ls="--", lw=0.5)
-        ax.text(now, FSCALE[50], "   50", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.axhline(  FSCALE[50],  c="grey", ls="--", lw=0.5)
-        ax.text(now, FSCALE[100], " 100", family="sans-serif", stretch="condensed", ha="left", va="center")
-        ax.axhline(  FSCALE[100], c="grey", ls="--", lw=0.5)
+        for real, drawn in FSCALE.items():
+            if self.frequency == real:
+                c = 'green'
+                w = 'bold'
+            else:
+                c = 'black'
+                w = 'regular'
+            ax.text(now, drawn, f"{real:4d}", family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
+            ax.axhline(drawn,  c="grey", ls="--", lw=0.5)
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
         if self.isDead:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=2.0)
@@ -250,9 +255,6 @@ class Actimetre:
     def actimName(self):
         return f"Actim{self.actimId:04d}"
 
-    def serverName(self):
-        return f"Actis{self.serverId:03d}"
-
     def htmlInfo(self):
         if self.isDead or self.frequency == 0:
             return f'<span class="dead">(dead)</span>'
@@ -270,12 +272,11 @@ class Actimetre:
         if up > timedelta(days=1):
             return f'{days}d{hours}h'
         else:
-            return f'{hours}h{minutes}m'
+            return f'{hours}h{minutes:02d}m'
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", \
-                 lastReport=TIMEZERO, \
-                 actimetreList=set()):
+                 lastReport=TIMEZERO, actimetreList=set()):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
@@ -303,18 +304,17 @@ class Actiserver:
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         if d.get('actimetreList') is not None:
             self.actimetreList = set([int(a) for a in d['actimetreList']])
-        else:
-            self.actimetreList = set()
         return self
 
     def serverName(self):
         return f"Actis{self.serverId:03d}"
 
 class Project:
-    def __init__(self, projectId=0, title="", owner="", actimetreList=set()):
+    def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
         self.projectId     = projectId
         self.title         = title
         self.owner         = owner
+        self.email         = email
         self.actimetreList = actimetreList
         self.repoSize      = 0
 
@@ -322,6 +322,7 @@ class Project:
         return {'projectId'     : self.projectId,
                 'title'         : self.title,
                 'owner'         : self.owner,
+                'email'         : self.email,
                 'repoSize'      : self.repoSize,
                 'actimetreList' : list(self.actimetreList),
                 }
@@ -330,11 +331,11 @@ class Project:
         self.projectId      = int(d['projectId'])
         self.title          = d['title']
         self.owner          = d['owner']
+        if d.get('email') is not None:
+            self.email = d['email']
         self.repoSize       = int(d['repoSize'])
         if d.get('actimetreList') is not None:
             self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
-        else:
-            self.actimetreList = set()
         return self
 
     def addActim(self, a):
@@ -357,6 +358,24 @@ def dumpData(filename, data):
         pass
     with open(filename, "r+") as registry:
         json.dump(data, registry)
+
+def sendSESEmail(now, recipient, subject, text):
+    content = f"""\
+    Event: {subject}
+    At {now.strftime(TIMEFORMAT_DISP)}
+
+    {text}
+
+    For more information, please visit www.actimetre.fr
+    """
+    data = { \
+        'Content': { 'Simple': { 'Body'   : { 'Text': { 'Data': content } }, \
+                                 'Subject': { 'Data': subject } } }, \
+        'Destination': { 'ToAddresses': [recipient] }, \
+        'FromEmailAddress': 'acticentral@actimetre.fr', \
+        'ReplyToAddresses': ['manager@actimetre.fr'] }
+
+    pass
 
 qs = os.environ['QUERY_STRING']
 printLog(qs)
@@ -469,8 +488,10 @@ def htmlActimetres(now):
                     else:
                         text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
                     doc.asis('<button type="submit" name="action" value="actim-reload-graph">&#x27f3;</button>\n')
-                    if a.bootTime != TIMEZERO:
-                        doc.asis(f'<span class="up">up {a.uptime(now)}</span>')
+                    if a.bootTime == TIMEZERO:
+                        line('span', 'down', klass='dead')
+                    else:
+                        line('span', f'up {a.uptime(now)}', klass='up')
                     with tag('div'):
                         doc.asis(f'<a href="/images/Actim{actimId:04d}-large.svg"><img src="/images/Actim{actimId:04d}.svg" class="health"></a>\n')
                         
@@ -615,11 +636,13 @@ def processForm(formId):
         projectId = int(args['projectId'][0])
         title = args['title'][0]
         owner = args['owner'][0]
-        printLog(f"Setting project {projectId} data: {title}, {owner}")
+        email = args['email'][0]
+        printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
         
         if title != "" and owner != "":
             Projects[projectId].title = title
             Projects[projectId].owner = owner
+            Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
         print("Location:\\index.html\n\n")
 
@@ -803,6 +826,16 @@ elif action == 'actimetre-off':
             Actiservers[serverId].actimetreList.remove(actimId)
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+
+        if Projects.get(a.projectId) is not None \
+           and Projects[a.projectId].email != "":
+            sendSESEmail(now, Projects[a.projectId].email,\
+                         f'{a.actimName()} died',\
+                         f'{a.actimName()}\nType {a.boardType}\nMAC {a.mac}\n' +\
+                         f'Connected to Actis{a.serverId:03d}\nSensors {a.sensorStr}\nRunning at {a.frequency}Hz\n' +\
+                         f'Latest uptime {a.uptime(now)}\nMissing rate {a.rating:.3f}%\n' +\
+                         f'Total data size {printSize(a.repoSize)}\n')
+
     plain("Ok")
 
 elif action == 'actim-change-project':
