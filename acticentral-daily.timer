@@ -1,0 +1,11 @@
+[Unit]
+Description=Run acticentral daily backup
+Requires=acticentral-daily.service
+
+[Timer]
+Unit=acticentral-daily.service
+OnCalendar=*-*-* 03:00:00
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

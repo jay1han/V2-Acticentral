@@ -17,12 +17,12 @@ HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
 HTML_DIR        = "/var/www/html"
 
-ACTIM_FAIL_TIME = timedelta(seconds=15)
-ACTIM_RETIRE_P  = timedelta(days=7)
-ACTIM_HIDE_P    = timedelta(days=1)
 ACTIS_FAIL_TIME = timedelta(seconds=30)
 ACTIS_RETIRE_P  = timedelta(days=7)
 ACTIS_HIDE_P    = timedelta(days=1)
+ACTIM_FAIL_TIME = ACTIS_FAIL_TIME
+ACTIM_RETIRE_P  = timedelta(days=7)
+ACTIM_HIDE_P    = timedelta(days=1)
 
 TIMEZERO     = datetime(year=2023, month=1, day=1)
 
@@ -32,11 +32,61 @@ def printLog(text=''):
             os.truncate(LOG_FILE, 0)
     except OSError: pass
     with open(LOG_FILE, 'a') as logfile:
-        if text[-1:] == '\n':
-            end = ''
-        else:
-            end = '\n'
-        print(text, file=logfile, end=end)
+        print(f'[{datetime.utcnow().strftime(TIMEFORMAT_DISP)}]', text, file=logfile)
+
+def loadData(filename):
+    try:
+        registry = open(filename, "r")
+    except OSError:
+        return {}
+    data = json.load(registry)
+    registry.close()
+    return data
+
+def dumpData(filename, data):
+    printLog(f"[DUMP {filename}] {json.dumps(data)}")
+    try:
+        os.truncate(filename, 0)
+    except OSError:
+        pass
+    with open(filename, "r+") as registry:
+        json.dump(data, registry)
+
+lock = open("/etc/actimetre/acticentral.lock", "w+")
+fcntl.lockf(lock, fcntl.LOCK_EX)
+
+class Project:
+    def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
+        self.projectId     = projectId
+        self.title         = title
+        self.owner         = owner
+        self.email         = email
+        self.actimetreList = actimetreList
+        self.repoSize      = 0
+
+    def toD(self):
+        return {'projectId'     : self.projectId,
+                'title'         : self.title,
+                'owner'         : self.owner,
+                'email'         : self.email,
+                'repoSize'      : self.repoSize,
+                'actimetreList' : list(self.actimetreList),
+                }
+
+    def fromD(self, d):
+        self.projectId      = int(d['projectId'])
+        self.title          = d['title']
+        self.owner          = d['owner']
+        if d.get('email') is not None:
+            self.email = d['email']
+        self.repoSize       = int(d['repoSize'])
+        if d.get('actimetreList') is not None:
+            self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
+        return self
+
+    def addActim(self, a):
+        self.actimetreList.add(a.actimId)
+Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
 
 REDRAW_TIME  = timedelta(minutes=1)
 GRAPH_SPAN   = timedelta(days=7)
@@ -90,7 +140,7 @@ class Actimetre:
                 'graphSince': self.graphSince.strftime(TIMEFORMAT_FN),
                 }
 
-    def fromD(self, d):
+    def fromD(self, d, actual=False):
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
@@ -112,7 +162,33 @@ class Actimetre:
             self.graphSince = datetime.strptime(d['graphSince'], TIMEFORMAT_FN)
         return self
 
+    def cutHistory(self, cutLength=None, now=datetime.utcnow()):
+        if cutLength == None:
+            cutLength = now - self.bootTime
+            
+        historyFile = f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist"
+        freshLines = list()
+        with open(historyFile, "r") as history:
+            for line in history:
+                timeStr, part, freq = line.partition(':')
+                time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
+                if now - time < cutLength:
+                    time = now - cutLength
+                    self.graphSince = time
+                    freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
+                    freshLines.extend(history.readlines())
+        if len(freshLines) == 0:
+            time = now - cutLength
+            self.graphSince = time
+            freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
+
+        os.truncate(historyFile, 0)
+        with open(historyFile, "r+") as history:
+            for line in freshLines:
+                history.write(line)
+
     def drawGraph(self, now):
+        printLog(f'{self.actimName()}.drawGraph')
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
         import matplotlib.pyplot as pyplot
 
@@ -123,6 +199,10 @@ class Actimetre:
             with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
                 print(now.strftime(TIMEFORMAT_FN), ':', self.frequency, sep="", file=history)
                 self.graphSince = now
+            try:
+                os.chmod(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", 0o666)
+            except OSError:
+                pass
                     
         timeline = []
         frequencies = []
@@ -164,58 +244,18 @@ class Actimetre:
         else:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
         pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
-        pyplot.close()
-        
-        fig, ax = pyplot.subplots(figsize=(140.0,4.0), dpi=300.0)
-        ax.set_frame_on(False)
-        ax.set_ylim(bottom=-1, top=12)
-        ax.get_yaxis().set_visible(False)
-        ax.xaxis_date()
-        pyplot.grid(True, 'both', 'x', ls='--', lw=0.5)
-        ax.axhline(           0,  c="grey", ls="--", lw=0.5)
-        for real, drawn in FSCALE.items():
-            if self.frequency == real:
-                c = 'green'
-                w = 'bold'
-            else:
-                c = 'black'
-                w = 'regular'
-            ax.text(now, drawn, f"{real:4d}", family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
-            ax.axhline(drawn,  c="grey", ls="--", lw=0.5)
-        ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
-        if self.isDead:
-            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=2.0)
-        else:
-            ax.plot(timeline[markIndex:], freq[markIndex:], ds="steps-post", c="green", lw=2.0)
-        pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}-large.svg", format='svg', bbox_inches="tight", pad_inches=0.5)
+        try:
+            os.chmod(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", 0o666)
+        except OSError:
+            pass
         pyplot.close()
         
         self.lastDrawn = now
-
         if now - self.graphSince >= GRAPH_SPAN:
-            historyFile = f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist"
-            freshLines = list()
-            with open(historyFile, "r") as history:
-                for line in history:
-                    timeStr, part, freq = line.partition(':')
-                    time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
-                    if now - time < GRAPH_CULL:
-                        time = now - GRAPH_CULL
-                        self.graphSince = time
-                        freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
-                        freshLines.extend(history.readlines())
-            if len(freshLines) == 0:
-                time = now - GRAPH_CULL
-                self.graphSince = time
-                freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
-                
-            os.truncate(historyFile, 0)
-            with open(historyFile, "r+") as history:
-                for line in freshLines:
-                    history.write(line)
+            self.cutHistory(GRAPH_CULL, now)
 
     def drawGraphMaybe(self, now):
-        if now - self.lastDrawn > REDRAW_TIME:
+        if now - self.lastDrawn > REDRAW_TIME and now - self.bootTime > ACTIM_FAIL_TIME:
             self.drawGraph(now)
             return True
         else:
@@ -225,27 +265,46 @@ class Actimetre:
         with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "a") as history:
             print(now.strftime(TIMEFORMAT_FN), ':', frequency, sep="", file=history)
 
-    def update(self, newActim, now):
+    def update(self, newActim, now, actual=False):
         redraw = False
-        if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
-            self.addFreqEvent(newActim.bootTime, 0)
-            self.frequency = 0
-            redraw = True
-        if self.frequency != newActim.frequency:
-            self.addFreqEvent(now, newActim.frequency)
-            redraw = True
-        self.frequency = newActim.frequency
-        self.isDead    = False
-        self.boardType = newActim.boardType
-        self.version   = newActim.version
-        self.serverId  = newActim.serverId
-        self.bootTime  = newActim.bootTime
-        self.lastSeen  = newActim.lastSeen
-        self.sensorStr = newActim.sensorStr
-        self.rating    = newActim.rating
-        self.repoSize  = newActim.repoSize
+        if actual:
+            if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
+                self.addFreqEvent(newActim.bootTime, 0)
+                self.frequency = 0
+                redraw = True
+            if self.frequency != newActim.frequency:
+                self.addFreqEvent(now, newActim.frequency)
+                redraw = True
+            self.frequency  = newActim.frequency
+            self.isDead     = False
+        self.boardType  = newActim.boardType
+        self.version    = newActim.version
+        self.serverId   = newActim.serverId
+        self.bootTime   = newActim.bootTime
+        self.lastSeen   = newActim.lastSeen
+        self.lastReport = newActim.lastReport
+        self.sensorStr  = newActim.sensorStr
+        self.rating     = newActim.rating
+        self.repoSize   = newActim.repoSize
         if redraw:
             self.drawGraph(now)
+        return redraw
+
+    def dies(self, now):
+        printLog(f'{self.actimName()} dies')
+        if Projects.get(self.projectId) is not None \
+           and Projects[self.projectId].email != "":
+            sendEmail(now, Projects[self.projectId].email,\
+                      f'{self.actimName()} died',\
+                      f'{self.actimName()}\nType {self.boardType}\nMAC {self.mac}\n' +\
+                      f'Connected to Actis{self.serverId:03d}\nSensors {self.sensorStr}\nRunning at {self.frequency}Hz\n' +\
+                      f'Latest uptime {self.uptime(now)}\nMissing rate {self.rating:.3f}%\n' +\
+                      f'Total data size {printSize(self.repoSize)}\n')
+        self.isDead    = True
+        self.frequency = 0
+        self.addFreqEvent(now, 0)
+        self.serverId = 0
+        self.drawGraph(now)
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
@@ -268,6 +327,7 @@ class Actimetre:
             return f'{days}d{hours}h'
         else:
             return f'{hours}h{minutes:02d}m'
+Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", \
@@ -279,6 +339,7 @@ class Actiserver:
         self.ip         = ip
         self.lastReport = lastReport
         self.actimetreList = actimetreList
+        self.saveActim  = False
 
     def toD(self):
         return {'serverId'  : self.serverId,
@@ -287,72 +348,40 @@ class Actiserver:
                 'channel'   : self.channel,
                 'ip'        : self.ip,
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
-                'actimetreList': list(self.actimetreList)
+                'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']'
                 }
 
-    def fromD(self, d):
+    def fromD(self, d, actual=False):
         self.serverId   = int(d['serverId'])
         self.machine    = d['machine']
         self.version    = d['version']
         self.channel    = int(d['channel'])
         self.ip         = d['ip']
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
-        if d.get('actimetreList') is not None:
-            self.actimetreList = set([int(a) for a in d['actimetreList']])
+        self.saveActim  = False
+        self.actimetreList = set()
+        if d['actimetreList'] != "[]":
+            for actimData in json.loads(d['actimetreList']):
+                a = Actimetre().fromD(actimData, actual)
+                if Actimetres.get(a.actimId) is None:
+                    Actimetres[a.actimId] = a
+                    if actual:
+                        self.saveActim = True
+                else:
+                    if Actimetres[a.actimId].update(a, self.lastReport, actual):
+                        self.saveActim = True
+                self.actimetreList.add(a.actimId)
+        else:
+            self.actimetreList = set()
+        for a in Actimetres.values():
+            if a.serverId == self.serverId and not a.actimId in self.actimetreList:
+                a.dies(self.lastReport)
+                self.saveActim = True
         return self
 
     def serverName(self):
         return f"Actis{self.serverId:03d}"
-
-class Project:
-    def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
-        self.projectId     = projectId
-        self.title         = title
-        self.owner         = owner
-        self.email         = email
-        self.actimetreList = actimetreList
-        self.repoSize      = 0
-
-    def toD(self):
-        return {'projectId'     : self.projectId,
-                'title'         : self.title,
-                'owner'         : self.owner,
-                'email'         : self.email,
-                'repoSize'      : self.repoSize,
-                'actimetreList' : list(self.actimetreList),
-                }
-
-    def fromD(self, d):
-        self.projectId      = int(d['projectId'])
-        self.title          = d['title']
-        self.owner          = d['owner']
-        if d.get('email') is not None:
-            self.email = d['email']
-        self.repoSize       = int(d['repoSize'])
-        if d.get('actimetreList') is not None:
-            self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
-        return self
-
-    def addActim(self, a):
-        self.actimetreList.add(a.actimId)
-
-def loadData(filename):
-    try:
-        registry = open(filename, "r")
-    except OSError:
-        return {}
-    data = json.load(registry)
-    registry.close()
-    return data
-
-def dumpData(filename, data):
-    printLog(f"[DUMP {filename}] {json.dumps(data)}")
-    try:
-        os.truncate(filename, 0)
-    except OSError:
-        pass
-    with open(filename, "r+") as registry:
-        json.dump(data, registry)
+Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
 
 def printSize(size, unit='', precision=0):
     if unit == '':
@@ -401,9 +430,6 @@ def saveRegistry():
         json.dump(Registry, registry)
     printLog("Saved Registry " + str(Registry))
 
-lock = open("/etc/actimetre/acticentral.lock", "w+")
-fcntl.lockf(lock, fcntl.LOCK_EX)
-
 Registry = {}
 with open(REGISTRY, "r") as registry:
     try:
@@ -411,9 +437,6 @@ with open(REGISTRY, "r") as registry:
     except JSONDecodeError:
         pass
     
-Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
-Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
-Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
 if Projects.get(0) is None:
     Projects[0] = Project(0, "Not assigned", "No owner")
     dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
@@ -448,7 +471,6 @@ def repoStats(now):
         if now - a.lastReport > ACTIM_HIDE_P:
             continue
         with tag('tr'):
-            alive = ''
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}"/>')
             alive = ''
@@ -473,20 +495,20 @@ def repoStats(now):
                 line('td', "?")
 
             if alive == 'retire':
-                line('td', 'No data', klass='health retire')
+                line('td', 'No data', klass=f'health retire')
             else:
-                with tag('td', klass=f'health {alive} left'):
+                with tag('td', klass=f'health left'):
                     if a.graphSince == TIMEZERO:
                         text('? ')
                     else:
                         text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
-                    doc.asis('<button type="submit" name="action" value="actim-reload-graph">&#x27f3;</button>\n')
-                    if a.bootTime == TIMEZERO:
+                    doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
+                    if alive == 'dead':
                         line('span', 'down', klass='dead')
                     else:
                         line('span', f'up {a.uptime(now)}', klass='up')
                     with tag('div'):
-                        doc.asis(f'<a href="/images/Actim{actimId:04d}-large.svg"><img src="/images/Actim{actimId:04d}.svg" class="health"></a>\n')
+                        doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
             with tag('td'):
                 line('div', Projects[a.projectId].title, klass='left')
@@ -731,7 +753,9 @@ cmdparser = argparse.ArgumentParser()
 cmdparser.add_argument('action', default='', nargs='?')
 cmdargs = cmdparser.parse_args()
 if cmdargs.action == 'prepare-stats':
+    printLog("repoStats begin")
     repoStats(now)
+    printLog("repoStats end")
     sys.exit(0)
 
 import urllib.parse
@@ -748,10 +772,11 @@ if action == 'actiserver':
     serverId = int(args['serverId'][0])
     if serverId != 0:
         printLog(f"Actis{serverId} alive")
-        thisServer = Actiserver(serverId).fromD(json.load(sys.stdin))
-        thisServer.lastReport = now
+        thisServer = Actiserver(serverId).fromD(json.load(sys.stdin), actual=True)
         Actiservers[serverId] = thisServer
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        if thisServer.saveActim:
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     plain(json.dumps(Registry))
 
 elif action == 'actimetre-new':
@@ -795,39 +820,40 @@ elif action == 'actimetre-new':
     plain(responseStr)
 
 elif action == 'actimetre':
-    actimId = int(args['actimId'][0])
-    serverId = int(args['serverId'][0])
-
-    if Actiservers.get(serverId) is None:
-        Actiservers[serverId] = Actiserver(serverId)
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-    thisServer = Actiservers[serverId]
-    newActim = Actimetre().fromD(json.load(sys.stdin))
-    a = Actimetres.get(actimId)
-    if a is None:
-        Actimetres[actimId] = newActim
-        a = newActim
-        a.isDead = False
-        a.addFreqEvent(now, a.frequency)
-        a.drawGraph(now)
-    else:
-        a.update(newActim, now)
-    Actimetres[actimId].lastReport = now
-    dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-
-    save = False
-    for s in Actiservers.values():
-        if s.serverId == serverId:
-            if not actimId in s.actimetreList:
-                s.actimetreList.add(actimId)
-                save = True
-        else:
-            if actimId in s.actimetreList:
-                s.actimetreList.remove(actimId)
-                save = True
-    if save:
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
     plain("Ok")
+    if False:
+        actimId = int(args['actimId'][0])
+        serverId = int(args['serverId'][0])
+
+        if Actiservers.get(serverId) is None:
+            Actiservers[serverId] = Actiserver(serverId)
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        thisServer = Actiservers[serverId]
+        newActim = Actimetre().fromD(json.load(sys.stdin))
+        a = Actimetres.get(actimId)
+        if a is None:
+            Actimetres[actimId] = newActim
+            a = newActim
+            a.isDead = False
+            a.addFreqEvent(now, a.frequency)
+            a.drawGraph(now)
+        else:
+            a.update(newActim, now)
+        Actimetres[actimId].lastReport = now
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+
+        save = False
+        for s in Actiservers.values():
+            if s.serverId == serverId:
+                if not actimId in s.actimetreList:
+                    s.actimetreList.add(actimId)
+                    save = True
+            else:
+                if actimId in s.actimetreList:
+                    s.actimetreList.remove(actimId)
+                    save = True
+        if save:
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
 
 elif action == 'actimetre-off':
     serverId = int(args['serverId'][0])
@@ -835,14 +861,8 @@ elif action == 'actimetre-off':
 
     a = Actimetres.get(actimId)
     if a is not None:
-        a.bootTime = TIMEZERO
-        a.isDead = True
-        a.frequency = 0
         a.addFreqEvent(now, 0)
         a.drawGraph(now)
-        if a.actimId in Actiservers[serverId].actimetreList:
-            Actiservers[serverId].actimetreList.remove(actimId)
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
 
         if Projects.get(a.projectId) is not None \
@@ -859,12 +879,13 @@ elif action == 'actim-change-project':
     actimId = int(args['actimId'][0])
     actimChangeProject(actimId)
 
-elif action == 'actim-reload-graph':
+elif action == 'actim-cut-graph':
     actimId = int(args['actimId'][0])
     if Actimetres.get(actimId) is not None:
         save = False
         if Actimetres[actimId].graphSince == TIMEZERO:
             save = True
+        Actimetres[actimId].cutHistory(None, now)
         Actimetres[actimId].drawGraph(now)
         if save:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})

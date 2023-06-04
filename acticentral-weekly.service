@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly backup of Acticentral data
+Wants=acticentral-weekly.timer
+
+[Service]
+Type=oneshot
+ExecStart=/etc/actimetre/backup-weekly.sh
+
+[Install]
+WantedBy=multi-user.target

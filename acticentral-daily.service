@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily backup of Acticentral data
+Wants=acticentral-daily.timer
+
+[Service]
+Type=oneshot
+ExecStart=/etc/actimetre/backup-daily.sh
+
+[Install]
+WantedBy=multi-user.target
