@@ -15,6 +15,7 @@ LOG_FILE        = "/etc/actimetre/central.log"
 PROJECTS        = "/etc/actimetre/projects.data"
 HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
+PNG240_DIR      = "/var/www/html/png240"
 HTML_DIR        = "/var/www/html"
 
 ACTIS_FAIL_TIME = timedelta(seconds=30)
@@ -244,8 +245,11 @@ class Actimetre:
         else:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
         pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
+#        pyplot.text(timeline[0], 1, '{:04d}'.format(self.actimId), size="xx-large", va="bottom", wrap=False, rotation=90.0, rotation_mode="anchor")
+#        pyplot.savefig(f"{PNG240_DIR}/Actim{self.actimId:04d}.png", format='png', bbox_inches="tight", pad_inches=0, dpi=59)
         try:
             os.chmod(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", 0o666)
+#            os.chmod(f"{PNG240_DIR}/Actim{self.actimId:04d}.png", 0o666)
         except OSError:
             pass
         pyplot.close()
@@ -269,7 +273,8 @@ class Actimetre:
         redraw = False
         if actual:
             if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
-                self.addFreqEvent(newActim.bootTime, 0)
+                if newActim.bootTime != TIMEZERO:
+                    self.addFreqEvent(newActim.bootTime, 0)
                 self.frequency = 0
                 redraw = True
             if self.frequency != newActim.frequency:
@@ -291,7 +296,7 @@ class Actimetre:
         return redraw
 
     def dies(self, now):
-        printLog(f'{self.actimName()} dies')
+        printLog(f'{self.actimName()} dies {now.strftime(TIMEFORMAT.DISP)}')
         if Projects.get(self.projectId) is not None \
            and Projects[self.projectId].email != "":
             sendEmail(now, Projects[self.projectId].email,\
