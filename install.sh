@@ -13,19 +13,23 @@ mkdir /var/www/html/images
 mkdir /etc/matplotlib
 chmod 777 /etc/matplotlib
 
-cp clear*.sh /etc/actimetre
+cp *.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/*.html html/*.svg /var/www/html/
 
 cd /var/www
+echo > html/images/index.txt
 chown -R www-data:www-data *
-chmod -R 777 *
+chmod 666 html/* html/images/*
+chmod 775 html/index.html cgi-bin/acticentral.py
+chmod 777 html html/images
 
 cd /etc/actimetre
 echo > central.log
 echo > acticentral.lock
 chown -R www-data:www-data . *
-chmod -R 777 . *
+chmod 666 * history/*
+chmod 777 . *.sh history
 
 cp *.service /etc/systemd/system/
 cp *.timer /etc/systemd/system/

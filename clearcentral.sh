@@ -1,11 +1,18 @@
 #!/usr/bin/bash
 
-echo > /etc/actimetre/central.log
-echo > /etc/actimetre/acticentral.lock
-echo {} > /etc/actimetre/actiservers.data
-echo {} > /etc/actimetre/actimetres.data
+cd /etc/actimetre
+
+echo > central.log
+echo > acticentral.lock
+echo {} > actiservers.data
+echo {} > actimetres.data
+
 chmod 666 *.data *.log
-rm -f /etc/actimetre/history/Actim*.hist
+rm -f history/Actim*.hist
+
+rm -f /var/www/html/images/*
+echo > /var/www/html/images/index.txt
+chmod 666 /var/www/html/images/index.txt
 
 ls -lRA
 
