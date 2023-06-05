@@ -55,6 +55,8 @@ def dumpData(filename, data):
         json.dump(data, registry)
 
 def printSize(size, unit='', precision=0):
+    if size == 0:
+        return ""
     if unit == '':
         if size >= 1_000_000_000:
             unit = 'GB'
