@@ -1,9 +1,9 @@
 [Unit]
-Description=Run acticentral daily backup
-Requires=acticentral-daily.service
+Description=Run acticentral weekly backup
+Requires=acticentral-weekly.service
 
 [Timer]
-Unit=acticentral-daily.service
+Unit=acticentral-weekly.service
 OnCalendar=Mon *-*-* 05:00:00
 AccuracySec=1hour
 
