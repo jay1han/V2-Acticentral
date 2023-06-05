@@ -2,6 +2,7 @@
 
 import os, sys, json, fcntl
 from datetime import datetime, timedelta
+from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
 
@@ -53,6 +54,46 @@ def dumpData(filename, data):
     with open(filename, "r+") as registry:
         json.dump(data, registry)
 
+def printSize(size, unit='', precision=0):
+    if unit == '':
+        if size >= 1_000_000_000:
+            unit = 'GB'
+            if size >= 10_000_000_000:
+                precision = 1
+            else:
+                precision = 2
+        else:
+            unit = 'MB'
+            if size >= 100_000_000:
+                precision = 0
+            elif size >= 10_000_000:
+                precision = 1
+            else:
+                precision = 2
+    if unit == 'GB':
+        inUnits = size / 1_000_000_000
+    else:
+        inUnits = size / 1_000_000
+    formatStr = '{:.' + str(precision) + 'f}'
+    return formatStr.format(inUnits) + unit
+
+def sendEmail(now, recipient, subject, text):
+    content = f"""\
+    Event: {subject}
+    At {now.strftime(TIMEFORMAT_DISP)}
+
+    {text}
+
+    For more information, please visit www.actimetre.fr
+    """
+    data = { \
+        'Content': { 'Simple': { 'Body'   : { 'Text': { 'Data': content } }, \
+                                 'Subject': { 'Data': subject } } }, \
+        'Destination': { 'ToAddresses': [recipient] }, \
+        'FromEmailAddress': 'acticentral@actimetre.fr', \
+        'ReplyToAddresses': ['manager@actimetre.fr'] }
+    pass
+
 lock = open("/etc/actimetre/acticentral.lock", "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
 
@@ -87,6 +128,7 @@ class Project:
 
     def addActim(self, a):
         self.actimetreList.add(a.actimId)
+        
 Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
 
 REDRAW_TIME  = timedelta(minutes=5)
@@ -156,8 +198,18 @@ class Actimetre:
         self.frequency  = int(d['frequency'])
         self.rating     = float(d['rating'])
         self.repoSize   = int(d['repoSize'])
+        
         if d.get('projectId') is not None:
             self.projectId  = int(d['projectId'])
+            for p in Projects.values():
+                if self.actimId in p.actimetreList and p.projectId != self.projectId:
+                    p.actimetreList.remove(self.actimId)
+            Projects[self.projectId].actimetreList.add(self.actimId)
+        else:
+            for p in Projects.values():
+                if self.actimId in p.actimetreList:
+                    self.projectId = p.projectId
+            
         if d.get('lastDrawn') is not None:
             self.lastDrawn = datetime.strptime(d['lastDrawn'], TIMEFORMAT_FN)
         if d.get('graphSince') is not None:
@@ -207,21 +259,13 @@ class Actimetre:
                     
         timeline = []
         frequencies = []
-        markIndex = 0
-        markStart = TIMEZERO
         with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
-            index = 0
             for line in history:
                 timeStr, part, freqStr = line.partition(':')
                 time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
                 freq = scaleFreq(int(freqStr))
                 timeline.append(time)
                 frequencies.append(freq)
-                if markStart == TIMEZERO:
-                    if not self.isDead and time >= self.bootTime:
-                        markIndex = index
-                        markStart = time
-                index += 1
 
         timeline.append(now)
         frequencies.append(scaleFreq(self.frequency))
@@ -411,47 +455,6 @@ class Actiserver:
         return f"Actis{self.serverId:03d}"
 Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
 
-def printSize(size, unit='', precision=0):
-    if unit == '':
-        if size >= 1_000_000_000:
-            unit = 'GB'
-            if size >= 10_000_000_000:
-                precision = 1
-            else:
-                precision = 2
-        else:
-            unit = 'MB'
-            if size >= 100_000_000:
-                precision = 0
-            elif size >= 10_000_000:
-                precision = 1
-            else:
-                precision = 2
-    if unit == 'GB':
-        inUnits = size / 1_000_000_000
-    else:
-        inUnits = size / 1_000_000
-    formatStr = '{:.' + str(precision) + 'f}'
-    return formatStr.format(inUnits) + unit
-
-def sendEmail(now, recipient, subject, text):
-    content = f"""\
-    Event: {subject}
-    At {now.strftime(TIMEFORMAT_DISP)}
-
-    {text}
-
-    For more information, please visit www.actimetre.fr
-    """
-    data = { \
-        'Content': { 'Simple': { 'Body'   : { 'Text': { 'Data': content } }, \
-                                 'Subject': { 'Data': subject } } }, \
-        'Destination': { 'ToAddresses': [recipient] }, \
-        'FromEmailAddress': 'acticentral@actimetre.fr', \
-        'ReplyToAddresses': ['manager@actimetre.fr'] }
-
-    pass
-
 def saveRegistry():
     os.truncate(REGISTRY, 0)
     with open(REGISTRY, "r+") as registry:
@@ -469,29 +472,7 @@ if Projects.get(0) is None:
     Projects[0] = Project(0, "Not assigned", "No owner")
     dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
-def repoStats(now):
-    for p in Projects.values():
-        p.repoSize = 0
-
-    save = False
-    for a in Actimetres.values():
-        if now - a.lastReport > ACTIM_HIDE_P:
-            continue
-        if a.drawGraphMaybe(now):
-            save = True
-        if Projects.get(a.projectId) is None:
-            Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
-        Projects[a.projectId].addActim(a)
-        Projects[a.projectId].repoSize += a.repoSize
-
-    if save:
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-
-    with open(f"{HTML_DIR}/updated.html", "w") as updated:
-        print(now.strftime(TIMEFORMAT_DISP), file=updated)
-    from yattag import Doc, indent
-
+def htmlActimetres(now):
     doc, tag, text, line = Doc().ttl()
 
     for actimId in sorted(Actimetres.keys()):
@@ -550,6 +531,7 @@ def repoStats(now):
     with open(f"{HTML_DIR}/actimetres.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
 
+def htmlActiservers(now):
     doc, tag, text, line = Doc().ttl()
 
     for serverId in sorted(Actiservers.keys()):
@@ -593,12 +575,11 @@ def repoStats(now):
     with open(f"{HTML_DIR}/actiservers.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
 
+def htmlProjects(now):
     doc, tag, text, line = Doc().ttl()
 
     for projectId in sorted(Projects.keys()):
         p = Projects[projectId]
-        if len(p.actimetreList) == 0:
-            continue
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="projectId" value="{p.projectId}" />')
@@ -620,6 +601,32 @@ def repoStats(now):
 
     with open(f"{HTML_DIR}/projects.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
+
+def repoStats(now):
+    for p in Projects.values():
+        p.repoSize = 0
+
+    save = False
+    for a in Actimetres.values():
+        if now - a.lastReport > ACTIM_HIDE_P:
+            continue
+        if a.drawGraphMaybe(now):
+            save = True
+        if Projects.get(a.projectId) is None:
+            Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
+        Projects[a.projectId].addActim(a)
+        Projects[a.projectId].repoSize += a.repoSize
+
+    if save:
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+
+    with open(f"{HTML_DIR}/updated.html", "w") as updated:
+        print(now.strftime(TIMEFORMAT_DISP), file=updated)
+
+    htmlActimetres(now)
+    htmlActiservers(now)
+    htmlProjects(now)
     
 def projectChangeInfo(projectId):
     print("Content-type: text/html\n\n")
@@ -701,6 +708,7 @@ def processForm(formId):
             Projects[projectId].owner = owner
             Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+            htmlProjects(now)
         print("Location:\\index.html\n\n")
 
     elif formId == 'actim-change-project':
@@ -714,6 +722,8 @@ def processForm(formId):
         Actimetres[actimId].projectId = projectId
         dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        htmlActimetres(now)
+        htmlProjects(now)
         print("Location:\\index.html\n\n")
 
     elif formId == 'create-project':
@@ -727,6 +737,7 @@ def processForm(formId):
                 projectId += 1
             Projects[projectId] = Project(projectId, title, owner)
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+            htmlProjects(now)
         print("Location:\\index.html\n\n")
 
     elif formId == 'retire-actim':
@@ -737,6 +748,7 @@ def processForm(formId):
         if a is not None and \
            (a.projectId == 0 and owner == 'CONFIRM') or \
            (Projects.get(a.projectId) is not None and Projects[a.projectId].owner == owner):
+            
             printLog(f"Retire Actimetre{actimId:04d} from {Projects[a.projectId].title}")
             save = False
             for s in Actiservers.values():
@@ -761,6 +773,7 @@ def processForm(formId):
             try:
                 os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
             except FileNotFoundError: pass
+            htmlActimetres(now)
         print("Location:\\index.html\n\n")
 
     elif formId == 'remove-project':
