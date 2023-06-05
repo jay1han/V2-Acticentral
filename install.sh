@@ -16,6 +16,9 @@ mkdir /var/www/html/images
 cp *.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/*.html html/*.svg /var/www/html/
+cp *.service /etc/systemd/system/
+cp *.timer /etc/systemd/system/
+
 
 cd /var/www
 echo > html/images/index.txt
@@ -31,9 +34,6 @@ chown -R www-data:www-data . *
 chmod 666 * history/*
 chmod 777 . *.sh history daily weekly
 
-cp *.service /etc/systemd/system/
-cp *.timer /etc/systemd/system/
-
 systemctl daemon-reload
 systemctl enable acticentral.timer
 systemctl start acticentral.timer
@@ -41,3 +41,5 @@ systemctl enable acticentral-daily.timer
 systemctl start acticentral-daily.timer
 systemctl enable acticentral-weekly.timer
 systemctl start acticentral-weekly.timer
+
+echo "Run 'sudo ./clearcentral.sh' for a fresh start"

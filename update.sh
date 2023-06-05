@@ -1,8 +1,14 @@
 #!/usr/bin/bash
 
+sudo systemctl stop acticentral.timer
+sudo systemctl stop acticentral-daily.timer
+sudo systemctl stop acticentral-weekly.timer
+
 cp clear*.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/*.html html/*.svg /var/www/html/
+cp *.service /etc/systemd/system/
+cp *.timer /etc/systemd/system/
 
 cd /var/www
 echo > html/images/index.txt
@@ -19,11 +25,6 @@ chown -R www-data:www-data . *
 chmod 666 * history/*
 chmod 777 . *.sh history
 
-sudo systemctl stop acticentral.timer
-sudo systemctl stop acticentral-daily.timer
-sudo systemctl stop acticentral-weekly.timer
-cp *.service /etc/systemd/system/
-cp *.timer /etc/systemd/system/
 systemctl daemon-reload
 sudo systemctl enable acticentral.timer
 sudo systemctl start acticentral.timer
