@@ -8,10 +8,10 @@ mkdir /etc/actimetre
 mkdir /etc/actimetre/history
 mkdir /etc/actimetre/daily
 mkdir /etc/actimetre/weekly
-mkdir /var/www/cgi-bin
-mkdir /var/www/html/images
 mkdir /etc/matplotlib
 chmod 777 /etc/matplotlib
+mkdir /var/www/cgi-bin
+mkdir /var/www/html/images
 
 cp *.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
@@ -29,7 +29,7 @@ echo > central.log
 echo > acticentral.lock
 chown -R www-data:www-data . *
 chmod 666 * history/*
-chmod 777 . *.sh history
+chmod 777 . *.sh history daily weekly
 
 cp *.service /etc/systemd/system/
 cp *.timer /etc/systemd/system/
