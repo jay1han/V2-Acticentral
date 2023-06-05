@@ -15,7 +15,7 @@ LOG_FILE        = "/etc/actimetre/central.log"
 PROJECTS        = "/etc/actimetre/projects.data"
 HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
-PNG240_DIR      = "/var/www/html/png240"
+IMAGES_INDEX    = "/var/www/html/images/index.txt"
 HTML_DIR        = "/var/www/html"
 
 ACTIS_FAIL_TIME = timedelta(seconds=30)
@@ -89,7 +89,8 @@ class Project:
         self.actimetreList.add(a.actimId)
 Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
 
-REDRAW_TIME  = timedelta(minutes=1)
+REDRAW_TIME  = timedelta(minutes=5)
+REDRAW_DEAD  = timedelta(minutes=30)
 GRAPH_SPAN   = timedelta(days=7)
 GRAPH_CULL   = timedelta(days=6)
 FSCALE       = {10:2, 30:4, 50:7, 100:10}
@@ -181,7 +182,7 @@ class Actimetre:
         if len(freshLines) == 0:
             time = now - cutLength
             self.graphSince = time
-            freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
+            freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.frequency}")
 
         os.truncate(historyFile, 0)
         with open(historyFile, "r+") as history:
@@ -189,7 +190,6 @@ class Actimetre:
                 history.write(line)
 
     def drawGraph(self, now):
-        printLog(f'{self.actimName()}.drawGraph')
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
         import matplotlib.pyplot as pyplot
 
@@ -245,36 +245,59 @@ class Actimetre:
         else:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
         pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
-#        pyplot.text(timeline[0], 1, '{:04d}'.format(self.actimId), size="xx-large", va="bottom", wrap=False, rotation=90.0, rotation_mode="anchor")
-#        pyplot.savefig(f"{PNG240_DIR}/Actim{self.actimId:04d}.png", format='png', bbox_inches="tight", pad_inches=0, dpi=59)
+        pyplot.close()
         try:
             os.chmod(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", 0o666)
-#            os.chmod(f"{PNG240_DIR}/Actim{self.actimId:04d}.png", 0o666)
         except OSError:
             pass
-        pyplot.close()
+
+        updateMap = {}
+        dataMap = {}
+        with open(IMAGES_INDEX, "r") as index:
+            for line in index:
+                if line.strip() != "":
+                    actimStr, updateStr, dataStr = line.split(':')
+                    actimId = int(actimStr.strip())
+                    updateMap[actimId] = updateStr.strip()
+                    dataMap[actimId] = dataStr.strip()
+        updateMap[self.actimId] = now.strftime(TIMEFORMAT_FN)
+        dataMap[self.actimId] = f'{self.boardType},{self.serverId},{self.sensorStr},{self.frequency},{self.rating}'
+        os.truncate(IMAGES_INDEX, 0)
+        with open(IMAGES_INDEX, "r+") as index:
+            for actimId in updateMap.keys():
+                print(f'{actimId}:{updateMap[actimId]}:{dataMap[actimId]}', file=index)
+        printLog(f'{self.actimName()}.drawGraph --> ' + ','.join(map(str, updateMap.keys())))
         
         self.lastDrawn = now
         if now - self.graphSince >= GRAPH_SPAN:
             self.cutHistory(GRAPH_CULL, now)
 
     def drawGraphMaybe(self, now):
-        if now - self.lastDrawn > REDRAW_TIME and now - self.bootTime > ACTIM_FAIL_TIME:
-            self.drawGraph(now)
-            return True
+        redraw = False
+        if self.isDead:
+            if now - self.lastDrawn > REDRAW_DEAD:
+                redraw = True
         else:
-            return False
+            if now - self.lastDrawn > REDRAW_TIME and now - self.bootTime > ACTIM_FAIL_TIME:
+                redraw = True
+        if redraw:
+            self.drawGraph(now)
+        return redraw
 
     def addFreqEvent(self, now, frequency):
-        with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "a") as history:
-            print(now.strftime(TIMEFORMAT_FN), ':', frequency, sep="", file=history)
+        with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r+") as history:
+            for line in history:
+                timeStr, part, freq = line.partition(':')
+                time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
+            if now < time and frequency != freq:
+                now = time
+            print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
 
     def update(self, newActim, now, actual=False):
         redraw = False
         if actual:
             if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
-                if newActim.bootTime != TIMEZERO:
-                    self.addFreqEvent(newActim.bootTime, 0)
+                self.addFreqEvent(newActim.bootTime, 0)
                 self.frequency = 0
                 redraw = True
             if self.frequency != newActim.frequency:
@@ -296,7 +319,7 @@ class Actimetre:
         return redraw
 
     def dies(self, now):
-        printLog(f'{self.actimName()} dies {now.strftime(TIMEFORMAT.DISP)}')
+        printLog(f'{self.actimName()} dies {now.strftime(TIMEFORMAT_DISP)}')
         if Projects.get(self.projectId) is not None \
            and Projects[self.projectId].email != "":
             sendEmail(now, Projects[self.projectId].email,\
@@ -758,9 +781,7 @@ cmdparser = argparse.ArgumentParser()
 cmdparser.add_argument('action', default='', nargs='?')
 cmdargs = cmdparser.parse_args()
 if cmdargs.action == 'prepare-stats':
-    printLog("repoStats begin")
     repoStats(now)
-    printLog("repoStats end")
     sys.exit(0)
 
 import urllib.parse
@@ -793,7 +814,7 @@ elif action == 'actimetre-new':
 
     thisServer = Actiservers.get(serverId)
     if thisServer is None:
-        thisServer = Actiserver(serverId, ip=ip, lastReport=now)
+        thisServer = Actiserver(serverId, lastReport=now)
         Actiservers[serverId] = thisServer
     else:
         thisServer.lastReport = now
@@ -824,42 +845,6 @@ elif action == 'actimetre-new':
     dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
     plain(responseStr)
 
-elif action == 'actimetre':
-    plain("Ok")
-    if False:
-        actimId = int(args['actimId'][0])
-        serverId = int(args['serverId'][0])
-
-        if Actiservers.get(serverId) is None:
-            Actiservers[serverId] = Actiserver(serverId)
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-        thisServer = Actiservers[serverId]
-        newActim = Actimetre().fromD(json.load(sys.stdin))
-        a = Actimetres.get(actimId)
-        if a is None:
-            Actimetres[actimId] = newActim
-            a = newActim
-            a.isDead = False
-            a.addFreqEvent(now, a.frequency)
-            a.drawGraph(now)
-        else:
-            a.update(newActim, now)
-        Actimetres[actimId].lastReport = now
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-
-        save = False
-        for s in Actiservers.values():
-            if s.serverId == serverId:
-                if not actimId in s.actimetreList:
-                    s.actimetreList.add(actimId)
-                    save = True
-            else:
-                if actimId in s.actimetreList:
-                    s.actimetreList.remove(actimId)
-                    save = True
-        if save:
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-
 elif action == 'actimetre-off':
     serverId = int(args['serverId'][0])
     actimId = int(args['actimId'][0])
@@ -868,8 +853,10 @@ elif action == 'actimetre-off':
     if a is not None:
         a.addFreqEvent(now, 0)
         a.drawGraph(now)
+        a.isDead = True
+        Actiservers[serverId].actimetreList.remove(actimId)
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-
         if Projects.get(a.projectId) is not None \
            and Projects[a.projectId].email != "":
             sendEmail(now, Projects[a.projectId].email,\
