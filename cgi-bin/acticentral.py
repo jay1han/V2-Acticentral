@@ -682,6 +682,12 @@ def retireActim(actimId):
               .replace("{owner}", ownerStr)\
               .replace("{projectTitle}", Projects[a.projectId].title))
 
+now = datetime.utcnow()
+
+def plain(text=''):
+    print("Content-type: text/plain\n\n")
+    print(text)
+
 def processForm(formId):
     if formId == 'project-change-info':
         projectId = int(args['projectId'][0])
@@ -765,23 +771,19 @@ def processForm(formId):
             del Projects[projectId]
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            repoStats(now)
         print("Location:\\index.html\n\n")
 
     else:
         print("Location:\\index.html\n\n")
     
-def plain(text=''):
-    print("Content-type: text/plain\n\n")
-    print(text)
-
-now = datetime.utcnow()
-
 import argparse
 cmdparser = argparse.ArgumentParser()
 cmdparser.add_argument('action', default='', nargs='?')
 cmdargs = cmdparser.parse_args()
 if cmdargs.action == 'prepare-stats':
     repoStats(now)
+    lock.close()
     sys.exit(0)
 
 import urllib.parse
