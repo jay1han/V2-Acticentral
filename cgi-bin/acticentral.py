@@ -241,7 +241,7 @@ class Actimetre:
         os.truncate(historyFile, 0)
         with open(historyFile, "r+") as history:
             for line in freshLines:
-                history.write(line)
+                print(line, file=history)
 
     def drawGraph(self, now):
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
