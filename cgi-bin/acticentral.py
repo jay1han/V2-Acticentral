@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
+VERSION_STR     = "v235"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -18,12 +19,13 @@ HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
 IMAGES_INDEX    = "/var/www/html/images/index.txt"
 HTML_DIR        = "/var/www/html"
+HTML_VERSION    = "/var/www/html/version.html"
 
 ACTIS_FAIL_TIME = timedelta(seconds=30)
 ACTIS_RETIRE_P  = timedelta(days=7)
 ACTIS_HIDE_P    = timedelta(days=1)
 ACTIM_FAIL_TIME = ACTIS_FAIL_TIME
-ACTIM_RETIRE_P  = timedelta(days=7)
+ACTIM_RETIRE_P  = timedelta(days=1)
 ACTIM_HIDE_P    = timedelta(days=1)
 
 TIMEZERO     = datetime(year=2023, month=1, day=1)
@@ -98,6 +100,9 @@ def sendEmail(now, recipient, subject, text):
 
 lock = open("/etc/actimetre/acticentral.lock", "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
+
+with open(HTML_VERSION, "w") as version:
+    print(VERSION_STR, file=version)
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
@@ -241,7 +246,7 @@ class Actimetre:
         os.truncate(historyFile, 0)
         with open(historyFile, "r+") as history:
             for line in freshLines:
-                print(line, file=history)
+                print(line.strip(), file=history)
 
     def drawGraph(self, now):
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
@@ -474,6 +479,61 @@ if Projects.get(0) is None:
     Projects[0] = Project(0, "Not assigned", "No owner")
     dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
+def htmlActimetre1(now, actimId):
+    if Actimetres.get(actimId) is None:
+        return ""
+    
+    a = Actimetres[actimId]
+    doc, tag, text, line = Doc().ttl()
+    with tag('tr'):
+        doc.asis('<form action="/bin/acticentral.py" method="get">')
+        doc.asis(f'<input type="hidden" name="actimId" value="{a.actimId}"/>')
+        alive = ''
+        if now - a.lastReport > ACTIM_RETIRE_P:
+            alive = 'retire'
+        elif now - a.lastReport > ACTIM_FAIL_TIME or a.frequency == 0:
+            alive = 'dead'
+
+        with tag('td', klass=alive):
+            doc.asis('Actim&shy;{:04d}<br>'.format(actimId))
+        with tag('td'):
+            text(a.boardType)
+            doc.asis('<br>\n')
+            if alive == '': text(f"v{a.version}")
+        if alive == '':
+            line('td', f"Actis{a.serverId:03d}")
+            line('td', a.sensorStr)
+            line('td', "{:.3f}%".format(100.0 * a.rating))
+        else: 
+            line('td', "?")
+            line('td', "?")
+            line('td', "?")
+
+        if alive == 'retire':
+            line('td', 'No data', klass=f'health retire')
+        else:
+            with tag('td', klass=f'health left'):
+                if a.graphSince == TIMEZERO:
+                    text('? ')
+                else:
+                    text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
+                doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
+                if alive == 'dead':
+                    line('span', ' ?', klass='dead')
+                else:
+                    line('span', f' up {a.uptime(now)}', klass='up')
+                with tag('div'):
+                    doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
+
+        with tag('td', klass='right'):
+            text(printSize(a.repoSize))
+            if alive != '': doc.asis('<br>(?)')
+        with tag('td', klass='no-borders'):
+            with tag('button', type='submit', name='action', value='actim-change-project'):
+                text('Change project')
+        doc.asis('</form>\n')
+    return indent(doc.getvalue())
+
 def htmlActimetres(now):
     doc, tag, text, line = Doc().ttl()
 
@@ -485,15 +545,11 @@ def htmlActimetres(now):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}"/>')
             alive = ''
-            if now - a.lastReport > ACTIM_RETIRE_P:
-                alive = 'retire'
-            elif now - a.lastReport > ACTIM_FAIL_TIME or a.frequency == 0:
+            if now - a.lastReport > ACTIM_FAIL_TIME or a.frequency == 0:
                 alive = 'dead'
 
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}<br>'.format(actimId))
-                if alive == 'retire':
-                    line('button', "Retire", type='submit', name='action', value='retire-actim')
             with tag('td'):
                 text(a.boardType)
                 doc.asis('<br>\n')
@@ -505,26 +561,22 @@ def htmlActimetres(now):
                 line('td', "?")
                 line('td', "?")
 
-            if alive == 'retire':
-                line('td', 'No data', klass=f'health retire')
-            else:
-                with tag('td', klass=f'health left'):
-                    if a.graphSince == TIMEZERO:
-                        text('? ')
-                    else:
-                        text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
-                    doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
-                    if alive == 'dead':
-                        line('span', 'down', klass='dead')
-                    else:
-                        line('span', f'up {a.uptime(now)}', klass='up')
-                    with tag('div'):
-                        doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
+            with tag('td', klass=f'health left'):
+                if a.graphSince == TIMEZERO:
+                    text('? ')
+                else:
+                    text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
+                doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
+                if alive == 'dead':
+                    line('span', ' ?', klass='dead')
+                else:
+                    line('span', f' up {a.uptime(now)}', klass='up')
+                with tag('div'):
+                    doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
-            with tag('td'):
-                line('div', Projects[a.projectId].title, klass='left')
-                with tag('div', klass='right'):
-                    line('button', "Change", type='submit', name='action', value='actim-change-project')
+            with tag('td', klass='left'):
+                with tag('a', href=f'/project{a.projectId:03d}.html'):
+                    text(Projects[a.projectId].title)
             with tag('td', klass='right'):
                 text(printSize(a.repoSize))
                 if alive != '': doc.asis('<br>(?)')
@@ -578,14 +630,35 @@ def htmlActiservers(now):
         print(indent(doc.getvalue()), file=html)
 
 def htmlProjects(now):
-    doc, tag, text, line = Doc().ttl()
+    for projectId in Projects.keys():
+        p = Projects[projectId]
+        projectActimHTML = ""
+        for actimId in p.actimetreList:
+            projectActimHTML += htmlActimetre1(now, actimId)
+        
+        with open(f"{HTML_DIR}/project{projectId:03d}.html", "w") as html:
+            with open(f"{HTML_DIR}/templateProject.html") as template:
+                print(template.read()\
+                      .replace("{buttons}", '''\
+                      <button type="submit" name="action" value="project-edit-info">Edit info</button>
+                      <button type="submit" name="action" value="remove-project">Remove project</button>
+                      ''')\
+                      .replace("{projectTitle}", p.title)\
+                      .replace("{projectOwner}", p.owner)\
+                      .replace("{projectActimHTML}", projectActimHTML)\
+                      .replace("{projectId}", str(projectId)), \
+                      file=html)
+        os.chmod(f"{HTML_DIR}/project{projectId:03d}.html", 0o666)
 
+    doc, tag, text, line = Doc().ttl()
     for projectId in sorted(Projects.keys()):
         p = Projects[projectId]
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
-            doc.asis(f'<input type="hidden" name="projectId" value="{p.projectId}" />')
-            line('td', p.title, klass='left')
+            doc.asis(f'<input type="hidden" name="projectId" value="{projectId}" />')
+            with tag('td', klass='left'):
+                with tag('a', href=f'/project{projectId:03d}.html'):
+                    text(p.title)
             line('td', p.owner)
             with tag('td', klass='left'):
                 for actimId in p.actimetreList:
@@ -593,12 +666,6 @@ def htmlProjects(now):
                         with tag('div'):
                             doc.asis(Actimetres[actimId].htmlCartouche())
             line('td', printSize(p.repoSize), klass='right')
-            with tag('td', klass="no-borders"):
-                if p.projectId != 0:
-                    with tag('div', klass='left'):
-                        line('button', "Edit", type='submit', name='action', value='project-change-info')
-                    with tag('div', klass='left'):
-                        line('button', "Remove", type='submit', name='action', value='remove-project')
             doc.asis('</form>')
 
     with open(f"{HTML_DIR}/projects.html", "w") as html:
@@ -635,6 +702,17 @@ def projectChangeInfo(projectId):
 
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
+              .replace("{project-change-info}", "project-change-info")\
+              .replace("{projectTitle}", Projects[projectId].title)\
+              .replace("{projectOwner}", Projects[projectId].owner)\
+              .replace("{projectId}", str(projectId)))
+
+def projectEditInfo(projectId):
+    print("Content-type: text/html\n\n")
+
+    with open(f"{HTML_DIR}/formProject.html") as form:
+        print(form.read()\
+              .replace("{project-change-info}", "project-edit-info")\
               .replace("{projectTitle}", Projects[projectId].title)\
               .replace("{projectOwner}", Projects[projectId].owner)\
               .replace("{projectId}", str(projectId)))
@@ -713,6 +791,21 @@ def processForm(formId):
             htmlProjects(now)
         print("Location:\\index.html\n\n")
 
+    if formId == 'project-edit-info':
+        projectId = int(args['projectId'][0])
+        title = args['title'][0]
+        owner = args['owner'][0]
+        email = args['email'][0]
+        printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
+        
+        if title != "" and owner != "":
+            Projects[projectId].title = title
+            Projects[projectId].owner = owner
+            Projects[projectId].email = email
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+            htmlProjects(now)
+        print(f"Location:\\project{projectId:03d}.html\n\n")
+
     elif formId == 'actim-change-project':
         actimId = int(args['actimId'][0])
         projectId = int(args['projectId'][0])
@@ -787,7 +880,7 @@ def processForm(formId):
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
             repoStats(now)
-        print("Location:\\index.html\n\n")
+        print(f"Location:\\project{projectId:03d}.html\n\n")
 
     else:
         print("Location:\\index.html\n\n")
@@ -898,7 +991,10 @@ elif action == 'actim-cut-graph':
         Actimetres[actimId].drawGraph(now)
         if save:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    print("Location:\\index.html\n\n")
+    if args.get('projectId') is not None:
+        print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
+    else:
+        print("Location:\\index.html\n\n")
 
 elif action == 'retire-actim':
     actimId = int(args['actimId'][0])
@@ -913,6 +1009,10 @@ elif action == 'retire-server':
 elif action == 'project-change-info':
     projectId = int(args['projectId'][0])
     projectChangeInfo(projectId)
+
+elif action == 'project-edit-info':
+    projectId = int(args['projectId'][0])
+    projectEditInfo(projectId)
 
 elif action == 'create-project':
     print("Location:\\formCreate.html\n\n")
