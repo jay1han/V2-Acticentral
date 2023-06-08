@@ -648,7 +648,7 @@ def htmlProjects(now):
                       .replace("{projectActimHTML}", projectActimHTML)\
                       .replace("{projectId}", str(projectId)), \
                       file=html)
-        os.chmod(f"{HTML_DIR}/project{projectId:03d}.html", 0o666)
+        os.chmod(f"{HTML_DIR}/project{projectId:03d}.html", 0o777)
 
     doc, tag, text, line = Doc().ttl()
     for projectId in sorted(Projects.keys()):
