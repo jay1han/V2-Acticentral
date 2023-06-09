@@ -635,14 +635,18 @@ def htmlProjects(now):
         projectActimHTML = ""
         for actimId in p.actimetreList:
             projectActimHTML += htmlActimetre1(now, actimId)
+        if projectId == 0:
+            buttons = ""
+        else:
+            buttons = '''\
+                      <button type="submit" name="action" value="project-edit-info">Edit info</button>
+                      <button type="submit" name="action" value="remove-project">Remove project</button>
+                      '''
         
         with open(f"{HTML_DIR}/project{projectId:03d}.html", "w") as html:
             with open(f"{HTML_DIR}/templateProject.html") as template:
                 print(template.read()\
-                      .replace("{buttons}", '''\
-                      <button type="submit" name="action" value="project-edit-info">Edit info</button>
-                      <button type="submit" name="action" value="remove-project">Remove project</button>
-                      ''')\
+                      .replace("{buttons}", buttons)\
                       .replace("{projectTitle}", p.title)\
                       .replace("{projectOwner}", p.owner)\
                       .replace("{projectActimHTML}", projectActimHTML)\
