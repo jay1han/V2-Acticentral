@@ -488,19 +488,19 @@ def htmlActimetre1(now, actimId):
     with tag('tr'):
         doc.asis('<form action="/bin/acticentral.py" method="get">')
         doc.asis(f'<input type="hidden" name="actimId" value="{a.actimId}"/>')
-        alive = ''
+        alive = 'up'
         if now - a.lastReport > ACTIM_RETIRE_P:
             alive = 'retire'
         elif now - a.lastReport > ACTIM_FAIL_TIME or a.frequency == 0:
-            alive = 'dead'
+            alive = 'down'
 
         with tag('td', klass=alive):
             doc.asis('Actim&shy;{:04d}<br>'.format(actimId))
         with tag('td'):
             text(a.boardType)
             doc.asis('<br>\n')
-            if alive == '': text(f"v{a.version}")
-        if alive == '':
+            if alive == 'up': text(f"v{a.version}")
+        if alive == 'up':
             line('td', f"Actis{a.serverId:03d}")
             line('td', a.sensorStr)
             line('td', "{:.3f}%".format(100.0 * a.rating))
@@ -518,16 +518,13 @@ def htmlActimetre1(now, actimId):
                 else:
                     text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
                 doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
-                if alive == 'dead':
-                    line('span', ' ?', klass='dead')
-                else:
-                    line('span', f' up {a.uptime(now)}', klass='up')
+                line('span', f' {a.uptime(now)}', klass=alive)
                 with tag('div'):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
         with tag('td', klass='right'):
             text(printSize(a.repoSize))
-            if alive != '': doc.asis('<br>(?)')
+            if alive != 'up': doc.asis('<br>(?)')
         with tag('td', klass='no-borders'):
             with tag('button', type='submit', name='action', value='actim-change-project'):
                 text('Change project')
@@ -544,17 +541,17 @@ def htmlActimetres(now):
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}"/>')
-            alive = ''
+            alive = 'up'
             if now - a.lastReport > ACTIM_FAIL_TIME or a.frequency == 0:
-                alive = 'dead'
+                alive = 'down'
 
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}<br>'.format(actimId))
             with tag('td'):
                 text(a.boardType)
                 doc.asis('<br>\n')
-                if alive == '': text(f"v{a.version}")
-            if alive == '':
+                if alive == 'up': text(f"v{a.version}")
+            if alive == 'up':
                 line('td', a.sensorStr)
                 line('td', "{:.3f}%".format(100.0 * a.rating))
             else: 
@@ -567,10 +564,7 @@ def htmlActimetres(now):
                 else:
                     text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
                 doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
-                if alive == 'dead':
-                    line('span', ' ?', klass='dead')
-                else:
-                    line('span', f' up {a.uptime(now)}', klass='up')
+                line('span', f' {a.uptime(now)}', klass=alive)
                 with tag('div'):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
@@ -579,7 +573,7 @@ def htmlActimetres(now):
                     text(Projects[a.projectId].title)
             with tag('td', klass='right'):
                 text(printSize(a.repoSize))
-                if alive != '': doc.asis('<br>(?)')
+                if alive != 'up': doc.asis('<br>(?)')
         doc.asis('</form>\n')
 
     with open(f"{HTML_DIR}/actimetres.html", "w") as html:
@@ -596,11 +590,11 @@ def htmlActiservers(now):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="serverId" value="{s.serverId}" />')
             if now - s.lastReport < ACTIS_FAIL_TIME:
-                alive = ''
+                alive = 'up'
             elif now - s.lastReport > ACTIS_RETIRE_P:
                 alive = 'retire'
             else:
-                alive = 'dead'
+                alive = 'down'
 
             with tag('td', klass=alive):
                 text(s.serverName())
@@ -608,14 +602,14 @@ def htmlActiservers(now):
                     line('button', "Retire", type='submit', name='action', value='retire-server')
             line('td', s.machine)
             with tag('td'):
-                if alive == '':
+                if alive == 'up':
                     text(f"v{s.version}")
                     doc.asis("<br>")
                     if s.channel != 0:
                         text(f"Ch. {s.channel}")
                 else:
                     text("?")
-            if alive != '':
+            if alive != 'up':
                 line('td', "None")
             else:
                 with tag('td', klass='left'):
