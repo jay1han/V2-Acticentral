@@ -370,6 +370,8 @@ class Actimetre:
         return redraw
 
     def dies(self, now):
+        if self.isDead:
+            return
         printLog(f'{self.actimName()} dies {now.strftime(TIMEFORMAT_DISP)}')
         if Projects.get(self.projectId) is not None \
            and Projects[self.projectId].email != "":
@@ -398,7 +400,10 @@ class Actimetre:
         return f'{self.actimName()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
 
     def uptime(self, now):
-        up = now - self.bootTime
+        if self.isDead:
+            up = now - self.lastReport
+        else:
+            up = now - self.bootTime
         days = up // timedelta(days=1)
         hours = (up % timedelta(days=1)) // timedelta(hours=1)
         minutes = (up % timedelta(hours=1)) // timedelta(minutes=1)
@@ -406,6 +411,7 @@ class Actimetre:
             return f'{days}d{hours}h'
         else:
             return f'{hours}h{minutes:02d}m'
+        
 Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 
 class Actiserver:
@@ -460,6 +466,15 @@ class Actiserver:
 
     def serverName(self):
         return f"Actis{self.serverId:03d}"
+
+    def killActimetres(self, now):
+        killed = False
+        for a in self.actimetreList:
+            if a.isDead == False:
+                a.dies(now);
+                killed = True
+        return killed
+    
 Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
 
 def saveRegistry():
@@ -582,6 +597,7 @@ def htmlActimetres(now):
 def htmlActiservers(now):
     doc, tag, text, line = Doc().ttl()
 
+    modServers = False
     for serverId in sorted(Actiservers.keys()):
         s = Actiservers[serverId]
         if now - s.lastReport > ACTIM_HIDE_P:
@@ -595,6 +611,8 @@ def htmlActiservers(now):
                 alive = 'retire'
             else:
                 alive = 'down'
+                if s.killActimetres(now):
+                    modServers = True
 
             with tag('td', klass=alive):
                 text(s.serverName())
@@ -622,6 +640,8 @@ def htmlActiservers(now):
                 line('td', s.lastReport.strftime(TIMEFORMAT_DISP), klass=alive)
     with open(f"{HTML_DIR}/actiservers.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
+    if modServers:
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
 
 def htmlProjects(now):
     for projectId in Projects.keys():
@@ -959,20 +979,10 @@ elif action == 'actimetre-off':
 
     a = Actimetres.get(actimId)
     if a is not None:
-        a.addFreqEvent(now, 0)
-        a.drawGraph(now)
-        a.isDead = True
+        a.dies(now)
         Actiservers[serverId].actimetreList.remove(actimId)
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-        if Projects.get(a.projectId) is not None \
-           and Projects[a.projectId].email != "":
-            sendEmail(now, Projects[a.projectId].email,\
-                      f'{a.actimName()} died',\
-                      f'{a.actimName()}\nType {a.boardType}\nMAC {a.mac}\n' +\
-                      f'Connected to Actis{a.serverId:03d}\nSensors {a.sensorStr}\nRunning at {a.frequency}Hz\n' +\
-                      f'Latest uptime {a.uptime(now)}\nMissing rate {a.rating:.3f}%\n' +\
-                      f'Total data size {printSize(a.repoSize)}\n')
     plain("Ok")
 
 elif action == 'actim-change-project':
