@@ -390,7 +390,7 @@ class Actimetre:
 
     def htmlInfo(self):
         if self.isDead or self.frequency == 0:
-            return f'<span class="dead">(dead)</span>'
+            return f'<span class="down">(down)</span>'
         else:
             return f'{self.sensorStr}@{self.frequency}Hz'
         
