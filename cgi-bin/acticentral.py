@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v235"
+VERSION_STR     = "v240"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -154,7 +154,7 @@ def scaleFreq(origFreq):
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=True, \
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
-                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0, repoSize = 0):
+                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,  repoSize = 0):
         self.actimId    = int(actimId)
         self.mac        = mac
         self.boardType  = boardType
@@ -168,6 +168,7 @@ class Actimetre:
         self.sensorStr  = sensorStr
         self.frequency  = frequency
         self.rating     = rating
+        self.rssi       = rssi
         self.repoSize   = repoSize
         self.lastDrawn  = TIMEZERO
         self.graphSince = TIMEZERO
@@ -186,6 +187,7 @@ class Actimetre:
                 'sensorStr' : self.sensorStr,
                 'frequency' : self.frequency,
                 'rating'    : self.rating,
+                'rssi'      : str(self.rssi),
                 'repoSize'  : self.repoSize,
                 'lastDrawn' : self.lastDrawn.strftime(TIMEFORMAT_FN),
                 'graphSince': self.graphSince.strftime(TIMEFORMAT_FN),
@@ -204,6 +206,8 @@ class Actimetre:
         self.sensorStr  = d['sensorStr']
         self.frequency  = int(d['frequency'])
         self.rating     = float(d['rating'])
+        if d.get('rssi') is not None:
+            self.rssi   = int(d['rssi'])
         self.repoSize   = int(d['repoSize'])
         
         if d.get('projectId') is not None:
@@ -364,6 +368,7 @@ class Actimetre:
         self.lastReport = newActim.lastReport
         self.sensorStr  = newActim.sensorStr
         self.rating     = newActim.rating
+        self.rssi       = newActim.rssi
         self.repoSize   = newActim.repoSize
         if redraw:
             self.drawGraph(now)
@@ -494,6 +499,23 @@ if Projects.get(0) is None:
     Projects[0] = Project(0, "Not assigned", "No owner")
     dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
+def htmlRssi(rssi):
+    doc, tag, text, line = Doc().ttl()
+    
+    widthFull = 100.0 * rssi / 7
+    widthEmpty = 100.0 - widthFull
+    with tag('table', klass='rssi'):
+        with tag('tr'):
+            if rssi == 0:
+                line('td', '?', klass='small')
+            else:
+                if   rssi < 3: color = 'weak'
+                elif rssi > 5: color = 'best'
+                else         : color = 'good'
+                line('td', ' ', width=f'{widthFull}%', klass=color)
+                line('td', ' ', width=f'{widthEmpty}%')
+    return doc.getvalue()
+
 def htmlActimetre1(now, actimId):
     if Actimetres.get(actimId) is None:
         return ""
@@ -518,7 +540,10 @@ def htmlActimetre1(now, actimId):
         if alive == 'up':
             line('td', f"Actis{a.serverId:03d}")
             line('td', a.sensorStr)
-            line('td', "{:.3f}%".format(100.0 * a.rating))
+            with tag('td'):
+                doc.asis(htmlRssi(a.rssi))
+                doc.stag('br')
+                text("{:.3f}%".format(100.0 * a.rating))
         else: 
             line('td', "?")
             line('td', "?")
@@ -568,7 +593,10 @@ def htmlActimetres(now):
                 if alive == 'up': text(f"v{a.version}")
             if alive == 'up':
                 line('td', a.sensorStr)
-                line('td', "{:.3f}%".format(100.0 * a.rating))
+                with tag('td'):
+                    doc.asis(htmlRssi(a.rssi))
+                    doc.stag('br')
+                    text("{:.3f}%".format(100.0 * a.rating))
             else: 
                 line('td', "?")
                 line('td', "?")

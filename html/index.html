@@ -3,9 +3,13 @@
     <meta http-equiv="refresh" content="15" />
     <style>
       body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual;}
-      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse; text-align:center;}
+      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse; text-align:center; align:center;}
       td {padding:0.3em; border:1px solid black;}
       th {padding:0.5em; border:1px solid black;}
+      .rssi {width:100%; padding:0; height:14pt;}
+      .weak {background-color:orange}
+      .good {background-color:grey}
+      .best {background-color:green}
       .no-borders {border:0;}
       .right {text-align:right;}
       .left {text-align:left;}
@@ -26,7 +30,7 @@
 	<th>Name</th>
 	<th>Type<br>Version</th>
 	<th>Sensors</th>
-	<th>Missing</th>
+	<th>Signal<br>Rating</th>
 	<th>Health</th>
 	<th>Project</th>
 	<th>Data<br>size</th>
