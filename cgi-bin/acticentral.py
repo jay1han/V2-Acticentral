@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v240"
+VERSION_STR     = "v250"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -111,6 +111,7 @@ class Project:
         self.owner         = owner
         self.email         = email
         self.actimetreList = actimetreList
+        self.repoNums      = 0
         self.repoSize      = 0
 
     def toD(self):
@@ -118,6 +119,7 @@ class Project:
                 'title'         : self.title,
                 'owner'         : self.owner,
                 'email'         : self.email,
+                'repoNums'      : self.repoNums,
                 'repoSize'      : self.repoSize,
                 'actimetreList' : list(self.actimetreList),
                 }
@@ -126,8 +128,10 @@ class Project:
         self.projectId      = int(d['projectId'])
         self.title          = d['title']
         self.owner          = d['owner']
-        if d.get('email') is not None:
-            self.email = d['email']
+        if d.get('email'):
+            self.email      = d['email']
+        if d.get('repoNums'):
+            self.repoNums   = int(d['repoNums'])
         self.repoSize       = int(d['repoSize'])
         if d.get('actimetreList') is not None:
             self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
@@ -154,7 +158,7 @@ def scaleFreq(origFreq):
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=True, \
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
-                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,  repoSize = 0):
+                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,  repoNums = 0, repoSize = 0):
         self.actimId    = int(actimId)
         self.mac        = mac
         self.boardType  = boardType
@@ -169,6 +173,7 @@ class Actimetre:
         self.frequency  = frequency
         self.rating     = rating
         self.rssi       = rssi
+        self.repoNums   = repoNums
         self.repoSize   = repoSize
         self.lastDrawn  = TIMEZERO
         self.graphSince = TIMEZERO
@@ -188,6 +193,7 @@ class Actimetre:
                 'frequency' : self.frequency,
                 'rating'    : self.rating,
                 'rssi'      : str(self.rssi),
+                'repoNums'  : self.repoNums,
                 'repoSize'  : self.repoSize,
                 'lastDrawn' : self.lastDrawn.strftime(TIMEFORMAT_FN),
                 'graphSince': self.graphSince.strftime(TIMEFORMAT_FN),
@@ -199,7 +205,7 @@ class Actimetre:
         self.boardType  = d['boardType']
         self.version    = d['version']
         self.serverId   = int(d['serverId'])
-        self.isDead     = bool(d['isDead']=="true" or d['isDead']=="True")
+        self.isDead     = (str(d['isDead']).upper() =="TRUE")
         self.bootTime   = datetime.strptime(d['bootTime'], TIMEFORMAT_FN)
         self.lastSeen   = datetime.strptime(d['lastSeen'], TIMEFORMAT_FN)
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
@@ -208,6 +214,8 @@ class Actimetre:
         self.rating     = float(d['rating'])
         if d.get('rssi') is not None:
             self.rssi   = int(d['rssi'])
+        if d.get('repoNums'):
+            self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
         
         if d.get('projectId') is not None:
@@ -369,6 +377,7 @@ class Actimetre:
         self.sensorStr  = newActim.sensorStr
         self.rating     = newActim.rating
         self.rssi       = newActim.rssi
+        self.repoNums   = newActim.repoNums
         self.repoSize   = newActim.repoSize
         if redraw:
             self.drawGraph(now)
@@ -385,7 +394,7 @@ class Actimetre:
                       f'{self.actimName()}\nType {self.boardType}\nMAC {self.mac}\n' +\
                       f'Connected to Actis{self.serverId:03d}\nSensors {self.sensorStr}\nRunning at {self.frequency}Hz\n' +\
                       f'Latest uptime {self.uptime(now)}\nMissing rate {self.rating:.3f}%\n' +\
-                      f'Total data size {printSize(self.repoSize)}\n')
+                      f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n')
         self.isDead    = True
         self.frequency = 0
         self.addFreqEvent(now, 0)
@@ -420,13 +429,14 @@ class Actimetre:
 Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 
 class Actiserver:
-    def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", \
+    def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False,\
                  lastReport=TIMEZERO, actimetreList=set()):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
         self.channel    = int(channel)
         self.ip         = ip
+        self.isLocal    = isLocal
         self.lastReport = lastReport
         self.actimetreList = actimetreList
         self.saveActim  = False
@@ -437,6 +447,7 @@ class Actiserver:
                 'version'   : self.version,
                 'channel'   : self.channel,
                 'ip'        : self.ip,
+                'isLocal'   : self.isLocal,
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
                 'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']'
                 }
@@ -447,6 +458,8 @@ class Actiserver:
         self.version    = d['version']
         self.channel    = int(d['channel'])
         self.ip         = d['ip']
+        if d.get('isLocal'):
+            self.isLocal = (str(d['isLocal']).upper() == "TRUE")
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         self.saveActim  = False
         self.actimetreList = set()
@@ -563,6 +576,9 @@ def htmlActimetre1(now, actimId):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
         with tag('td', klass='right'):
+            if a.repoNums > 0:
+                text(f'{a.repoNums} files')
+                doc.stag('br')
             text(printSize(a.repoSize))
             if alive != 'up': doc.asis('<br>(?)')
         with tag('td', klass='no-borders'):
@@ -615,6 +631,9 @@ def htmlActimetres(now):
                 with tag('a', href=f'/project{a.projectId:03d}.html'):
                     text(Projects[a.projectId].title)
             with tag('td', klass='right'):
+                if a.repoNums > 0:
+                    text(f'{a.repoNums} files')
+                    doc.stag('br')
                 text(printSize(a.repoSize))
                 if alive != 'up': doc.asis('<br>(?)')
         doc.asis('</form>\n')
@@ -642,7 +661,7 @@ def htmlActiservers(now):
                 if s.killActimetres(now):
                     modServers = True
 
-            with tag('td', klass=alive):
+            with tag('td',  klass=alive):
                 text(s.serverName())
                 if alive == 'retire':
                     line('button', "Retire", type='submit', name='action', value='retire-server')
@@ -655,17 +674,28 @@ def htmlActiservers(now):
                         text(f"Ch. {s.channel}")
                 else:
                     text("?")
-            if alive != 'up':
-                line('td', "None")
-            else:
-                with tag('td', klass='left'):
-                    for a in s.actimetreList:
-                        with tag ('div'):
-                            doc.asis(Actimetres[a].htmlCartouche())
             if s.lastReport == TIMEZERO:
                 line('td', "?", klass=alive)
             else:
                 line('td', s.lastReport.strftime(TIMEFORMAT_DISP), klass=alive)
+            if alive != 'up':
+                line('td', "None")
+                line('td', '')
+            else:
+                with tag('td', klass='left'):
+                    for actimId in s.actimetreList:
+                        with tag('div'):
+                            doc.asis(Actimetres[actimId].htmlCartouche())
+                with tag('td', klass='right'):
+                    if s.isLocal:
+                        for actimId in s.actimetreList:
+                            a = Actimetres[actimId]
+                            if a.repoSize == 0:
+                                continue
+                            with tag('div'):
+                                with tag('a', href=f'http://{s.ip}/index{a.actimId:04d}.html'):
+                                    doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
+                
     with open(f"{HTML_DIR}/actiservers.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
     if modServers:
@@ -711,7 +741,11 @@ def htmlProjects(now):
                     if Actimetres.get(actimId) is not None:
                         with tag('div'):
                             doc.asis(Actimetres[actimId].htmlCartouche())
-            line('td', printSize(p.repoSize), klass='right')
+            with tag('td', klass='right'):
+                if p.repoNums > 0:
+                    text(f'{p.repoNums} files')
+                    doc.stag('br')
+                text(printSize(p.repoSize))
             doc.asis('</form>')
 
     with open(f"{HTML_DIR}/projects.html", "w") as html:
@@ -730,6 +764,7 @@ def repoStats(now):
         if Projects.get(a.projectId) is None:
             Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
         Projects[a.projectId].addActim(a)
+        Projects[a.projectId].repoNums += a.repoNums
         Projects[a.projectId].repoSize += a.repoSize
 
     if save:
@@ -806,11 +841,15 @@ def retireActim(actimId):
     else:
         ownerStr = '"CONFIRM"'
     with open(f"{HTML_DIR}/formRetire.html") as form:
+        repoNumsStr = ''
+        if a.repoNums > 0:
+            repoNumsStr = f'{a.repoNums} files, '
         print(form.read()\
               .replace("{actimId}", str(actimId))\
               .replace("{actimName}", a.actimName())\
               .replace("{mac}", a.mac)\
               .replace("{boardType}", a.boardType)\
+              .replace("{repoNums}", repoNumsStr)\
               .replace("{repoSize}", printSize(a.repoSize))\
               .replace("{owner}", ownerStr)\
               .replace("{projectTitle}", Projects[a.projectId].title))
