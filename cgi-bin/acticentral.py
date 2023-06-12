@@ -754,6 +754,7 @@ def htmlProjects(now):
 def repoStats(now):
     for p in Projects.values():
         p.repoSize = 0
+        p.repoNums = 0
 
     save = False
     for a in Actimetres.values():
