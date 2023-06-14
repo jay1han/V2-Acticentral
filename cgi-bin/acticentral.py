@@ -199,7 +199,7 @@ class Actimetre:
                 'graphSince': self.graphSince.strftime(TIMEFORMAT_FN),
                 }
 
-    def fromD(self, d, actual=False):
+    def fromD(self, d):
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
@@ -439,7 +439,6 @@ class Actiserver:
         self.isLocal    = isLocal
         self.lastReport = lastReport
         self.actimetreList = actimetreList
-        self.saveActim  = False
 
     def toD(self):
         return {'serverId'  : self.serverId,
@@ -461,38 +460,35 @@ class Actiserver:
         if d.get('isLocal'):
             self.isLocal = (str(d['isLocal']).upper() == "TRUE")
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
-        self.saveActim  = False
         self.actimetreList = set()
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
-                a = Actimetre().fromD(actimData, actual)
+                a = Actimetre().fromD(actimData)
                 if Actimetres.get(a.actimId) is None:
                     Actimetres[a.actimId] = a
-                    if actual:
-                        self.saveActim = True
                 else:
-                    if Actimetres[a.actimId].update(a, self.lastReport, actual):
-                        self.saveActim = True
+                    Actimetres[a.actimId].update(a, self.lastReport, actual)
                 self.actimetreList.add(a.actimId)
         else:
             self.actimetreList = set()
         for a in Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
                 a.dies(self.lastReport)
-                self.saveActim = True
         return self
 
     def serverName(self):
         return f"Actis{self.serverId:03d}"
 
-    def killActimetres(self, now):
-        killed = False
-        for actimId in self.actimetreList:
+    def removeActimetres(self, now):
+        removed = False
+        for actimId in self.actimetreList.copy():
             a = Actimetres.get(actimId)
-            if a is not None and a.isDead == False:
-                a.dies(now);
-                killed = True
-        return killed
+            if a is not None:
+                if a.serverId == self.serverId and a.isDead == False:
+                    a.dies(now)
+                self.actimetreList.remove(actimId)
+                removed = True
+        return removed
     
 Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
 
@@ -659,7 +655,7 @@ def htmlActiservers(now):
                 alive = 'retire'
             else:
                 alive = 'down'
-                if s.killActimetres(now):
+                if s.removeActimetres(now):
                     modServers = True
 
             with tag('td',  klass=alive):
@@ -998,8 +994,7 @@ if action == 'actiserver':
         thisServer = Actiserver(serverId).fromD(json.load(sys.stdin), actual=True)
         Actiservers[serverId] = thisServer
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-        if thisServer.saveActim:
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     plain(json.dumps(Registry))
 
 elif action == 'actimetre-new':
