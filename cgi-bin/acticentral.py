@@ -487,8 +487,9 @@ class Actiserver:
 
     def killActimetres(self, now):
         killed = False
-        for a in self.actimetreList:
-            if a.isDead == False:
+        for actimId in self.actimetreList:
+            a = Actimetres.get(actimId)
+            if a is not None and a.isDead == False:
                 a.dies(now);
                 killed = True
         return killed
