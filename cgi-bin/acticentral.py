@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v250"
+VERSION_STR     = "v255"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -21,7 +21,7 @@ IMAGES_INDEX    = "/var/www/html/images/index.txt"
 HTML_DIR        = "/var/www/html"
 HTML_VERSION    = "/var/www/html/version.html"
 
-ACTIS_FAIL_TIME = timedelta(seconds=30)
+ACTIS_FAIL_TIME = timedelta(seconds=60)
 ACTIS_RETIRE_P  = timedelta(days=7)
 ACTIS_HIDE_P    = timedelta(days=1)
 ACTIM_FAIL_TIME = ACTIS_FAIL_TIME
@@ -437,6 +437,8 @@ class Actiserver:
         self.channel    = int(channel)
         self.ip         = ip
         self.isLocal    = isLocal
+        self.diskSize   = 0
+        self.diskFree   = 0
         self.lastReport = lastReport
         self.actimetreList = actimetreList
 
@@ -447,6 +449,8 @@ class Actiserver:
                 'channel'   : self.channel,
                 'ip'        : self.ip,
                 'isLocal'   : self.isLocal,
+                'diskSize'  : self.diskSize,
+                'diskFree'  : self.diskFree,
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
                 'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']'
                 }
@@ -459,6 +463,9 @@ class Actiserver:
         self.ip         = d['ip']
         if d.get('isLocal'):
             self.isLocal = (str(d['isLocal']).upper() == "TRUE")
+        if d.get('diskSize'):
+            self.diskSize = int(d['diskSize'])
+            self.diskFree = int(d['diskFree'])
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         self.actimetreList = set()
         if d['actimetreList'] != "[]":
@@ -678,13 +685,14 @@ def htmlActiservers(now):
             if alive != 'up':
                 line('td', "None")
                 line('td', '')
+                line('td', '')
             else:
                 with tag('td', klass='left'):
                     for actimId in s.actimetreList:
                         with tag('div'):
                             doc.asis(Actimetres[actimId].htmlCartouche())
-                with tag('td', klass='right'):
-                    if s.isLocal:
+                if s.isLocal:
+                    with tag('td', klass='right'):
                         for actimId in s.actimetreList:
                             a = Actimetres[actimId]
                             if a.repoSize == 0:
@@ -692,6 +700,13 @@ def htmlActiservers(now):
                             with tag('div'):
                                 with tag('a', href=f'http://{s.ip}/index{a.actimId:04d}.html'):
                                     doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
+                    if s.diskSize > 0:
+                        line('td', f'{printSize(s.diskFree)} ({100.0*s.diskFree/s.diskSize:.1f}%)')
+                    else:
+                        line('td', '')
+                else:
+                    line('td', '')
+                    line('td', '')
                 
     with open(f"{HTML_DIR}/actiservers.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
