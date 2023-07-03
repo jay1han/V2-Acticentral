@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v255"
+VERSION_STR     = "v256"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -24,11 +24,11 @@ HTML_VERSION    = "/var/www/html/version.html"
 ACTIS_FAIL_TIME = timedelta(seconds=60)
 ACTIS_RETIRE_P  = timedelta(days=7)
 ACTIS_HIDE_P    = timedelta(days=1)
-ACTIM_FAIL_TIME = ACTIS_FAIL_TIME
 ACTIM_RETIRE_P  = timedelta(days=1)
 ACTIM_HIDE_P    = timedelta(days=1)
 
 TIMEZERO     = datetime(year=2023, month=1, day=1)
+NOW          = datetime.utcnow()
 
 def printLog(text=''):
     try:
@@ -36,7 +36,7 @@ def printLog(text=''):
             os.truncate(LOG_FILE, 0)
     except OSError: pass
     with open(LOG_FILE, 'a') as logfile:
-        print(f'[{datetime.utcnow().strftime(TIMEFORMAT_DISP)}]', text, file=logfile)
+        print(f'[{NOW.strftime(TIMEFORMAT_DISP)}]', text, file=logfile)
 
 def loadData(filename):
     try:
@@ -81,10 +81,10 @@ def printSize(size, unit='', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
-def sendEmail(now, recipient, subject, text):
+def sendEmail(recipient, subject, text):
     content = f"""\
     Event: {subject}
-    At {now.strftime(TIMEFORMAT_DISP)}
+    At {NOW.strftime(TIMEFORMAT_DISP)}
 
     {text}
 
@@ -235,42 +235,50 @@ class Actimetre:
             self.graphSince = datetime.strptime(d['graphSince'], TIMEFORMAT_FN)
         return self
 
-    def cutHistory(self, cutLength=None, now=datetime.utcnow()):
+    def cutHistory(self, cutLength=None):
         if cutLength == None:
-            cutLength = now - self.bootTime
+            cutLength = NOW - self.bootTime
             
         historyFile = f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist"
         freshLines = list()
-        with open(historyFile, "r") as history:
-            for line in history:
-                timeStr, part, freq = line.partition(':')
-                time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
-                if now - time < cutLength:
-                    time = now - cutLength
-                    self.graphSince = time
-                    freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
-                    freshLines.extend(history.readlines())
-        if len(freshLines) == 0:
-            time = now - cutLength
-            self.graphSince = time
-            freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.frequency}")
+        try:
+            with open(historyFile, "r") as history:
+                for line in history:
+                    timeStr, part, freqStr = line.partition(':')
+                    time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
+                    freq = int(freqStr)
+                    if NOW - time <= cutLength:
+                        time = NOW - cutLength
+                        self.graphSince = time
+                        freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
+                        freshLines.extend(history.readlines())
+        except FileNotFoundError:
+            pass
+        else:
+            if len(freshLines) == 0:
+                time = NOW - cutLength
+                self.graphSince = time
+                freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.frequency}")
 
-        os.truncate(historyFile, 0)
-        with open(historyFile, "r+") as history:
-            for line in freshLines:
-                print(line.strip(), file=history)
+            os.truncate(historyFile, 0)
+            with open(historyFile, "r+") as history:
+                for line in freshLines:
+                    print(line.strip(), file=history)
 
-    def drawGraph(self, now):
+    def drawGraph(self):
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
         import matplotlib.pyplot as pyplot
 
+        if NOW - self.graphSince >= GRAPH_SPAN:
+            self.cutHistory(GRAPH_CULL)
+            
         try:
             with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
                 self.graphSince = datetime.strptime(history.readline().partition(':')[0], TIMEFORMAT_FN)
         except (FileNotFoundError, ValueError):
             with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
-                print(now.strftime(TIMEFORMAT_FN), ':', self.frequency, sep="", file=history)
-                self.graphSince = now
+                print(NOW.strftime(TIMEFORMAT_FN), ':', self.frequency, sep="", file=history)
+                self.graphSince = NOW
             try:
                 os.chmod(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", 0o666)
             except OSError:
@@ -283,10 +291,11 @@ class Actimetre:
                 timeStr, part, freqStr = line.partition(':')
                 time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
                 freq = scaleFreq(int(freqStr))
-                timeline.append(time)
-                frequencies.append(freq)
+                if len(timeline) == 0 or freq != frequencies[-1]:
+                    timeline.append(time)
+                    frequencies.append(freq)
 
-        timeline.append(now)
+        timeline.append(NOW)
         frequencies.append(scaleFreq(self.frequency))
         freq = [scaleFreq(self.frequency) for i in range(len(timeline))]
 
@@ -301,7 +310,7 @@ class Actimetre:
             else:
                 c = 'black'
                 w = 'regular'
-            ax.text(now, drawn, f"{real:4d}", family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
+            ax.text(NOW, drawn, f"{real:4d}", family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
         if self.isDead:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
@@ -323,7 +332,7 @@ class Actimetre:
                     actimId = int(actimStr.strip())
                     updateMap[actimId] = updateStr.strip()
                     dataMap[actimId] = dataStr.strip()
-        updateMap[self.actimId] = now.strftime(TIMEFORMAT_FN)
+        updateMap[self.actimId] = NOW.strftime(TIMEFORMAT_FN)
         dataMap[self.actimId] = f'{self.boardType},{self.serverId},{self.sensorStr},{self.frequency},{self.rating}'
         os.truncate(IMAGES_INDEX, 0)
         with open(IMAGES_INDEX, "r+") as index:
@@ -331,43 +340,54 @@ class Actimetre:
                 print(f'{actimId}:{updateMap[actimId]}:{dataMap[actimId]}', file=index)
         printLog(f'{self.actimName()}.drawGraph --> ' + ','.join(map(str, updateMap.keys())))
         
-        self.lastDrawn = now
-        if now - self.graphSince >= GRAPH_SPAN:
-            self.cutHistory(GRAPH_CULL, now)
+        self.lastDrawn = NOW
 
-    def drawGraphMaybe(self, now):
+    def drawGraphMaybe(self):
         redraw = False
         if self.isDead:
-            if now - self.lastDrawn > REDRAW_DEAD:
+            if NOW - self.lastDrawn > REDRAW_DEAD:
                 redraw = True
         else:
-            if now - self.lastDrawn > REDRAW_TIME and now - self.bootTime > ACTIM_FAIL_TIME:
+            if NOW - self.lastDrawn > REDRAW_TIME:
                 redraw = True
         if redraw:
-            self.drawGraph(now)
+            self.drawGraph()
         return redraw
 
     def addFreqEvent(self, now, frequency):
         with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r+") as history:
             for line in history:
-                timeStr, part, freq = line.partition(':')
+                timeStr, part, freqStr = line.partition(':')
                 time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
-            if now < time and frequency != freq:
-                now = time
-            print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
+                freq = int(freqStr)
+            if now < time: now = time
+            if frequency != freq:
+                print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
 
-    def update(self, newActim, now, actual=False):
+    def update(self, newActim, actual=False):
         redraw = False
         if actual:
-            if self.serverId != newActim.serverId or self.bootTime != newActim.bootTime:
+            s = Actiservers.get(self.serverId)
+            if self.serverId != newActim.serverId:
+                if s is not None and self.actimId in s.actimetreList:
+                    s.actimetreList.remove(self.actimId)
+                if self.frequency > 0:
+                    if s is not None:
+                        self.addFreqEvent(s.lastReport, 0)
+                    else:
+                        self.addFreqEvent(newActim.bootTime, 0)
+                    self.frequency = 0
+                redraw = True
+            if self.bootTime != newActim.bootTime:
                 self.addFreqEvent(newActim.bootTime, 0)
                 self.frequency = 0
                 redraw = True
             if self.frequency != newActim.frequency:
-                self.addFreqEvent(now, newActim.frequency)
+                self.addFreqEvent(newActim.bootTime, newActim.frequency)
+                self.frequency  = newActim.frequency
                 redraw = True
-            self.frequency  = newActim.frequency
             self.isDead     = False
+            
         self.boardType  = newActim.boardType
         self.version    = newActim.version
         self.serverId   = newActim.serverId
@@ -379,27 +399,28 @@ class Actimetre:
         self.rssi       = newActim.rssi
         self.repoNums   = newActim.repoNums
         self.repoSize   = newActim.repoSize
+        
         if redraw:
-            self.drawGraph(now)
+            self.drawGraph()
         return redraw
 
-    def dies(self, now):
+    def dies(self):
         if self.isDead:
             return
-        printLog(f'{self.actimName()} dies {now.strftime(TIMEFORMAT_DISP)}')
+        printLog(f'{self.actimName()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
         if Projects.get(self.projectId) is not None \
            and Projects[self.projectId].email != "":
-            sendEmail(now, Projects[self.projectId].email,\
+            sendEmail(Projects[self.projectId].email,\
                       f'{self.actimName()} died',\
                       f'{self.actimName()}\nType {self.boardType}\nMAC {self.mac}\n' +\
                       f'Connected to Actis{self.serverId:03d}\nSensors {self.sensorStr}\nRunning at {self.frequency}Hz\n' +\
-                      f'Latest uptime {self.uptime(now)}\nMissing rate {self.rating:.3f}%\n' +\
+                      f'Latest uptime {self.uptime()}\nMissing rate {self.rating:.3f}%\n' +\
                       f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n')
         self.isDead    = True
         self.frequency = 0
-        self.addFreqEvent(now, 0)
+        self.addFreqEvent(NOW, 0)
         self.serverId = 0
-        self.drawGraph(now)
+        self.drawGraph()
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
@@ -413,11 +434,11 @@ class Actimetre:
     def htmlCartouche(self):
         return f'{self.actimName()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
 
-    def uptime(self, now):
+    def uptime(self):
         if self.isDead:
-            up = now - self.lastReport
+            up = NOW - self.lastReport
         else:
-            up = now - self.bootTime
+            up = NOW - self.bootTime
         days = up // timedelta(days=1)
         hours = (up % timedelta(days=1)) // timedelta(hours=1)
         minutes = (up % timedelta(hours=1)) // timedelta(minutes=1)
@@ -466,7 +487,6 @@ class Actiserver:
         if d.get('diskSize'):
             self.diskSize = int(d['diskSize'])
             self.diskFree = int(d['diskFree'])
-        self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         self.actimetreList = set()
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
@@ -474,25 +494,26 @@ class Actiserver:
                 if Actimetres.get(a.actimId) is None:
                     Actimetres[a.actimId] = a
                 else:
-                    Actimetres[a.actimId].update(a, self.lastReport, actual)
+                    Actimetres[a.actimId].update(a, actual)
                 self.actimetreList.add(a.actimId)
         else:
             self.actimetreList = set()
         for a in Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
-                a.dies(self.lastReport)
+                a.dies()
+        self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
         return self
 
     def serverName(self):
         return f"Actis{self.serverId:03d}"
 
-    def removeActimetres(self, now):
+    def removeActimetres(self):
         removed = False
         for actimId in self.actimetreList.copy():
             a = Actimetres.get(actimId)
             if a is not None:
                 if a.serverId == self.serverId and a.isDead == False:
-                    a.dies(now)
+                    a.dies()
                 self.actimetreList.remove(actimId)
                 removed = True
         return removed
@@ -533,7 +554,7 @@ def htmlRssi(rssi):
                 line('td', ' ', width=f'{widthEmpty}%')
     return doc.getvalue()
 
-def htmlActimetre1(now, actimId):
+def htmlActimetre1(actimId):
     if Actimetres.get(actimId) is None:
         return ""
     
@@ -543,9 +564,9 @@ def htmlActimetre1(now, actimId):
         doc.asis('<form action="/bin/acticentral.py" method="get">')
         doc.asis(f'<input type="hidden" name="actimId" value="{a.actimId}"/>')
         alive = 'up'
-        if now - a.lastReport > ACTIM_RETIRE_P:
+        if NOW - a.lastReport > ACTIM_RETIRE_P:
             alive = 'retire'
-        elif now - a.lastReport > ACTIM_FAIL_TIME or a.frequency == 0:
+        elif a.frequency == 0 or a.isDead:
             alive = 'down'
 
         with tag('td', klass=alive):
@@ -575,7 +596,7 @@ def htmlActimetre1(now, actimId):
                 else:
                     text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
                 doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
-                line('span', f' {a.uptime(now)}', klass=alive)
+                line('span', f' {a.uptime()}', klass=alive)
                 with tag('div'):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
@@ -591,19 +612,21 @@ def htmlActimetre1(now, actimId):
         doc.asis('</form>\n')
     return indent(doc.getvalue())
 
-def htmlActimetres(now):
+def htmlActimetres():
     doc, tag, text, line = Doc().ttl()
 
     for actimId in sorted(Actimetres.keys()):
         a = Actimetres[actimId]
-        if now - a.lastReport > ACTIM_HIDE_P:
+        if NOW - a.lastReport > ACTIM_HIDE_P:
             continue
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}"/>')
             alive = 'up'
-            if now - a.lastReport > ACTIM_FAIL_TIME or a.frequency == 0:
+            if a.frequency == 0 or a.isDead:
                 alive = 'down'
+            elif Actiservers.get(a.serverId) is None or NOW - Actiservers[a.serverId].lastReport > ACTIS_FAIL_TIME:
+                alive = 'unknown'
 
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}<br>'.format(actimId))
@@ -611,7 +634,7 @@ def htmlActimetres(now):
                 text(a.boardType)
                 doc.asis('<br>\n')
                 if alive == 'up': text(f"v{a.version}")
-            if alive == 'up':
+            if alive == 'up' or alive == 'unknown':
                 line('td', a.sensorStr)
                 with tag('td'):
                     doc.asis(htmlRssi(a.rssi))
@@ -627,7 +650,7 @@ def htmlActimetres(now):
                 else:
                     text(a.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
                 doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
-                line('span', f' {a.uptime(now)}', klass=alive)
+                line('span', f' {a.uptime()}', klass=alive)
                 with tag('div'):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
@@ -645,25 +668,23 @@ def htmlActimetres(now):
     with open(f"{HTML_DIR}/actimetres.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
 
-def htmlActiservers(now):
+def htmlActiservers():
     doc, tag, text, line = Doc().ttl()
 
     modServers = False
     for serverId in sorted(Actiservers.keys()):
         s = Actiservers[serverId]
-        if now - s.lastReport > ACTIM_HIDE_P:
+        if NOW - s.lastReport > ACTIM_HIDE_P:
             continue
         with tag('tr'):
             doc.asis('<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="serverId" value="{s.serverId}" />')
-            if now - s.lastReport < ACTIS_FAIL_TIME:
+            if NOW - s.lastReport < ACTIS_FAIL_TIME:
                 alive = 'up'
-            elif now - s.lastReport > ACTIS_RETIRE_P:
+            elif NOW - s.lastReport > ACTIS_RETIRE_P:
                 alive = 'retire'
             else:
                 alive = 'down'
-                if s.removeActimetres(now):
-                    modServers = True
 
             with tag('td',  klass=alive):
                 text(s.serverName())
@@ -713,12 +734,12 @@ def htmlActiservers(now):
     if modServers:
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
 
-def htmlProjects(now):
+def htmlProjects():
     for projectId in Projects.keys():
         p = Projects[projectId]
         projectActimHTML = ""
         for actimId in p.actimetreList:
-            projectActimHTML += htmlActimetre1(now, actimId)
+            projectActimHTML += htmlActimetre1(actimId)
         if projectId == 0:
             buttons = ""
         else:
@@ -763,16 +784,16 @@ def htmlProjects(now):
     with open(f"{HTML_DIR}/projects.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
 
-def repoStats(now):
+def repoStats():
     for p in Projects.values():
         p.repoSize = 0
         p.repoNums = 0
 
     save = False
     for a in Actimetres.values():
-        if now - a.lastReport > ACTIM_HIDE_P:
+        if NOW - a.lastReport > ACTIM_HIDE_P:
             continue
-        if a.drawGraphMaybe(now):
+        if a.drawGraphMaybe():
             save = True
         if Projects.get(a.projectId) is None:
             Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
@@ -785,11 +806,11 @@ def repoStats(now):
     dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
     with open(f"{HTML_DIR}/updated.html", "w") as updated:
-        print(now.strftime(TIMEFORMAT_DISP), file=updated)
+        print(NOW.strftime(TIMEFORMAT_DISP), file=updated)
 
-    htmlActimetres(now)
-    htmlActiservers(now)
-    htmlProjects(now)
+    htmlActimetres()
+    htmlActiservers()
+    htmlProjects()
     
 def projectChangeInfo(projectId):
     print("Content-type: text/html\n\n")
@@ -867,8 +888,6 @@ def retireActim(actimId):
               .replace("{owner}", ownerStr)\
               .replace("{projectTitle}", Projects[a.projectId].title))
 
-now = datetime.utcnow()
-
 def plain(text=''):
     print("Content-type: text/plain\n\n")
     print(text)
@@ -886,7 +905,7 @@ def processForm(formId):
             Projects[projectId].owner = owner
             Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-            htmlProjects(now)
+            htmlProjects()
         print("Location:\\index.html\n\n")
 
     if formId == 'project-edit-info':
@@ -901,7 +920,7 @@ def processForm(formId):
             Projects[projectId].owner = owner
             Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-            htmlProjects(now)
+            htmlProjects()
         print(f"Location:\\project{projectId:03d}.html\n\n")
 
     elif formId == 'actim-change-project':
@@ -915,8 +934,8 @@ def processForm(formId):
         Actimetres[actimId].projectId = projectId
         dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-        htmlActimetres(now)
-        htmlProjects(now)
+        htmlActimetres()
+        htmlProjects()
         print("Location:\\index.html\n\n")
 
     elif formId == 'create-project':
@@ -930,7 +949,7 @@ def processForm(formId):
                 projectId += 1
             Projects[projectId] = Project(projectId, title, owner)
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-            htmlProjects(now)
+            htmlProjects()
         print("Location:\\index.html\n\n")
 
     elif formId == 'retire-actim':
@@ -966,7 +985,7 @@ def processForm(formId):
             try:
                 os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
             except FileNotFoundError: pass
-            htmlActimetres(now)
+            htmlActimetres()
         print("Location:\\index.html\n\n")
 
     elif formId == 'remove-project':
@@ -977,7 +996,7 @@ def processForm(formId):
             del Projects[projectId]
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-            repoStats(now)
+            repoStats()
         print(f"Location:\\project{projectId:03d}.html\n\n")
 
     else:
@@ -988,7 +1007,7 @@ cmdparser = argparse.ArgumentParser()
 cmdparser.add_argument('action', default='', nargs='?')
 cmdargs = cmdparser.parse_args()
 if cmdargs.action == 'prepare-stats':
-    repoStats(now)
+    repoStats()
     lock.close()
     sys.exit(0)
 
@@ -1021,10 +1040,10 @@ elif action == 'actimetre-new':
 
     thisServer = Actiservers.get(serverId)
     if thisServer is None:
-        thisServer = Actiserver(serverId, lastReport=now)
+        thisServer = Actiserver(serverId, lastReport=NOW)
         Actiservers[serverId] = thisServer
     else:
-        thisServer.lastReport = now
+        thisServer.lastReport = NOW
 
     if Registry.get(mac) is None:
         actimList = [r for r in Registry.values()]
@@ -1043,7 +1062,7 @@ elif action == 'actimetre-new':
         printLog(f"Found known Actim{actimId:04d} for {mac}")
         responseStr = str(actimId)
         
-    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=now, lastSeen=now, lastReport=now)
+    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=NOW, lastSeen=NOW, lastReport=NOW)
     printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
     
     thisServer.actimetreList.add(actimId)
@@ -1058,7 +1077,7 @@ elif action == 'actimetre-off':
 
     a = Actimetres.get(actimId)
     if a is not None:
-        a.dies(now)
+        a.dies()
         Actiservers[serverId].actimetreList.remove(actimId)
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
@@ -1071,13 +1090,9 @@ elif action == 'actim-change-project':
 elif action == 'actim-cut-graph':
     actimId = int(args['actimId'][0])
     if Actimetres.get(actimId) is not None:
-        save = False
-        if Actimetres[actimId].graphSince == TIMEZERO:
-            save = True
-        Actimetres[actimId].cutHistory(None, now)
-        Actimetres[actimId].drawGraph(now)
-        if save:
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        Actimetres[actimId].cutHistory(None)
+        Actimetres[actimId].drawGraph()
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     if args.get('projectId') is not None:
         print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
     else:
