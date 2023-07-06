@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v256"
+VERSION_STR     = "v257"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -278,7 +278,7 @@ class Actimetre:
         except (FileNotFoundError, ValueError):
             with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
                 print(NOW.strftime(TIMEFORMAT_FN), ':', self.frequency, sep="", file=history)
-                self.graphSince = NOW
+            self.graphSince = NOW
             try:
                 os.chmod(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", 0o666)
             except OSError:
@@ -355,15 +355,24 @@ class Actimetre:
         return redraw
 
     def addFreqEvent(self, now, frequency):
-        with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r+") as history:
-            for line in history:
-                timeStr, part, freqStr = line.partition(':')
-                time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
-                freq = int(freqStr)
-            if now < time: now = time
-            if frequency != freq:
-                print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
-
+        try:
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r+") as history:
+                for line in history:
+                    timeStr, part, freqStr = line.partition(':')
+                    time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
+                    freq = int(freqStr)
+                if now < time: now = time
+                if frequency != freq:
+                    print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
+        except FileNotFoundError:
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
+                print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)                
+            self.graphSince = now
+            try:
+                os.chmod(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", 0o666)
+            except OSError:
+                pass
+            
     def update(self, newActim, actual=False):
         redraw = False
         if actual:
