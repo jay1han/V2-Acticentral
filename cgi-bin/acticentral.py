@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v257"
+VERSION_STR     = "v258"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -223,7 +223,10 @@ class Actimetre:
             for p in Projects.values():
                 if self.actimId in p.actimetreList and p.projectId != self.projectId:
                     p.actimetreList.remove(self.actimId)
-            Projects[self.projectId].actimetreList.add(self.actimId)
+            if Projects.get(self.projectId) is None:
+                self.projectId = 0
+            else:
+                Projects[self.projectId].actimetreList.add(self.actimId)
         else:
             for p in Projects.values():
                 if self.actimId in p.actimetreList:
