@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v258"
+VERSION_STR     = "v259"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -734,7 +734,10 @@ def htmlActiservers():
                                 with tag('a', href=f'http://{s.ip}/index{a.actimId:04d}.html'):
                                     doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
                     if s.diskSize > 0:
-                        line('td', f'{printSize(s.diskFree)} ({100.0*s.diskFree/s.diskSize:.1f}%)')
+                        diskState = ''
+                        if s.diskFree < s.diskSize // 10:
+                            diskState = 'disk-low'
+                        line('td', f'{printSize(s.diskFree)} ({100.0*s.diskFree/s.diskSize:.1f}%)', klass=diskState)
                     else:
                         line('td', '')
                 else:
