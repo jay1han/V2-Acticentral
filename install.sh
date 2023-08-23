@@ -15,7 +15,7 @@ mkdir /var/www/html/images
 
 cp *.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
-cp html/*.html html/*.svg /var/www/html/
+cp html/*.html html/*.svg html/*.pdf /var/www/html/
 cp *.service /etc/systemd/system/
 cp *.timer /etc/systemd/system/
 

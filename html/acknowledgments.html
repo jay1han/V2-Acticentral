@@ -12,16 +12,23 @@
       .center {text-align:center;}
       .health {height:50px; width:250px;}
     </style>
-    <title>Actimetre Dashboard</title>
+    <title>Actimetre System</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
   </head>
 
   <body>
     <div style="float:right"><img height="200px" width="200px" src="/actimetre.svg"></div>
-    <h1>Acknowledgment</h1>
+
+    <h1>Actimetre System</h1>
+    <p>Actimetre is short for "Activity Metre". It is intended to measure the activity of lab animals, typically rats in cages, using commodity electronic components. For a hardware cost of less than $10 per cage, the system can record 6 axes of activity (acceleration XYZ and gyroscope XYZ) at up to 100Hz.
+      A centralized dashboard helps monitor and manage the system, which can theoretically contain up to 35000 sensors.
+      The entire system is fairly robust to disruption, except the Central component which is assumed to be highly available. Installation and configuration requires some amount of technical knowledge.</p>
+    <p>A detailed description of the system is available <a href="https://github.com/jay1han/V2-Documents/blob/main/Actimetre%20Technical.pdf">here</a>. Instructions for installation are <a href="https://github.com/jay1han/V2-Documents/blob/main/Actimetre%20System%20V2.pdf">here</a>.</p>
+
+    <h2>Acknowledgments</h2>
     <p>Actimetre System makes use of the following hardware and software components.</p>
 
-    <h2>Actimetre</h2>
+    <h3>Actimetre</h3>
     <h4>Hardware</h4>
     <ul>
       <li><a href="https://www.wemos.cc/en/latest/s2/s2_mini.html">S2 mini</a> and
@@ -41,7 +48,7 @@
         <a href="https://docs.espressif.com/projects/arduino-esp32/en/latest/index.html">ESP32 Arduino Core</a>
     </ul>
 
-    <h2>Actiserver</h2>
+    <h3>Actiserver</h3>
     <h4>Hardware</h4>
     <ul>
       <li>amd64 based Ubuntu 22.04 system optionally with RTL88x2AU/BU WiFi chip on USB,
@@ -61,7 +68,7 @@
         by <i>asebak</i> was used
     </ul>
 
-    <h2>Acticentral</h2>
+    <h3>Acticentral</h3>
     <p>Acticentral is really independent of hardware.
       It was tested on various single-board computers, Linux PCs, and AWS Lightsail.</p>
     <h4>Software</h4>
@@ -72,7 +79,7 @@
       <li><a href="https://www.yattag.org/">Yattag</a> for HTML generation with Python
     </ul>
 
-    <h2>Generic software</h2>
+    <h3>Generic software</h3>
     <ul>
       <li><a href="https://www.gnu.org/software/emacs/">GNU Emacs</a> for code editing
       <li><a href="http://www.9bis.net/kitty/#!index.md">KiTTY</a> and
@@ -80,9 +87,12 @@
       <li><a href="https://github.com/jay1han">Github</a> for version management
     </ul>
 
+    <h2>History</h2>
+    <p>Actimetre System was created by Boris Lamotte D'Incamps and Jay Han in the Spring of 2023, when Jay left his high-paying job for some time off and Boris was stuck debugging his I2C driver on a Raspberry Pi. Jay's idea of a time off was to write low-level C code, and Boris' way to get unstuck was to hire Jay as an intern (read: feed him). The system grew during the following few months to become the distributed system in place today.</p>
+
     <hr>
     <p>If you are interested in industrial/commercial applications, please send email to
-      <a href="mailto:actimetre@jayhan.name">actimetre@jayhan.name</a></p>
+      <a href="mailto:jayhan.name@gmail.com">jayhan.name@gmail.com</a></p>
 
   </body>
 </html>
