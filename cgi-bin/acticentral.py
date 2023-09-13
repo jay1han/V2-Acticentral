@@ -15,11 +15,14 @@ ACTIMETRES      = "/etc/actimetre/actimetres.data"
 ACTISERVERS     = "/etc/actimetre/actiservers.data"
 LOG_FILE        = "/etc/actimetre/central.log"
 PROJECTS        = "/etc/actimetre/projects.data"
+LOCK_FILE       = "/etc/actimetre/acticentral.lock"
+SECRET_FILE     = "/etc/actimetre/.secret"
 HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
 IMAGES_INDEX    = "/var/www/html/images/index.txt"
 HTML_DIR        = "/var/www/html"
 HTML_VERSION    = "/var/www/html/version.html"
+SECRET_KEY      = "YouDontKnowThis"
 
 ACTIS_FAIL_TIME = timedelta(seconds=60)
 ACTIS_RETIRE_P  = timedelta(days=7)
@@ -98,8 +101,11 @@ def sendEmail(recipient, subject, text):
         'ReplyToAddresses': ['manager@actimetre.fr'] }
     pass
 
-lock = open("/etc/actimetre/acticentral.lock", "w+")
+lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
+
+with open(SECRET_FILE, "r") as secret:
+    SECRET_KEY = secret.read().strip()
 
 with open(HTML_VERSION, "w") as version:
     print(VERSION_STR, file=version)
@@ -582,10 +588,10 @@ def htmlActimetre1(actimId):
             alive = 'down'
 
         with tag('td', klass=alive):
-            doc.asis('Actim&shy;{:04d}<br>'.format(actimId))
+            doc.asis('Actim&shy;{:04d}'.format(actimId))
         with tag('td'):
             text(a.boardType)
-            doc.asis('<br>\n')
+            doc.asis('<br>')
             if alive == 'up': text(f"v{a.version}")
         if alive == 'up':
             line('td', f"Actis{a.serverId:03d}")
@@ -778,8 +784,6 @@ def htmlProjects():
     for projectId in sorted(Projects.keys()):
         p = Projects[projectId]
         with tag('tr'):
-            doc.asis('<form action="/bin/acticentral.py" method="get">')
-            doc.asis(f'<input type="hidden" name="projectId" value="{projectId}" />')
             with tag('td', klass='left'):
                 with tag('a', href=f'/project{projectId:03d}.html'):
                     text(p.title)
@@ -794,7 +798,6 @@ def htmlProjects():
                     text(f'{p.repoNums} files')
                     doc.stag('br')
                 text(printSize(p.repoSize))
-            doc.asis('</form>')
 
     with open(f"{HTML_DIR}/projects.html", "w") as html:
         print(indent(doc.getvalue()), file=html)
@@ -908,13 +911,18 @@ def plain(text=''):
     print(text)
 
 def processForm(formId):
+    password = args['password'][0]
+    if password != SECRET_KEY:
+        print("Location:\\password.html\n\n")
+        return
+    
     if formId == 'project-change-info':
         projectId = int(args['projectId'][0])
         title = args['title'][0]
         owner = args['owner'][0]
         email = args['email'][0]
         printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
-        
+
         if title != "" and owner != "":
             Projects[projectId].title = title
             Projects[projectId].owner = owner
@@ -923,13 +931,13 @@ def processForm(formId):
             htmlProjects()
         print("Location:\\index.html\n\n")
 
-    if formId == 'project-edit-info':
+    elif formId == 'project-edit-info':
         projectId = int(args['projectId'][0])
         title = args['title'][0]
         owner = args['owner'][0]
         email = args['email'][0]
         printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
-        
+
         if title != "" and owner != "":
             Projects[projectId].title = title
             Projects[projectId].owner = owner
@@ -957,7 +965,7 @@ def processForm(formId):
         title = args['title'][0]
         owner = args['owner'][0]
         printLog(f"Create new project with data: {title}, {owner}")
-        
+
         if title != "" and owner != "":
             projectId = 1
             while projectId in set(Projects.keys()):
@@ -975,7 +983,7 @@ def processForm(formId):
         if a is not None and \
            (a.projectId == 0 and owner == 'CONFIRM') or \
            (Projects.get(a.projectId) is not None and Projects[a.projectId].owner == owner):
-            
+
             printLog(f"Retire Actimetre{actimId:04d} from {Projects[a.projectId].title}")
             save = False
             for s in Actiservers.values():
@@ -992,7 +1000,7 @@ def processForm(formId):
                     save = True
             if save:
                 dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-                
+
             del Registry[Actimetres[actimId].mac]
             saveRegistry()
             del Actimetres[actimId]
@@ -1001,6 +1009,7 @@ def processForm(formId):
                 os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
             except FileNotFoundError: pass
             htmlActimetres()
+                
         print("Location:\\index.html\n\n")
 
     elif formId == 'remove-project':
@@ -1016,7 +1025,124 @@ def processForm(formId):
 
     else:
         print("Location:\\index.html\n\n")
-    
+
+def processAction():
+    if action == 'actiserver':
+        if secret != SECRET_KEY:
+            return
+        serverId = int(args['serverId'][0])
+        if serverId != 0:
+            printLog(f"Actis{serverId} alive")
+            thisServer = Actiserver(serverId).fromD(json.load(sys.stdin), actual=True)
+            Actiservers[serverId] = thisServer
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        plain(json.dumps(Registry))
+
+    elif action == 'actimetre-new':
+        if secret != SECRET_KEY:
+            return
+        mac       = args['mac'][0]
+        boardType = args['boardType'][0]
+        serverId  = int(args['serverId'][0])
+        version   = args['version'][0]
+        bootTime  = datetime.strptime(args['bootTime'][0], TIMEFORMAT_FN)
+
+        thisServer = Actiservers.get(serverId)
+        if thisServer is None:
+            thisServer = Actiserver(serverId, lastReport=NOW)
+            Actiservers[serverId] = thisServer
+        else:
+            thisServer.lastReport = NOW
+
+        if Registry.get(mac) is None:
+            actimList = [r for r in Registry.values()]
+            actimList.sort()
+            actimId = len(actimList) + 1
+            for newId in range(1, len(actimList) + 1):
+                if not newId in actimList:
+                    actimId = newId
+                    break
+            Registry[mac] = actimId
+            printLog(f"Allocated new Actim{actimId:04d} for {mac}")
+            saveRegistry()
+            responseStr = f"+{actimId}"
+        else:
+            actimId = Registry[mac]
+            printLog(f"Found known Actim{actimId:04d} for {mac}")
+            responseStr = str(actimId)
+
+        a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=NOW, lastSeen=NOW, lastReport=NOW)
+        printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
+
+        thisServer.actimetreList.add(actimId)
+        Actimetres[actimId] = a
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        plain(responseStr)
+
+    elif action == 'actimetre-off':
+        if secret != SECRET_KEY:
+            return
+        serverId = int(args['serverId'][0])
+        actimId = int(args['actimId'][0])
+
+        a = Actimetres.get(actimId)
+        if a is not None:
+            a.dies()
+            Actiservers[serverId].actimetreList.remove(actimId)
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        plain("Ok")
+
+    elif action == 'actim-change-project':
+        actimId = int(args['actimId'][0])
+        actimChangeProject(actimId)
+
+    elif action == 'actim-cut-graph':
+        actimId = int(args['actimId'][0])
+        if Actimetres.get(actimId) is not None:
+            actimetres[actimId].cutHistory(None)
+            Actimetres[actimId].drawGraph()
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        if args.get('projectId') is not None:
+            print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
+        else:
+            print("Location:\\index.html\n\n")
+
+    elif action == 'retire-actim':
+        actimId = int(args['actimId'][0])
+        retireActim(actimId)
+
+    elif action == 'retire-server':
+        serverId = int(args['serverId'][0])
+        del Actiservers[serverId]
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        print("Location:\\index.html\n\n")
+
+    elif action == 'project-change-info':
+        projectId = int(args['projectId'][0])
+        projectChangeInfo(projectId)
+
+    elif action == 'project-edit-info':
+        projectId = int(args['projectId'][0])
+        projectEditInfo(projectId)
+
+    elif action == 'create-project':
+        print("Location:\\formCreate.html\n\n")
+
+    elif action == 'remove-project':
+        projectId = int(args['projectId'][0])
+        removeProject(projectId)
+
+    elif action == 'submit':
+        formId = args['formId'][0]
+        printLog(f"Submitted form {formId}")
+        processForm(formId)
+
+    elif action == 'cancel':
+        print("Location:\\index.html\n\n")
+        
 import argparse
 cmdparser = argparse.ArgumentParser()
 cmdparser.add_argument('action', default='', nargs='?')
@@ -1028,122 +1154,16 @@ if cmdargs.action == 'prepare-stats':
 
 import urllib.parse
 qs = os.environ['QUERY_STRING']
-printLog(qs)
+remote = os.environ['REMOTE_ADDR']
+printLog(f"From {remote}: {qs}")
 
 args = urllib.parse.parse_qs(qs, keep_blank_values=True)
 if 'action' in args.keys():
     action = args['action'][0]
-else:
-    action = ''
-
-if action == 'actiserver':
-    serverId = int(args['serverId'][0])
-    if serverId != 0:
-        printLog(f"Actis{serverId} alive")
-        thisServer = Actiserver(serverId).fromD(json.load(sys.stdin), actual=True)
-        Actiservers[serverId] = thisServer
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    plain(json.dumps(Registry))
-
-elif action == 'actimetre-new':
-    mac       = args['mac'][0]
-    boardType = args['boardType'][0]
-    serverId  = int(args['serverId'][0])
-    version   = args['version'][0]
-    bootTime  = datetime.strptime(args['bootTime'][0], TIMEFORMAT_FN)
-
-    thisServer = Actiservers.get(serverId)
-    if thisServer is None:
-        thisServer = Actiserver(serverId, lastReport=NOW)
-        Actiservers[serverId] = thisServer
+    if 'secret' in args.keys():
+        secret = args['secret'][0]
     else:
-        thisServer.lastReport = NOW
-
-    if Registry.get(mac) is None:
-        actimList = [r for r in Registry.values()]
-        actimList.sort()
-        actimId = len(actimList) + 1
-        for newId in range(1, len(actimList) + 1):
-            if not newId in actimList:
-                actimId = newId
-                break
-        Registry[mac] = actimId
-        printLog(f"Allocated new Actim{actimId:04d} for {mac}")
-        saveRegistry()
-        responseStr = f"+{actimId}"
-    else:
-        actimId = Registry[mac]
-        printLog(f"Found known Actim{actimId:04d} for {mac}")
-        responseStr = str(actimId)
-        
-    a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=NOW, lastSeen=NOW, lastReport=NOW)
-    printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
-    
-    thisServer.actimetreList.add(actimId)
-    Actimetres[actimId] = a
-    dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-    plain(responseStr)
-
-elif action == 'actimetre-off':
-    serverId = int(args['serverId'][0])
-    actimId = int(args['actimId'][0])
-
-    a = Actimetres.get(actimId)
-    if a is not None:
-        a.dies()
-        Actiservers[serverId].actimetreList.remove(actimId)
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    plain("Ok")
-
-elif action == 'actim-change-project':
-    actimId = int(args['actimId'][0])
-    actimChangeProject(actimId)
-
-elif action == 'actim-cut-graph':
-    actimId = int(args['actimId'][0])
-    if Actimetres.get(actimId) is not None:
-        Actimetres[actimId].cutHistory(None)
-        Actimetres[actimId].drawGraph()
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    if args.get('projectId') is not None:
-        print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
-    else:
-        print("Location:\\index.html\n\n")
-
-elif action == 'retire-actim':
-    actimId = int(args['actimId'][0])
-    retireActim(actimId)
-
-elif action == 'retire-server':
-    serverId = int(args['serverId'][0])
-    del Actiservers[serverId]
-    dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-    print("Location:\\index.html\n\n")
-
-elif action == 'project-change-info':
-    projectId = int(args['projectId'][0])
-    projectChangeInfo(projectId)
-
-elif action == 'project-edit-info':
-    projectId = int(args['projectId'][0])
-    projectEditInfo(projectId)
-
-elif action == 'create-project':
-    print("Location:\\formCreate.html\n\n")
-
-elif action == 'remove-project':
-    projectId = int(args['projectId'][0])
-    removeProject(projectId)
-
-elif action == 'submit':
-    formId = args['formId'][0]
-    printLog(f"Submitted form {formId}")
-    processForm(formId)
-
-else:
-    print("Location:\\index.html\n\n")
+        secret = "YouDontKnowThis"
+    processAction();
 
 lock.close()

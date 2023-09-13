@@ -17,9 +17,10 @@
     <form action="/bin/acticentral.py" method="get" target="_parent">
       <input type="hidden" name="actimId" value="{actimId}" />
       <input type="hidden" name="formId" value="actim-change-project" />
-      <input type="hidden" name="whence" value="{whence}" />
-      
       {htmlProjectList}
+
+      <h3>System Password</h3>
+      <p><input id="password" type="password" name="password" value=""></p>
 
       <p>
       <button type="submit" name="action" value="submit">Confirm</button>
