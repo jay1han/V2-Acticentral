@@ -13,7 +13,7 @@ chmod 777 /etc/matplotlib
 mkdir /var/www/cgi-bin
 mkdir /var/www/html/images
 
-cp *.sh /etc/actimetre
+cp .secret *.sh /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/*.html html/*.svg html/*.pdf /var/www/html/
 cp *.service /etc/systemd/system/
@@ -42,4 +42,4 @@ systemctl start acticentral-daily.timer
 systemctl enable acticentral-weekly.timer
 systemctl start acticentral-weekly.timer
 
-echo "Run 'sudo ./clearcentral.sh' for a fresh start"
+echo "Edit /etc/actimetre/.secret for the secret key"

@@ -30,11 +30,13 @@
     
     <form action="/bin/acticentral.py" method="get" target="_parent">
       <input type="hidden" name="formId" value="retire-actim"/>
-      <input type="hidden" name="actimId" value="{actimId}"/>
-
+      
       <h3>To Confirm</h3>
       <p>Enter {owner} below to confirm</p>
       <p><input id="title" type="text" name="owner" value=""></p>
+
+      <h3>System Password</h3>
+      <p><input id="password" type="password" name="password" value=""></p>
 
       <button type="submit" name="action" value="cancel">Cancel</button>
       <button type="submit" name="action" value="submit">Confirm</button>
