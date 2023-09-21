@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v260"
+VERSION_STR     = "v261"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -1021,7 +1021,7 @@ def processForm(formId):
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
             repoStats()
-        print(f"Location:\\project{projectId:03d}.html\n\n")
+        print(f"Location:\\index.html\n\n")
 
     else:
         print("Location:\\index.html\n\n")
