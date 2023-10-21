@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v261"
+VERSION_STR     = "v270"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -20,9 +20,18 @@ SECRET_FILE     = "/etc/actimetre/.secret"
 HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
 IMAGES_INDEX    = "/var/www/html/images/index.txt"
+
 HTML_DIR        = "/var/www/html"
-HTML_VERSION    = "/var/www/html/version.html"
+INDEX_HTML      = "/var/www/html/index.html"
+CGI_BIN         = "acticentral.py"
+
+TEMPLATE_HTML   = "/var/www/html/template.html"
 SECRET_KEY      = "YouDontKnowThis"
+
+HTML_ACTIMETRES = ""
+HTML_ACTISERVERS= ""
+HTML_PROJECTS   = ""
+LAST_UPDATED    = ""
 
 ACTIS_FAIL_TIME = timedelta(seconds=60)
 ACTIS_RETIRE_P  = timedelta(days=7)
@@ -106,9 +115,6 @@ fcntl.lockf(lock, fcntl.LOCK_EX)
 
 with open(SECRET_FILE, "r") as secret:
     SECRET_KEY = secret.read().strip()
-
-with open(HTML_VERSION, "w") as version:
-    print(VERSION_STR, file=version)
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
@@ -579,7 +585,7 @@ def htmlActimetre1(actimId):
     a = Actimetres[actimId]
     doc, tag, text, line = Doc().ttl()
     with tag('tr'):
-        doc.asis('<form action="/bin/acticentral.py" method="get">')
+        doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
         doc.asis(f'<input type="hidden" name="actimId" value="{a.actimId}"/>')
         alive = 'up'
         if NOW - a.lastReport > ACTIM_RETIRE_P:
@@ -638,7 +644,7 @@ def htmlActimetres():
         if NOW - a.lastReport > ACTIM_HIDE_P:
             continue
         with tag('tr'):
-            doc.asis('<form action="/bin/acticentral.py" method="get">')
+            doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}"/>')
             alive = 'up'
             if a.frequency == 0 or a.isDead:
@@ -683,8 +689,8 @@ def htmlActimetres():
                 if alive != 'up': doc.asis('<br>(?)')
         doc.asis('</form>\n')
 
-    with open(f"{HTML_DIR}/actimetres.html", "w") as html:
-        print(indent(doc.getvalue()), file=html)
+    global HTML_ACTIMETRES
+    HTML_ACTIMETRES = indent(doc.getvalue())
 
 def htmlActiservers():
     doc, tag, text, line = Doc().ttl()
@@ -695,7 +701,7 @@ def htmlActiservers():
         if NOW - s.lastReport > ACTIM_HIDE_P:
             continue
         with tag('tr'):
-            doc.asis('<form action="/bin/acticentral.py" method="get">')
+            doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
             doc.asis(f'<input type="hidden" name="serverId" value="{s.serverId}" />')
             if NOW - s.lastReport < ACTIS_FAIL_TIME:
                 alive = 'up'
@@ -750,8 +756,9 @@ def htmlActiservers():
                     line('td', '')
                     line('td', '')
                 
-    with open(f"{HTML_DIR}/actiservers.html", "w") as html:
-        print(indent(doc.getvalue()), file=html)
+    global HTML_ACTISERVERS
+    HTML_ACTISERVERS = indent(doc.getvalue())
+    
     if modServers:
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
 
@@ -776,9 +783,12 @@ def htmlProjects():
                       .replace("{projectTitle}", p.title)\
                       .replace("{projectOwner}", p.owner)\
                       .replace("{projectActimHTML}", projectActimHTML)\
-                      .replace("{projectId}", str(projectId)), \
-                      file=html)
-        os.chmod(f"{HTML_DIR}/project{projectId:03d}.html", 0o777)
+                      .replace("{projectId}", str(projectId)) \
+                      , file=html)
+        try:
+            os.chmod(f"{HTML_DIR}/project{projectId:03d}.html", 0o777)
+        except OSError:
+            pass
 
     doc, tag, text, line = Doc().ttl()
     for projectId in sorted(Projects.keys()):
@@ -799,8 +809,25 @@ def htmlProjects():
                     doc.stag('br')
                 text(printSize(p.repoSize))
 
-    with open(f"{HTML_DIR}/projects.html", "w") as html:
-        print(indent(doc.getvalue()), file=html)
+    global HTML_PROJECTS
+    HTML_PROJECTS = indent(doc.getvalue())
+
+def htmlUpdate():
+    global LAST_UPDATED
+    LAST_UPDATED = NOW.strftime(TIMEFORMAT_DISP)
+
+    htmlTemplate = open(TEMPLATE_HTML, "r").read()
+    htmlOutput = htmlTemplate\
+        .replace("{Actimetres}", HTML_ACTIMETRES)\
+        .replace("{Actiservers}", HTML_ACTISERVERS)\
+        .replace("{Projects}", HTML_PROJECTS)\
+        .replace("{Updated}", LAST_UPDATED)\
+        .replace("{Version}", VERSION_STR)\
+        .replace("{cgi-bin}", CGI_BIN)
+    
+    os.truncate(INDEX_HTML, 0)
+    with open(INDEX_HTML, "r+") as html:
+        print(htmlOutput, file=html)
 
 def repoStats():
     for p in Projects.values():
@@ -823,12 +850,10 @@ def repoStats():
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
-    with open(f"{HTML_DIR}/updated.html", "w") as updated:
-        print(NOW.strftime(TIMEFORMAT_DISP), file=updated)
-
     htmlActimetres()
     htmlActiservers()
     htmlProjects()
+    htmlUpdate()
     
 def projectChangeInfo(projectId):
     print("Content-type: text/html\n\n")
@@ -929,7 +954,8 @@ def processForm(formId):
             Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             htmlProjects()
-        print("Location:\\index.html\n\n")
+            htmlUpdate()
+        print(f'Location:\\{INDEX_HTML}\n\n')
 
     elif formId == 'project-edit-info':
         projectId = int(args['projectId'][0])
@@ -944,6 +970,7 @@ def processForm(formId):
             Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             htmlProjects()
+            htmlUpdate()
         print(f"Location:\\project{projectId:03d}.html\n\n")
 
     elif formId == 'actim-change-project':
@@ -959,6 +986,7 @@ def processForm(formId):
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
         htmlActimetres()
         htmlProjects()
+        htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif formId == 'create-project':
@@ -973,6 +1001,7 @@ def processForm(formId):
             Projects[projectId] = Project(projectId, title, owner)
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             htmlProjects()
+            htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif formId == 'retire-actim':
@@ -1009,6 +1038,7 @@ def processForm(formId):
                 os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
             except FileNotFoundError: pass
             htmlActimetres()
+            htmlUpdate()
                 
         print("Location:\\index.html\n\n")
 
@@ -1102,7 +1132,7 @@ def processAction():
     elif action == 'actim-cut-graph':
         actimId = int(args['actimId'][0])
         if Actimetres.get(actimId) is not None:
-            actimetres[actimId].cutHistory(None)
+            Actimetres[actimId].cutHistory(None)
             Actimetres[actimId].drawGraph()
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
         if args.get('projectId') is not None:
