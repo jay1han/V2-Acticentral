@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v271"
+VERSION_STR     = "v272" 
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
@@ -813,9 +813,13 @@ def htmlProjects():
     HTML_PROJECTS = indent(doc.getvalue())
 
 def htmlUpdate():
+    htmlActimetres()
+    htmlActiservers()
+    htmlProjects()
+    
     global LAST_UPDATED
     LAST_UPDATED = NOW.strftime(TIMEFORMAT_DISP)
-
+    
     htmlTemplate = open(TEMPLATE_HTML, "r").read()
     htmlOutput = htmlTemplate\
         .replace("{Actimetres}", HTML_ACTIMETRES)\
@@ -850,9 +854,6 @@ def repoStats():
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
-    htmlActimetres()
-    htmlActiservers()
-    htmlProjects()
     htmlUpdate()
     
 def projectChangeInfo(projectId):
@@ -953,7 +954,6 @@ def processForm(formId):
             Projects[projectId].owner = owner
             Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-            htmlProjects()
             htmlUpdate()
         print(f'Location:\\{INDEX_HTML}\n\n')
 
@@ -969,7 +969,6 @@ def processForm(formId):
             Projects[projectId].owner = owner
             Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-            htmlProjects()
             htmlUpdate()
         print(f"Location:\\project{projectId:03d}.html\n\n")
 
@@ -984,8 +983,6 @@ def processForm(formId):
         Actimetres[actimId].projectId = projectId
         dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-        htmlActimetres()
-        htmlProjects()
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -1000,7 +997,6 @@ def processForm(formId):
                 projectId += 1
             Projects[projectId] = Project(projectId, title, owner)
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-            htmlProjects()
             htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -1037,7 +1033,6 @@ def processForm(formId):
             try:
                 os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
             except FileNotFoundError: pass
-            htmlActimetres()
             htmlUpdate()
                 
         print("Location:\\index.html\n\n")
@@ -1067,6 +1062,7 @@ def processAction():
             Actiservers[serverId] = thisServer
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            htmlUpdate()
         plain(json.dumps(Registry))
 
     elif action == 'actimetre-new':
@@ -1109,6 +1105,7 @@ def processAction():
         Actimetres[actimId] = a
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        htmlUpdate()
         plain(responseStr)
 
     elif action == 'actimetre-off':
@@ -1123,6 +1120,7 @@ def processAction():
             Actiservers[serverId].actimetreList.remove(actimId)
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            htmlUpdate()
         plain("Ok")
 
     elif action == 'actim-change-project':
@@ -1135,6 +1133,7 @@ def processAction():
             Actimetres[actimId].cutHistory(None)
             Actimetres[actimId].drawGraph()
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            htmlUpdate()
         if args.get('projectId') is not None:
             print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
         else:
@@ -1147,6 +1146,7 @@ def processAction():
     elif action == 'retire-server':
         serverId = int(args['serverId'][0])
         del Actiservers[serverId]
+        htmlUpdate()
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
         print("Location:\\index.html\n\n")
 
