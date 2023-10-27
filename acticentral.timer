@@ -5,9 +5,6 @@ Requires=acticentral.service
 [Timer]
 Unit=acticentral.service
 OnCalendar=*-*-* *:*:00
-OnCalendar=*-*-* *:*:15
-OnCalendar=*-*-* *:*:30
-OnCalendar=*-*-* *:*:45
 AccuracySec=1s
 
 [Install]
