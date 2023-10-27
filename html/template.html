@@ -1,0 +1,136 @@
+<html>
+  <head>
+    <style>
+      body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual;}
+      table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse; text-align:center; align:center;}
+      td {padding:0.3em; border:1px solid black;}
+      th {padding:0.5em; border:1px solid black;}
+      .rssi {width:100%; padding:0; height:14pt;}
+      .weak {background-color:orange}
+      .good {background-color:grey}
+      .best {background-color:green}
+      .no-borders {border:0;}
+      .right {text-align:right;}
+      .left {text-align:left;}
+      .health {height:50px; width:250px; font-size:90%;}
+      .small {font-size:80%;}
+      .down {color:red;}
+      .unknown {color:orange;}
+      .up {color:green;}
+      .retire {color:grey; font-style:italic}
+      .disk-low {color:red; font-style:bold}
+    </style>
+
+    <script>
+      function checkPage() {
+          const DayOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          const MonthName = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+          let refreshPromise = new Promise(
+              function(result, reject) {
+                  // This is really painful...
+                  // If-Modified-Since: <day-name>, <day> <month-name> <year> <hour>:<minute>:<second> GMT
+		  let docRequestedDate = new Date(document.lastModified);
+                  let docRequestedHTTPString =
+                      DayOfWeek[docRequestedDate.getUTCDay()] + ", " +
+                      docRequestedDate.getUTCDate().toString().padStart(2, "0") + " " +
+                      MonthName[docRequestedDate.getUTCMonth()] + " " +
+                      docRequestedDate.getUTCFullYear().toString() + " " +
+                      docRequestedDate.getUTCHours().toString().padStart(2, "0") + ":" +
+                      docRequestedDate.getUTCMinutes().toString().padStart(2, "0") + ":" +
+                      docRequestedDate.getUTCSeconds().toString().padStart(2, "0") + " GMT";
+
+                  var http = new XMLHttpRequest();
+                  http.open("HEAD", document.URL);
+                  http.setRequestHeader("If-Modified-Since", docRequestedHTTPString);
+                  http.onreadystatechange = function() {
+                      if (this.readyState == this.DONE) {
+                          result(this.status);
+                      }
+                  }
+                  http.send();
+              }
+          );
+
+          refreshPromise.then(
+              function(status) {
+                  if (status == 200) {
+                      location.reload(true);
+                  } else {
+                      setupPromise();
+                  }
+              }
+          );
+      }
+
+      function setupPromise() {
+          setTimeout(checkPage, 1000);
+      }
+
+      window.addEventListener("load", setupPromise);
+
+    </script>
+    
+    <title>Actimetre Dashboard</title>
+    <link rel="icon" type="image/svg" href="/actimetre.svg">
+  </head>
+
+  <body>
+    <p class="log" id="log"></p>
+    
+    <h1>Actimetres</h1>
+    <table>
+      <tr>
+	<th>Name</th>
+	<th>Type<br>Version</th>
+	<th>Sensors</th>
+	<th>Signal<br>Rating</th>
+	<th>Health</th>
+	<th>Project</th>
+	<th>Data<br>size</th>
+      </tr>
+      {Actimetres}
+    </table>
+    
+    <h1>Servers</h1>
+    <table>
+      <tr>
+	<th>Name</th>
+	<th>Hardware</th>
+	<th>Version<br>Channel</th>
+	<th>Last update</th>
+	<th>Actimetres</th>
+        <th>Local files</th>
+        <th>Disk space</th>
+      </tr>
+      {Actiservers}
+    </table>
+    
+    <h1>Projects</h1>
+    <table>
+      <tr>
+	<th>Title</th>
+	<th>Owner</th>
+	<th>Actimetres</th>
+	<th>Data Size</th>
+      </tr>
+
+      {Projects}
+    </table>
+    
+    <form action="/bin/{cgi-bin}" method="get">
+      <input type="hidden" name="secret" value="YouDontKnowThis">
+      <p><button type="submit" name="action" value="create-project">Create a new project</button></p>
+    </form>
+    
+    <hr width="100%">
+    <div style="float:left">All times in UTC &ndash;
+      Last updated:
+      {Updated}
+    </div>
+    <div style="float:right"><a href="/admin.html"><img height="20px" src="/actimetre.svg" style="vertical-align:middle"></a>
+      <a href="/acknowledgments.html">Acticentral
+	{Version}
+    </a></div>
+  </body>
+</html>

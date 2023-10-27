@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v270"
+VERSION_STR     = "v271"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"

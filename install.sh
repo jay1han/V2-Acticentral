@@ -24,7 +24,7 @@ cd /var/www
 echo > html/images/index.txt
 chown -R www-data:www-data *
 chmod 666 html/* html/images/*
-chmod 775 html/index.html cgi-bin/acticentral.py
+chmod 664 html/index.html cgi-bin/acticentral.py
 chmod 777 html html/images
 
 cd /etc/actimetre
