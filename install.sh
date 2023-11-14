@@ -13,7 +13,7 @@ chmod 777 /etc/matplotlib
 mkdir /var/www/cgi-bin
 mkdir /var/www/html/images
 
-cp .secret *.sh /etc/actimetre
+cp .secret *.sh administrators /etc/actimetre
 cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/*.html html/*.svg html/*.pdf /var/www/html/
 cp *.service /etc/systemd/system/

@@ -5,10 +5,13 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v272" 
+VERSION_STR     = "v280"
+ADMIN_EMAIL     = "actimetre@gmail.com"
+ADMINISTRATORS  = "/etc/actimetre/administrators"
 
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
+TIMEFORMAT_ALERT= "%Y/%m/%d %H:%M (UTC)"
 
 REGISTRY        = "/etc/actimetre/registry.data"
 ACTIMETRES      = "/etc/actimetre/actimetres.data"
@@ -17,6 +20,7 @@ LOG_FILE        = "/etc/actimetre/central.log"
 PROJECTS        = "/etc/actimetre/projects.data"
 LOCK_FILE       = "/etc/actimetre/acticentral.lock"
 SECRET_FILE     = "/etc/actimetre/.secret"
+STAT_FILE       = "/etc/actimetre/acticentral.stat"
 HISTORY_DIR     = "/etc/actimetre/history"
 IMAGES_DIR      = "/var/www/html/images"
 IMAGES_INDEX    = "/var/www/html/images/index.txt"
@@ -33,14 +37,20 @@ HTML_ACTISERVERS= ""
 HTML_PROJECTS   = ""
 LAST_UPDATED    = ""
 
+ACTIM_ALERT1    = timedelta(minutes=5)
+ACTIM_ALERT2    = timedelta(minutes=30)
+ACTIS_ALERT1    = timedelta(minutes=5)
+ACTIS_ALERT2    = timedelta(minutes=30)
+ACTIS_ALERT3    = timedelta(hours=8)
+
 ACTIS_FAIL_TIME = timedelta(seconds=60)
 ACTIS_RETIRE_P  = timedelta(days=7)
 ACTIS_HIDE_P    = timedelta(days=1)
 ACTIM_RETIRE_P  = timedelta(days=1)
 ACTIM_HIDE_P    = timedelta(days=1)
 
-TIMEZERO     = datetime(year=2023, month=1, day=1)
-NOW          = datetime.utcnow()
+TIMEZERO        = datetime(year=2023, month=1, day=1)
+NOW             = datetime.utcnow()
 
 def printLog(text=''):
     try:
@@ -60,7 +70,7 @@ def loadData(filename):
     return data
 
 def dumpData(filename, data):
-    printLog(f"[DUMP {filename}] {json.dumps(data)}")
+    printLog(f"[DUMP {filename}]")
     try:
         os.truncate(filename, 0)
     except OSError:
@@ -93,23 +103,34 @@ def printSize(size, unit='', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
+import subprocess, textwrap
+
 def sendEmail(recipient, subject, text):
     content = f"""\
-    Event: {subject}
-    At {NOW.strftime(TIMEFORMAT_DISP)}
+Subject:{subject}
+This alert triggered at {NOW.strftime(TIMEFORMAT_ALERT)}
 
-    {text}
+{text}
 
-    For more information, please visit www.actimetre.fr
-    """
-    data = { \
-        'Content': { 'Simple': { 'Body'   : { 'Text': { 'Data': content } }, \
-                                 'Subject': { 'Data': subject } } }, \
-        'Destination': { 'ToAddresses': [recipient] }, \
-        'FromEmailAddress': 'acticentral@actimetre.fr', \
-        'ReplyToAddresses': ['manager@actimetre.fr'] }
-    pass
-
+-----------------------------------------------
+For more information, please visit actimetre.fr
+.
+"""
+    if recipient != "":
+        subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", recipient],\
+                       input = content, text=True)
+    else:
+        try:
+            admins = open(ADMINISTRATORS, "r")
+        except OSError:
+            subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", ADMIN_EMAIL],\
+                           input = content, text=True)
+        else:
+            for email in admins:
+                subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", email],\
+                               input = content, text=True)
+            admins.close()
+                
 lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
 
@@ -168,7 +189,7 @@ def scaleFreq(origFreq):
             return scale
 
 class Actimetre:
-    def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=True, \
+    def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, \
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
                  projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,  repoNums = 0, repoSize = 0):
         self.actimId    = int(actimId)
@@ -196,7 +217,7 @@ class Actimetre:
                 'boardType' : self.boardType,
                 'version'   : self.version,
                 'serverId'  : self.serverId,
-                'isDead'    : str(self.isDead),
+                'isDead'    : int(self.isDead),
                 'bootTime'  : self.bootTime.strftime(TIMEFORMAT_FN),
                 'lastSeen'  : self.lastSeen.strftime(TIMEFORMAT_FN),
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
@@ -217,7 +238,10 @@ class Actimetre:
         self.boardType  = d['boardType']
         self.version    = d['version']
         self.serverId   = int(d['serverId'])
-        self.isDead     = (str(d['isDead']).upper() =="TRUE")
+        if str(d['isDead']).isdecimal():
+            self.isDead = int(d['isDead'])
+        else:
+            self.isDead = int(str(d['isDead']).upper() == "TRUE")
         self.bootTime   = datetime.strptime(d['bootTime'], TIMEFORMAT_FN)
         self.lastSeen   = datetime.strptime(d['lastSeen'], TIMEFORMAT_FN)
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
@@ -327,7 +351,7 @@ class Actimetre:
                 w = 'regular'
             ax.text(NOW, drawn, f"{real:4d}", family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
-        if self.isDead:
+        if self.isDead > 0:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
         else:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
@@ -359,7 +383,7 @@ class Actimetre:
 
     def drawGraphMaybe(self):
         redraw = False
-        if self.isDead:
+        if self.isDead > 0:
             if NOW - self.lastDrawn > REDRAW_DEAD:
                 redraw = True
         else:
@@ -410,7 +434,7 @@ class Actimetre:
                 self.addFreqEvent(newActim.bootTime, newActim.frequency)
                 self.frequency  = newActim.frequency
                 redraw = True
-            self.isDead     = False
+            self.isDead = 0
             
         self.boardType  = newActim.boardType
         self.version    = newActim.version
@@ -428,29 +452,37 @@ class Actimetre:
             self.drawGraph()
         return redraw
 
-    def dies(self):
-        if self.isDead:
-            return
-        printLog(f'{self.actimName()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
+    def alert(self):
+        printLog(f'Alert {self.actimName()}')
+        subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
+        content = f'{self.actimName()}\n'
+        if Projects.get(self.projectId) is not None:
+            content += f'Project "{Projects[self.projectId].title}"\n'
+        content += f'Type {self.boardType}\nMAC {self.mac}\n' +\
+            f'Sensors {self.sensorStr}\n' +\
+            f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' +\
+            f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
+        
         if Projects.get(self.projectId) is not None \
            and Projects[self.projectId].email != "":
-            sendEmail(Projects[self.projectId].email,\
-                      f'{self.actimName()} died',\
-                      f'{self.actimName()}\nType {self.boardType}\nMAC {self.mac}\n' +\
-                      f'Connected to Actis{self.serverId:03d}\nSensors {self.sensorStr}\nRunning at {self.frequency}Hz\n' +\
-                      f'Latest uptime {self.uptime()}\nMissing rate {self.rating:.3f}%\n' +\
-                      f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n')
-        self.isDead    = True
-        self.frequency = 0
-        self.addFreqEvent(NOW, 0)
-        self.serverId = 0
-        self.drawGraph()
+            sendEmail(Projects[self.projectId].email, subject, content)
+        sendEmail("", subject, content)
+
+    def dies(self):
+        if self.isDead > 0: return
+        elif self.isDead == 0:
+            printLog(f'{self.actimName()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
+            self.frequency = 0
+            self.addFreqEvent(NOW, 0)
+            self.serverId = 0
+            self.drawGraph()
+            self.isDead = 1
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
 
     def htmlInfo(self):
-        if self.isDead or self.frequency == 0:
+        if self.isDead > 0 or self.frequency == 0:
             return f'<span class="down">(down)</span>'
         else:
             return f'{self.sensorStr}@{self.frequency}Hz'
@@ -459,7 +491,7 @@ class Actimetre:
         return f'{self.actimName()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
 
     def uptime(self):
-        if self.isDead:
+        if self.isDead > 0:
             up = NOW - self.lastReport
         else:
             up = NOW - self.bootTime
@@ -475,7 +507,7 @@ Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTI
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False,\
-                 lastReport=TIMEZERO, actimetreList=set()):
+                 isDown = 0, lastUpdate=TIMEZERO, actimetreList=set()):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
@@ -484,7 +516,8 @@ class Actiserver:
         self.isLocal    = isLocal
         self.diskSize   = 0
         self.diskFree   = 0
-        self.lastReport = lastReport
+        self.lastUpdate = lastUpdate
+        self.isDown     = isDown
         self.actimetreList = actimetreList
 
     def toD(self):
@@ -496,7 +529,8 @@ class Actiserver:
                 'isLocal'   : self.isLocal,
                 'diskSize'  : self.diskSize,
                 'diskFree'  : self.diskFree,
-                'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
+                'lastUpdate': self.lastUpdate.strftime(TIMEFORMAT_FN),
+                'isDown'    : self.isDown,
                 'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']'
                 }
 
@@ -525,7 +559,17 @@ class Actiserver:
         for a in Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
                 a.dies()
-        self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
+        if d.get('lastUpdate'):
+            self.lastUpdate = datetime.strptime(d['lastUpdate'], TIMEFORMAT_FN)
+        else:
+            self.lastUpdate = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
+        if d.get('isDown'):
+            self.isDown = int(d['isDown'])
+        else:
+            if NOW - self.lastUpdate < ACTIS_ALERT3:
+                self.isDown = 0
+            else:
+                self.isDown = 3
         return self
 
     def serverName(self):
@@ -536,11 +580,27 @@ class Actiserver:
         for actimId in self.actimetreList.copy():
             a = Actimetres.get(actimId)
             if a is not None:
-                if a.serverId == self.serverId and a.isDead == False:
+                if a.serverId == self.serverId and a.isDead == 0:
                     a.dies()
                 self.actimetreList.remove(actimId)
                 removed = True
         return removed
+
+    def alert(self):
+        printLog(f'Alert {self.serverName()}')
+        subject = f'{self.serverName()} unreachable since {self.lastUpdate.strftime(TIMEFORMAT_ALERT)}'
+        content = f'{self.serverName()}\n' +\
+            f'Hardware {self.machine}\nVersion {self.version}\n' +\
+            f'IP {self.ip}\nChannel {self.channel}\n' +\
+            f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' +\
+            f'({100.0 * self.diskFree / self.diskSize:.1f}%)\n' +\
+            f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' +\
+            f'Last known Actimetres:\n    '
+        for actimId in self.actimetreList:
+            content += f'Actim{actimId:04d} '
+        content += '\n'
+        
+        sendEmail("", subject, content)
     
 Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
 
@@ -590,7 +650,7 @@ def htmlActimetre1(actimId):
         alive = 'up'
         if NOW - a.lastReport > ACTIM_RETIRE_P:
             alive = 'retire'
-        elif a.frequency == 0 or a.isDead:
+        elif a.frequency == 0 or a.isDead > 0:
             alive = 'down'
 
         with tag('td', klass=alive):
@@ -647,9 +707,9 @@ def htmlActimetres():
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{actimId}"/>')
             alive = 'up'
-            if a.frequency == 0 or a.isDead:
+            if a.frequency == 0 or a.isDead > 0:
                 alive = 'down'
-            elif Actiservers.get(a.serverId) is None or NOW - Actiservers[a.serverId].lastReport > ACTIS_FAIL_TIME:
+            elif Actiservers.get(a.serverId) is None or NOW - Actiservers[a.serverId].lastUpdate > ACTIS_FAIL_TIME:
                 alive = 'unknown'
 
             with tag('td', klass=alive):
@@ -698,14 +758,14 @@ def htmlActiservers():
     modServers = False
     for serverId in sorted(Actiservers.keys()):
         s = Actiservers[serverId]
-        if NOW - s.lastReport > ACTIM_HIDE_P:
+        if NOW - s.lastUpdate > ACTIM_HIDE_P:
             continue
         with tag('tr'):
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
             doc.asis(f'<input type="hidden" name="serverId" value="{s.serverId}" />')
-            if NOW - s.lastReport < ACTIS_FAIL_TIME:
+            if NOW - s.lastUpdate < ACTIS_FAIL_TIME:
                 alive = 'up'
-            elif NOW - s.lastReport > ACTIS_RETIRE_P:
+            elif NOW - s.lastUpdate > ACTIS_RETIRE_P:
                 alive = 'retire'
             else:
                 alive = 'down'
@@ -723,10 +783,10 @@ def htmlActiservers():
                         text(f"Ch. {s.channel}")
                 else:
                     text("?")
-            if s.lastReport == TIMEZERO:
+            if s.lastUpdate == TIMEZERO:
                 line('td', "?", klass=alive)
             else:
-                line('td', s.lastReport.strftime(TIMEFORMAT_DISP), klass=alive)
+                line('td', s.lastUpdate.strftime(TIMEFORMAT_DISP), klass=alive)
             if alive != 'up':
                 line('td', "None")
                 line('td', '')
@@ -782,6 +842,7 @@ def htmlProjects():
                       .replace("{buttons}", buttons)\
                       .replace("{projectTitle}", p.title)\
                       .replace("{projectOwner}", p.owner)\
+                      .replace("{projectEmail}", p.email)\
                       .replace("{projectActimHTML}", projectActimHTML)\
                       .replace("{projectId}", str(projectId)) \
                       , file=html)
@@ -833,6 +894,37 @@ def htmlUpdate():
     with open(INDEX_HTML, "r+") as html:
         print(htmlOutput, file=html)
 
+def checkAlerts():
+    save = False
+    for a in Actimetres.values():
+        if a.isDead == 1 and (NOW - a.lastSeen) > ACTIM_ALERT1:
+            a.alert()
+            a.isDead = 2
+            save = True
+        elif a.isDead == 2 and (NOW - a.lastSeen) > ACTIM_ALERT2:
+            a.alert()
+            a.isDead = 3
+            save = True
+    if save:
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+
+    save = False
+    for s in Actiservers.values():
+        if s.isDown == 0 and (NOW - s.lastUpdate) > ACTIS_ALERT1:
+            s.alert()
+            s.isDown = 1
+            save = True
+        elif s.isDown == 1 and (NOW - s.lastUpdate) > ACTIS_ALERT2:
+            s.alert()
+            s.isDown = 2
+            save = True
+        elif s.isDown == 2 and (NOW - s.lastUpdate) > ACTIS_ALERT3:
+            s.alert()
+            s.isDown = 3
+            save = True
+    if save:
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+
 def repoStats():
     for p in Projects.values():
         p.repoSize = 0
@@ -853,6 +945,9 @@ def repoStats():
     if save:
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
     dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+
+    with open(STAT_FILE, "w") as stat:
+        stat.write(NOW.strftime(TIMEFORMAT_DISP));
 
     htmlUpdate()
     
@@ -1076,10 +1171,10 @@ def processAction():
 
         thisServer = Actiservers.get(serverId)
         if thisServer is None:
-            thisServer = Actiserver(serverId, lastReport=NOW)
+            thisServer = Actiserver(serverId, lastUpdate=NOW)
             Actiservers[serverId] = thisServer
         else:
-            thisServer.lastReport = NOW
+            thisServer.lastUpdate = NOW
 
         if Registry.get(mac) is None:
             actimList = [r for r in Registry.values()]
@@ -1098,7 +1193,7 @@ def processAction():
             printLog(f"Found known Actim{actimId:04d} for {mac}")
             responseStr = str(actimId)
 
-        a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=NOW, lastSeen=NOW, lastReport=NOW)
+        a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=NOW, lastSeen=NOW, lastReport=NOW, isDead=0)
         printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
 
         thisServer.actimetreList.add(actimId)
@@ -1178,6 +1273,8 @@ cmdparser = argparse.ArgumentParser()
 cmdparser.add_argument('action', default='', nargs='?')
 cmdargs = cmdparser.parse_args()
 if cmdargs.action == 'prepare-stats':
+    printLog("Timer prepare-stats")
+    checkAlerts()
     repoStats()
     lock.close()
     sys.exit(0)
