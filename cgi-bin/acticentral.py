@@ -14,6 +14,7 @@ TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
 TIMEFORMAT_ALERT= "%Y/%m/%d %H:%M (UTC)"
 
 REGISTRY        = "/etc/actimetre/registry.data"
+REGISTRY_BACKUP = "/etc/actimetre/registry/backup."
 ACTIMETRES      = "/etc/actimetre/actimetres.data"
 ACTISERVERS     = "/etc/actimetre/actiservers.data"
 LOG_FILE        = "/etc/actimetre/central.log"
@@ -65,7 +66,10 @@ def loadData(filename):
         registry = open(filename, "r")
     except OSError:
         return {}
-    data = json.load(registry)
+    try:
+        data = json.load(registry)
+    except JSONDecodeError:
+        data = {}
     registry.close()
     return data
 
@@ -604,7 +608,14 @@ class Actiserver:
     
 Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
 
+import shutil
 def saveRegistry():
+    registryBackup = REGISTRY_BACKUP + datetime.now().strftime(TIMEFORMAT_FN)
+    try:
+        shutil.copyfile(REGISTRY, registryBackup)
+    except OSError:
+        pass
+    
     os.truncate(REGISTRY, 0)
     with open(REGISTRY, "r+") as registry:
         json.dump(Registry, registry)

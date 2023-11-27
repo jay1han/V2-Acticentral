@@ -8,6 +8,7 @@ mkdir /etc/actimetre
 mkdir /etc/actimetre/history
 mkdir /etc/actimetre/daily
 mkdir /etc/actimetre/weekly
+mkdir /etc/actimetre/registry
 mkdir /etc/matplotlib
 chmod 777 /etc/matplotlib
 mkdir /var/www/cgi-bin
@@ -18,7 +19,6 @@ cp cgi-bin/acticentral.py /var/www/cgi-bin/acticentral.py
 cp html/*.html html/*.svg html/*.pdf /var/www/html/
 cp *.service /etc/systemd/system/
 cp *.timer /etc/systemd/system/
-
 
 cd /var/www
 echo > html/images/index.txt
@@ -33,7 +33,7 @@ echo > central.log
 echo > acticentral.lock
 chown -R www-data:www-data . *
 chmod 666 * history/*
-chmod 777 . *.sh history daily weekly
+chmod 777 . *.sh history daily weekly registry
 
 systemctl daemon-reload
 systemctl enable acticentral.timer
