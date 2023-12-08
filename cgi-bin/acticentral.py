@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v280"
+VERSION_STR     = "v281"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -781,8 +781,10 @@ def htmlActiservers():
             else:
                 alive = 'down'
 
-            with tag('td',  klass=alive):
+            with tag('td', klass=alive):
                 text(s.serverName())
+                doc.asis('<br>')
+                line('span', s.ip, klass='small')
                 if alive == 'retire':
                     line('button', "Retire", type='submit', name='action', value='retire-server')
             line('td', s.machine)
