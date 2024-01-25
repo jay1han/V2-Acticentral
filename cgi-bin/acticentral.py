@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v281"
+VERSION_STR     = "v282"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -425,7 +425,7 @@ class Actimetre:
                     s.actimetreList.remove(self.actimId)
                 if self.frequency > 0:
                     if s is not None:
-                        self.addFreqEvent(s.lastReport, 0)
+                        self.addFreqEvent(s.lastUpdate, 0)
                     else:
                         self.addFreqEvent(newActim.bootTime, 0)
                     self.frequency = 0
