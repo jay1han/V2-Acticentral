@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v282"
+VERSION_STR     = "v300"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -183,7 +183,7 @@ REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
 GRAPH_SPAN   = timedelta(days=7)
 GRAPH_CULL   = timedelta(days=6)
-FSCALE       = {10:2, 30:4, 50:7, 100:10}
+FSCALE       = {50:3, 100:5, 500:7, 1000:10}
 
 def scaleFreq(origFreq):
     if origFreq == 0:
