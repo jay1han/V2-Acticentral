@@ -183,14 +183,9 @@ REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
 GRAPH_SPAN   = timedelta(days=7)
 GRAPH_CULL   = timedelta(days=6)
-FSCALE       = {50:3, 100:5, 500:7, 1000:10}
-
-def scaleFreq(origFreq):
-    if origFreq == 0:
-        return 0
-    for limit, scale in FSCALE.items():
-        if origFreq <= limit:
-            return scale
+FSCALETAG    = {50:5, 100:10}
+FSCALEV3     = {100:2, 500:3, 1000:4, 2000:6, 4000:8, 8000:10}
+FSCALEV3TAG  = {100:2, 1000:4, 2000:6, 4000:8}
 
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, \
@@ -308,6 +303,16 @@ class Actimetre:
                 for line in freshLines:
                     print(line.strip(), file=history)
 
+    def scaleFreq(self, origFreq):
+        if origFreq == 0:
+            return 0
+        if self.version >= "300":
+            for limit, scale in FSCALEV3.items():
+                if origFreq <= limit:
+                    return scale
+        else:
+            return origFreq // 10
+
     def drawGraph(self):
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
         import matplotlib.pyplot as pyplot
@@ -333,27 +338,36 @@ class Actimetre:
             for line in history:
                 timeStr, part, freqStr = line.partition(':')
                 time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
-                freq = scaleFreq(int(freqStr))
+                freq = self.scaleFreq(int(freqStr))
                 if len(timeline) == 0 or freq != frequencies[-1]:
                     timeline.append(time)
                     frequencies.append(freq)
 
         timeline.append(NOW)
-        frequencies.append(scaleFreq(self.frequency))
-        freq = [scaleFreq(self.frequency) for i in range(len(timeline))]
+        frequencies.append(self.scaleFreq(self.frequency))
+        freq = [self.scaleFreq(self.frequency) for i in range(len(timeline))]
 
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
         ax.set_ylim(bottom=-1, top=12)
         ax.axvline(timeline[0], 0, 0.95, lw=1.0, c="blue", marker="^", markevery=[1], ms=5.0, mfc="blue")
-        for real, drawn in FSCALE.items():
+        if self.version >= "300":
+            fscale = FSCALEV3TAG
+        else:
+            fscale = FSCALETAG
+        for real, drawn in fscale.items():
             if self.frequency == real:
                 c = 'green'
                 w = 'bold'
             else:
                 c = 'black'
                 w = 'regular'
-            ax.text(NOW, drawn, f"{real:4d}", family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
+            if real >= 1000:
+                real = f" {real // 1000 :2d}k"
+            else:
+                real = f" {real:3d}"
+            ax.text(NOW, drawn, real, family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
+            
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
         if self.isDead > 0:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
@@ -489,11 +503,17 @@ class Actimetre:
         if self.isDead > 0 or self.frequency == 0:
             return f'<span class="down">(down)</span>'
         else:
-            return f'{self.sensorStr}@{self.frequency}Hz'
+            return f'{self.sensorStr}@{self.frequencyText()}'
         
     def htmlCartouche(self):
         return f'{self.actimName()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
 
+    def frequencyText(self):
+        if self.frequency >= 1000:
+            return f"{self.frequency // 1000}kHz"
+        else:
+            return f"{self.frequency}Hz"
+    
     def uptime(self):
         if self.isDead > 0:
             up = NOW - self.lastReport
@@ -672,7 +692,8 @@ def htmlActimetre1(actimId):
             if alive == 'up': text(f"v{a.version}")
         if alive == 'up':
             line('td', f"Actis{a.serverId:03d}")
-            line('td', a.sensorStr)
+            with tag('td'):
+                doc.asis(f"{a.sensorStr}<br>@{a.frequencyText()}")
             with tag('td'):
                 doc.asis(htmlRssi(a.rssi))
                 doc.stag('br')
@@ -730,7 +751,8 @@ def htmlActimetres():
                 doc.asis('<br>\n')
                 if alive == 'up': text(f"v{a.version}")
             if alive == 'up' or alive == 'unknown':
-                line('td', a.sensorStr)
+                with tag('td'):
+                    doc.asis(f"{a.sensorStr}<br>@{a.frequencyText()}")
                 with tag('td'):
                     doc.asis(htmlRssi(a.rssi))
                     doc.stag('br')
