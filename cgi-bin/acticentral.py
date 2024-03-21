@@ -184,8 +184,8 @@ REDRAW_DEAD  = timedelta(minutes=30)
 GRAPH_SPAN   = timedelta(days=7)
 GRAPH_CULL   = timedelta(days=6)
 FSCALETAG    = {50:5, 100:10}
-FSCALEV3     = {100:2, 500:3, 1000:4, 2000:6, 4000:8, 8000:10}
-FSCALEV3TAG  = {100:2, 1000:4, 2000:6, 4000:8}
+FSCALEV3     = {100:1, 500:2, 1000:4, 2000:7, 4000:10}
+FSCALEV3TAG  = {100:1, 1000:4, 2000:7, 4000:10}
 
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, \
@@ -369,7 +369,7 @@ class Actimetre:
             ax.text(NOW, drawn, real, family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
             
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
-        if self.isDead > 0:
+        if self.isDead > 0 or self.frequency == 0:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
         else:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
@@ -449,7 +449,7 @@ class Actimetre:
                 self.frequency = 0
                 redraw = True
             if self.frequency != newActim.frequency:
-                self.addFreqEvent(newActim.bootTime, newActim.frequency)
+                self.addFreqEvent(NOW, newActim.frequency)
                 self.frequency  = newActim.frequency
                 redraw = True
             self.isDead = 0
@@ -491,10 +491,10 @@ class Actimetre:
         elif self.isDead == 0:
             printLog(f'{self.actimName()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
             self.frequency = 0
+            self.isDead = 1
             self.addFreqEvent(NOW, 0)
             self.serverId = 0
             self.drawGraph()
-            self.isDead = 1
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
@@ -515,7 +515,7 @@ class Actimetre:
             return f"{self.frequency}Hz"
     
     def uptime(self):
-        if self.isDead > 0:
+        if self.isDead > 0 or self.frequency == 0:
             up = NOW - self.lastReport
         else:
             up = NOW - self.bootTime
