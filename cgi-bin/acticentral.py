@@ -184,8 +184,8 @@ REDRAW_DEAD  = timedelta(minutes=30)
 GRAPH_SPAN   = timedelta(days=7)
 GRAPH_CULL   = timedelta(days=6)
 FSCALETAG    = {50:5, 100:10}
-FSCALEV3     = {100:1, 500:2, 1000:4, 2000:7, 4000:10}
-FSCALEV3TAG  = {100:1, 1000:4, 2000:7, 4000:10}
+FSCALEV3     = {100:2, 1000:4, 2000:6, 4000:8, 8000:10}
+FSCALEV3TAG  = {100:2, 1000:4, 4000:8, 8000:10}
 
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, \
