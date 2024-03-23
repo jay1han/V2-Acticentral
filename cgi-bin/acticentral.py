@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v300"
+VERSION_STR     = "v301"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -23,6 +23,7 @@ LOCK_FILE       = "/etc/actimetre/acticentral.lock"
 SECRET_FILE     = "/etc/actimetre/.secret"
 STAT_FILE       = "/etc/actimetre/acticentral.stat"
 HISTORY_DIR     = "/etc/actimetre/history"
+REMOTE_FILE     = "/etc/actimetre/remotes.data"
 IMAGES_DIR      = "/var/www/html/images"
 IMAGES_INDEX    = "/var/www/html/images/index.txt"
 
@@ -725,6 +726,13 @@ def htmlActimetre1(actimId):
         with tag('td', klass='no-borders'):
             with tag('button', type='submit', name='action', value='actim-change-project'):
                 text('Change project')
+            if alive == 'up':
+                doc.asis('<br>')
+                with tag('button', type='submit', name='action', value='remote-button'):
+                    text('Button')
+                doc.asis('<br>')
+                with tag('button', type='submit', name='action', value='remote-restart'):
+                    text('Restart')
         doc.asis('</form>\n')
     return indent(doc.getvalue())
 
@@ -1062,6 +1070,34 @@ def retireActim(actimId):
               .replace("{owner}", ownerStr)\
               .replace("{projectTitle}", Projects[a.projectId].title))
 
+def loadRemotes():
+    try:
+        remoteFile = open(REMOTE_FILE, "r")
+    except OSError:
+        return {}
+    try:
+        remoteJson = json.load(remoteFile)
+    except json.JSONDecodeError:
+        return {}
+    remote = {}
+    for (key, value) in remoteJson.items():
+        remote[int(key)] = int(value)
+    return remote
+
+def saveRemotes(remote):
+    try:
+        os.truncate(REMOTE_FILE, 0)
+    except OSError:
+        return
+    with open(REMOTE_FILE, "r+") as remoteFile:
+        json.dump(remote, remoteFile)
+        
+def remoteAction(actimId, command):
+    remotes = loadRemotes()
+    remotes[actimId] = command
+    saveRemotes(remotes)
+    print("Location:\\index.html\n\n")
+
 def plain(text=''):
     print("Content-type: text/plain\n\n")
     print(text)
@@ -1085,7 +1121,7 @@ def processForm(formId):
             Projects[projectId].email = email
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             htmlUpdate()
-        print(f'Location:\\{INDEX_HTML}\n\n')
+        print(f'Location:\\index.html\n\n')
 
     elif formId == 'project-edit-info':
         projectId = int(args['projectId'][0])
@@ -1193,6 +1229,14 @@ def processAction():
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
             htmlUpdate()
+
+        remotes = loadRemotes()
+        for actimId in remotes.keys():
+            if actimId in thisServer.actimetreList:
+                plain(f'+{actimId}:{remotes[actimId]}')
+                del remotes[actimId]
+                saveRemotes(remotes)
+                return
         plain(json.dumps(Registry))
 
     elif action == 'actimetre-new':
@@ -1268,6 +1312,14 @@ def processAction():
             print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
         else:
             print("Location:\\index.html\n\n")
+
+    elif action == 'remote-button':
+        actimId = int(args['actimId'][0])
+        remoteAction(actimId, 0x10)
+
+    elif action == 'remote-restart':
+        actimId = int(args['actimId'][0])
+        remoteAction(actimId, 0xF0)
 
     elif action == 'retire-actim':
         actimId = int(args['actimId'][0])
