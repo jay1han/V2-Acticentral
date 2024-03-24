@@ -726,7 +726,8 @@ def htmlActimetre1(actimId):
         with tag('td', klass='no-borders'):
             with tag('button', type='submit', name='action', value='actim-change-project'):
                 text('Change project')
-            if a.version >= '301' and Actiservers[a.serverId].version >= '301' and  alive == 'up':
+            if a.version >= '301' and alive == 'up' and \
+            (Actiservers.get(a.serverId) != None and Actiservers[a.serverId].version >= '301') :
                 doc.asis('<br>')
                 with tag('button', type='submit', name='action', value='remote-button'):
                     text('Button')
