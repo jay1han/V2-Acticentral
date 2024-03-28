@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v301"
+VERSION_STR     = "v310"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -122,18 +122,21 @@ For more information, please visit actimetre.fr
 .
 """
     if recipient != "":
-        subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", recipient],\
-                       input = content, text=True)
+        result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", recipient],\
+                                input = content, text=True, stderr=subprocess.STDOUT)
+        printLog(f'Email sent to "{recipient}", sendmail returns {result.returncode}: {result.stdout}')
     else:
         try:
             admins = open(ADMINISTRATORS, "r")
         except OSError:
-            subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", ADMIN_EMAIL],\
-                           input = content, text=True)
+            result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", ADMIN_EMAIL],\
+                                    input = content, text=True, stderr=subprocess.STDOUT)
+            printLog(f'Email sent to "{ADMIN_EMAIL}", sendmail returns {result.returncode}: {result.stdout}')
         else:
             for email in admins:
-                subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", email],\
-                               input = content, text=True)
+                result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", email],\
+                                        input = content, text=True, stderr=subprocess.STDOUT)
+                printLog(f'Email sent to "{email}", sendmail returns {result.returncode}: {result.stdout}')
             admins.close()
                 
 lock = open(LOCK_FILE, "w+")
@@ -241,7 +244,7 @@ class Actimetre:
         if str(d['isDead']).isdecimal():
             self.isDead = int(d['isDead'])
         else:
-            self.isDead = int(str(d['isDead']).upper() == "TRUE")
+            self.isDead = int(str(d['isDead']).strip().upper() == "TRUE")
         self.bootTime   = datetime.strptime(d['bootTime'], TIMEFORMAT_FN)
         self.lastSeen   = datetime.strptime(d['lastSeen'], TIMEFORMAT_FN)
         self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
@@ -487,6 +490,32 @@ class Actimetre:
             sendEmail(Projects[self.projectId].email, subject, content)
         sendEmail("", subject, content)
 
+    def alertDisk(self):
+        printLog(f"{self.actimName()}'s server disk low")
+        subject = f"{self.actimName()}'s server disk low"
+        content = f'{self.actimName()}\n'
+        if Projects.get(self.projectId) is not None:
+            content += f'Project "{Projects[self.projectId].title}"\n'
+        content += f'Type {self.boardType}\nMAC {self.mac}\n' +\
+            f'Sensors {self.sensorStr}\n' +\
+            f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' +\
+            f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
+        if Actiservers.get(self.serverId) is not None:
+            s = Actiservers[self.serverId]
+            content = f'{s.serverName()}\n' +\
+            f'Hardware {s.machine}\nVersion {s.version}\n' +\
+            f'IP {s.ip}\nChannel {s.channel}\n' +\
+            f'Disk size {printSize(s.diskSize)}, free {printSize(s.diskFree)} ' +\
+            f'({100.0 * s.diskFree / s.diskSize :.1f}%)\n' +\
+            f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
+        content += '\n'
+        
+        if Projects.get(self.projectId) is not None \
+           and Projects[self.projectId].email != "":
+            sendEmail(Projects[self.projectId].email, subject, content)
+        else:
+            sendEmail("", subject, content)
+        
     def dies(self):
         if self.isDead > 0: return
         elif self.isDead == 0:
@@ -544,6 +573,7 @@ class Actiserver:
         self.lastUpdate = lastUpdate
         self.isDown     = isDown
         self.actimetreList = actimetreList
+        self.diskLow    = False
 
     def toD(self):
         return {'serverId'  : self.serverId,
@@ -554,9 +584,10 @@ class Actiserver:
                 'isLocal'   : self.isLocal,
                 'diskSize'  : self.diskSize,
                 'diskFree'  : self.diskFree,
+                'diskLow'   : self.diskLow,
                 'lastUpdate': self.lastUpdate.strftime(TIMEFORMAT_FN),
                 'isDown'    : self.isDown,
-                'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']'
+                'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']',
                 }
 
     def fromD(self, d, actual=False):
@@ -566,7 +597,7 @@ class Actiserver:
         self.channel    = int(d['channel'])
         self.ip         = d['ip']
         if d.get('isLocal'):
-            self.isLocal = (str(d['isLocal']).upper() == "TRUE")
+            self.isLocal = (str(d['isLocal']).strip().upper() == "TRUE")
         if d.get('diskSize'):
             self.diskSize = int(d['diskSize'])
             self.diskFree = int(d['diskFree'])
@@ -595,6 +626,10 @@ class Actiserver:
                 self.isDown = 0
             else:
                 self.isDown = 3
+        if d.get('diskLow') is None:
+            self.diskLow = False
+        else:
+            self.diskLow = (str(d['diskLow']).strip().upper() == "TRUE")
         return self
 
     def serverName(self):
@@ -623,6 +658,24 @@ class Actiserver:
             f'Last known Actimetres:\n    '
         for actimId in self.actimetreList:
             content += f'Actim{actimId:04d} '
+        content += '\n'
+        
+        sendEmail("", subject, content)
+
+    def alertDisk(self):
+        printLog(f'{self.serverName()} disk low')
+        subject = f'{self.serverName()} storage {100.0 * self.diskFree / self.diskSize :.1f}% remaining'
+        content = f'{self.serverName()}\n' +\
+            f'Hardware {self.machine}\nVersion {self.version}\n' +\
+            f'IP {self.ip}\nChannel {self.channel}\n' +\
+            f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' +\
+            f'({100.0 * self.diskFree / self.diskSize :.1f}%)\n' +\
+            f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' +\
+            f'Last known Actimetres:\n    '
+        for actimId in self.actimetreList:
+            content += f'Actim{actimId:04d} '
+            if Actimetres.get(actimId) is not None:
+                Actimetres[actimId].alertDisk()
         content += '\n'
         
         sendEmail("", subject, content)
@@ -1223,9 +1276,20 @@ def processAction():
         if secret != SECRET_KEY:
             return
         serverId = int(args['serverId'][0])
+            
         if serverId != 0:
             printLog(f"Actis{serverId} alive")
             thisServer = Actiserver(serverId).fromD(json.load(sys.stdin), actual=True)
+            if Actiservers.get(serverId) is not None:
+                s = Actiservers[serverId]
+                thisServer.diskLow = s.diskLow
+                if not thisServer.diskLow:
+                    if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 10:
+                        thisServer.diskLow = True
+                        thisServer.alertDisk()
+                else:
+                    if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
+                        thisServer.diskLow = False
             Actiservers[serverId] = thisServer
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
