@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v320"
+VERSION_STR     = "v330"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -810,7 +810,7 @@ def htmlActimetres():
             elif Actiservers.get(a.serverId) is None or NOW - Actiservers[a.serverId].lastUpdate > ACTIS_FAIL_TIME:
                 alive = 'unknown'
 
-            with tag('td', klass=alive):
+            with tag('td', ('data-comparator', f'{actimId :04d}'), klass=alive):
                 doc.asis('Actim&shy;{:04d}<br>'.format(actimId))
             with tag('td'):
                 text(a.boardType)
@@ -837,16 +837,16 @@ def htmlActimetres():
                 with tag('div'):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
-            with tag('td', klass='left'):
+            with tag('td', ('data-comparator', Projects[a.projectId].title), klass='left'):
                 with tag('a', href=f'/project{a.projectId:03d}.html'):
                     text(Projects[a.projectId].title)
-            with tag('td', klass='right'):
+            with tag('td', ('data-comparator', f'{a.repoSize // 1000000 :06d}'), klass='right'):
                 if a.repoNums > 0:
                     text(f'{a.repoNums} files')
                     doc.stag('br')
                 text(printSize(a.repoSize))
                 if alive != 'up': doc.asis('<br>(?)')
-        doc.asis('</form>\n')
+            doc.asis('</form>\n')
 
     global HTML_ACTIMETRES
     HTML_ACTIMETRES = indent(doc.getvalue())
