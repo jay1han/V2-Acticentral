@@ -1097,8 +1097,9 @@ def removeProject(projectId):
         actimList = "(no Actimetres assigned to this project)\n"
     else:
         actimList = ""
-        for a in [Actimetres[actimId] for actimId in Projects[projectId].actimetreList]:
-            actimList += f'<li>{a.htmlCartouche()}</li>\n'
+        for actimId in Projects[projectId].actimetreList:
+            if Actimetres.get(actimId) is not None:
+                actimList += f'<li>{Actimetres[actimId].htmlCartouche()}</li>\n'
             
     with open(f"{HTML_DIR}/formRemove.html") as form:
         print(form.read()\
@@ -1265,7 +1266,8 @@ def processForm(formId):
         projectId = int(args['projectId'][0])
         if projectId != 0:
             for a in Projects[projectId].actimetreList:
-                Actimetres[a].projectId = 0
+                if Actimetres.get(a) is not None:
+                    Actimetres[a].projectId = 0
             del Projects[projectId]
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
