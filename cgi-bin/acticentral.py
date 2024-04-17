@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v310"
+VERSION_STR     = "v320"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -502,7 +502,7 @@ class Actimetre:
             f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
         if Actiservers.get(self.serverId) is not None:
             s = Actiservers[self.serverId]
-            content = f'{s.serverName()}\n' +\
+            content += f'{s.serverName()}\n' +\
             f'Hardware {s.machine}\nVersion {s.version}\n' +\
             f'IP {s.ip}\nChannel {s.channel}\n' +\
             f'Disk size {printSize(s.diskSize)}, free {printSize(s.diskFree)} ' +\
@@ -573,7 +573,7 @@ class Actiserver:
         self.lastUpdate = lastUpdate
         self.isDown     = isDown
         self.actimetreList = actimetreList
-        self.diskLow    = False
+        self.diskLow    = 0
 
     def toD(self):
         return {'serverId'  : self.serverId,
@@ -627,9 +627,13 @@ class Actiserver:
             else:
                 self.isDown = 3
         if d.get('diskLow') is None:
-            self.diskLow = False
+            self.diskLow = 0
+        elif d['diskLow'] == False:
+            self.diskLow = 0
+        elif d['diskLow'] == True:
+            self.diskLow = 1
         else:
-            self.diskLow = (str(d['diskLow']).strip().upper() == "TRUE")
+            self.diskLow = d['diskLow']
         return self
 
     def serverName(self):
@@ -1283,13 +1287,17 @@ def processAction():
             if Actiservers.get(serverId) is not None:
                 s = Actiservers[serverId]
                 thisServer.diskLow = s.diskLow
-                if not thisServer.diskLow:
+                if thisServer.diskLow == 0:
                     if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 10:
-                        thisServer.diskLow = True
+                        thisServer.diskLow = 1
+                        thisServer.alertDisk()
+                elif thisServer.diskLow == 1:
+                    if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 20:
+                        thisServer.diskLow = 2
                         thisServer.alertDisk()
                 else:
                     if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
-                        thisServer.diskLow = False
+                        thisServer.diskLow = 0
             Actiservers[serverId] = thisServer
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
