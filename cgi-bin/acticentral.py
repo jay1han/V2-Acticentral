@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v345"
+VERSION_STR     = "v346"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -914,7 +914,7 @@ def htmlActiservers():
                             if a.repoSize == 0:
                                 continue
                             with tag('div'):
-                                with tag('a', href=f'http://{s.ip}/index{a.actimId:04d}.html'):
+                                with tag('a', href=f'http://{s.ip}/Project{a.projectId:02d}/index.html'):
                                     doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
                     if s.diskSize > 0:
                         diskState = ''
