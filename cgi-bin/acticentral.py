@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v346"
+VERSION_STR     = "v347"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -461,7 +461,8 @@ class Actimetre:
                 self.addFreqEvent(NOW, newActim.frequency)
                 self.frequency  = newActim.frequency
                 redraw = True
-            self.isDead = 0
+            if newActim.isDead == 0:
+                self.isDead = 0
             
         self.boardType  = newActim.boardType
         self.version    = newActim.version
@@ -522,13 +523,11 @@ class Actimetre:
             sendEmail("", subject, content)
         
     def dies(self):
-        if self.isDead > 0: return
-        elif self.isDead == 0:
+        if self.isDead == 0:
             printLog(f'{self.actimName()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
             self.frequency = 0
             self.isDead = 1
             self.addFreqEvent(NOW, 0)
-            self.serverId = 0
             self.drawGraph()
 
     def actimName(self):
@@ -561,6 +560,9 @@ class Actimetre:
             return f'{days}d{hours}h'
         else:
             return f'{hours}h{minutes:02d}m'
+
+    def hasData(self):
+        return self.repoNums > 0 or self.repoSize > 0
         
 Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 
@@ -757,18 +759,16 @@ def htmlActimetre1(actimId):
         with tag('td'):
             text(a.boardType)
             doc.asis('<br>')
-            if alive == 'up': text(f"v{a.version}")
+            text(f"v{a.version}")
+        line('td', f"Actis{a.serverId:03d}")
+        with tag('td'):
+            doc.asis(f"{a.sensorStr}<br>@{a.frequencyText()}")
         if alive == 'up':
-            line('td', f"Actis{a.serverId:03d}")
-            with tag('td'):
-                doc.asis(f"{a.sensorStr}<br>@{a.frequencyText()}")
             with tag('td'):
                 doc.asis(htmlRssi(a.rssi))
                 doc.stag('br')
                 text("{:.3f}%".format(100.0 * a.rating))
         else: 
-            line('td', "?")
-            line('td', "?")
             line('td', "?")
 
         if alive == 'retire':
@@ -789,10 +789,14 @@ def htmlActimetre1(actimId):
                 text(f'{a.repoNums} files')
                 doc.stag('br')
             text(printSize(a.repoSize))
-            if alive != 'up': doc.asis('<br>(?)')
+            if alive != 'up' and a.hasData():
+                doc.asis('<br>')
+                with tag('button', type='submit', name='action', value='actim-cleanup'):
+                    text('Clean up')
         with tag('td', klass='no-borders'):
-            with tag('button', type='submit', name='action', value='actim-change-project'):
-                text('Change project')
+            if not a.hasData():
+                with tag('button', type='submit', name='action', value='actim-change-project'):
+                    text('Change project')
             if a.version >= '301' and alive == 'up' and \
             (Actiservers.get(a.serverId) != None and Actiservers[a.serverId].version >= '301') :
                 doc.asis('<br>')
@@ -825,16 +829,16 @@ def htmlActimetres():
             with tag('td'):
                 text(a.boardType)
                 doc.asis('<br>\n')
-                if alive == 'up': text(f"v{a.version}")
-            if alive == 'up' or alive == 'unknown':
-                with tag('td'):
-                    doc.asis(f"{a.sensorStr}<br>@{a.frequencyText()}")
+                text(f"v{a.version}")
+            line('td', f"Actis{a.serverId:03d}")
+            with tag('td'):
+                doc.asis(f"{a.sensorStr}<br>@{a.frequencyText()}")
+            if alive == 'up':
                 with tag('td'):
                     doc.asis(htmlRssi(a.rssi))
                     doc.stag('br')
                     text("{:.3f}%".format(100.0 * a.rating))
             else: 
-                line('td', "?")
                 line('td', "?")
 
             with tag('td', klass=f'health left'):
@@ -855,7 +859,6 @@ def htmlActimetres():
                     text(f'{a.repoNums} files')
                     doc.stag('br')
                 text(printSize(a.repoSize))
-                if alive != 'up': doc.asis('<br>(?)')
             doc.asis('</form>\n')
 
     global HTML_ACTIMETRES
@@ -915,7 +918,7 @@ def htmlActiservers():
                                 continue
                             with tag('div'):
                                 if s.version >= "345":
-                                    link = f'http://{s.ip}/Project{a.projectId:02d}/index.html'
+                                    link = f'http://{s.ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
                                 else:
                                     link = f'http://{s.ip}/index{a.actimId:04d}.html'
                                 with tag('a', href=link):
@@ -979,11 +982,6 @@ def htmlProjects():
                     if Actimetres.get(actimId) is not None:
                         with tag('div'):
                             doc.asis(Actimetres[actimId].htmlCartouche())
-            with tag('td', klass='right'):
-                if p.repoNums > 0:
-                    text(f'{p.repoNums} files')
-                    doc.stag('br')
-                text(printSize(p.repoSize))
 
     global HTML_PROJECTS
     HTML_PROJECTS = indent(doc.getvalue())
@@ -1059,7 +1057,7 @@ def repoStats():
 
     if save:
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+#    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
     with open(STAT_FILE, "w") as stat:
         stat.write(NOW.strftime(TIMEFORMAT_DISP));
@@ -1102,6 +1100,14 @@ def actimChangeProject(actimId):
               .replace("{actimName}", Actimetres[actimId].actimName())\
               .replace("{actimInfo}", Actimetres[actimId].htmlInfo())\
               .replace("{htmlProjectList}", htmlProjectList))
+
+def actimCleanup(actimId):
+    if Actimetres.get(actimId) is not None:
+        a = Actimetres[actimId]
+        remoteAction(actimId, 0x20)
+        print(f"Location:\\project{a.projectId:03d}.html\n\n")
+    else:
+        print("Location:\\index.html\n\n")
 
 def removeProject(projectId):
     print("Content-type: text/html\n\n")
@@ -1402,11 +1408,15 @@ def processAction():
         a = Actimetres.get(actimId)
         if a is not None:
             a.dies()
-            Actiservers[serverId].actimetreList.remove(actimId)
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+#            Actiservers[serverId].actimetreList.remove(actimId)
+#            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
             htmlUpdate()
         plain("Ok")
+
+    elif action == 'actim-cleanup':
+        actimId = int(args['actimId'][0])
+        actimCleanup(actimId)
 
     elif action == 'actim-change-project':
         actimId = int(args['actimId'][0])
