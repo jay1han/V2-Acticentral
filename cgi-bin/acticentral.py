@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
 import os, sys, json, fcntl
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v330"
+VERSION_STR     = "v345"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -51,7 +51,7 @@ ACTIS_HIDE_P    = timedelta(days=1)
 ACTIM_RETIRE_P  = timedelta(days=1)
 ACTIM_HIDE_P    = timedelta(days=1)
 
-TIMEZERO        = datetime(year=2023, month=1, day=1)
+TIMEZERO        = datetime(year=2023, month=1, day=1, tzinfo=timezone.utc)
 NOW             = datetime.utcnow()
 
 def printLog(text=''):
@@ -182,6 +182,11 @@ class Project:
         self.actimetreList.add(a.actimId)
         
 Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+
+def listProjects():
+    for (projectId, p) in Projects.items():
+        print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
@@ -561,7 +566,7 @@ Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTI
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False,\
-                 isDown = 0, lastUpdate=TIMEZERO, actimetreList=set()):
+                 isDown = 0, lastUpdate=TIMEZERO, dbTime=TIMEZERO, actimetreList=set()):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
@@ -571,6 +576,7 @@ class Actiserver:
         self.diskSize   = 0
         self.diskFree   = 0
         self.lastUpdate = lastUpdate
+        self.dbTime     = dbTime
         self.isDown     = isDown
         self.actimetreList = actimetreList
         self.diskLow    = 0
@@ -586,6 +592,7 @@ class Actiserver:
                 'diskFree'  : self.diskFree,
                 'diskLow'   : self.diskLow,
                 'lastUpdate': self.lastUpdate.strftime(TIMEFORMAT_FN),
+                'dbTime'    : self.dbTime.strftime(TIMEFORMAT_FN),
                 'isDown'    : self.isDown,
                 'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']',
                 }
@@ -619,6 +626,8 @@ class Actiserver:
             self.lastUpdate = datetime.strptime(d['lastUpdate'], TIMEFORMAT_FN)
         else:
             self.lastUpdate = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
+        if d.get('dbTime'):
+            self.dbTime = datetime.strptime(d['dbTime'], TIMEFORMAT_FN)
         if d.get('isDown'):
             self.isDown = int(d['isDown'])
         else:
@@ -705,6 +714,7 @@ with open(REGISTRY, "r") as registry:
         Registry = json.load(registry)
     except JSONDecodeError:
         pass
+RegistryTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
     
 if Projects.get(0) is None:
     Projects[0] = Project(0, "Not assigned", "No owner")
@@ -1278,7 +1288,7 @@ def processForm(formId):
         print("Location:\\index.html\n\n")
 
 def processAction():
-    if action == 'actiserver':
+    if action == 'actiserver' or action == 'actiserver3':
         if secret != SECRET_KEY:
             return
         serverId = int(args['serverId'][0])
@@ -1312,7 +1322,29 @@ def processAction():
                 del remotes[actimId]
                 saveRemotes(remotes)
                 return
+
+        if action == 'actiserver':
+            plain(json.dumps(Registry))
+        else:
+            if RegistryTime > thisServer.dbTime.replace(tzinfo=timezone.utc) \
+               or ProjectsTime > thisServer.dbTime.replace(tzinfo=timezone.utc):
+                printLog(f'{thisServer.dbTime} < {ProjectsTime}, needs update')
+                plain('!')
+            else:
+                plain('OK')
+
+    elif action == 'registry':
+        if secret != SECRET_KEY:
+            return
+#        serverId = int(args['serverId'][0])
         plain(json.dumps(Registry))
+
+    elif action == 'projects':
+        if secret != SECRET_KEY:
+            return
+#        serverId = int(args['serverId'][0])
+        plain()
+        listProjects()
 
     elif action == 'actimetre-new':
         if secret != SECRET_KEY:
