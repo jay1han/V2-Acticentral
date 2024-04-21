@@ -914,7 +914,11 @@ def htmlActiservers():
                             if a.repoSize == 0:
                                 continue
                             with tag('div'):
-                                with tag('a', href=f'http://{s.ip}/Project{a.projectId:02d}/index.html'):
+                                if s.version >= "345":
+                                    link = f'http://{s.ip}/Project{a.projectId:02d}/index.html'
+                                else:
+                                    link = f'http://{s.ip}/index{a.actimId:04d}.html'
+                                with tag('a', href=link):
                                     doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
                     if s.diskSize > 0:
                         diskState = ''
