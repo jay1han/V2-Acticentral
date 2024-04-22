@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v349"
+VERSION_STR     = "v350"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -85,7 +85,7 @@ def dumpData(filename, data):
 
 def printSize(size, unit='', precision=0):
     if size == 0:
-        return ""
+        return "0B"
     if unit == '':
         if size >= 1_000_000_000:
             unit = 'GB'
@@ -197,8 +197,8 @@ REDRAW_DEAD  = timedelta(minutes=30)
 GRAPH_SPAN   = timedelta(days=7)
 GRAPH_CULL   = timedelta(days=6)
 FSCALETAG    = {50:5, 100:10}
-FSCALEV3     = {100:2, 1000:4, 2000:6, 4000:8, 8000:10}
-FSCALEV3TAG  = {100:2, 1000:4, 2000:6, 4000:8, 8000:10}
+FSCALEV3     = {100:3, 1000:5, 4000:8, 8000:10}
+FSCALEV3TAG  = {100:3, 1000:5, 4000:8}
 
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, \
@@ -467,14 +467,16 @@ class Actimetre:
                 redraw = True
             if newActim.isDead == 0:
                 self.isDead = 0
-            
-        self.boardType  = newActim.boardType
-        self.version    = newActim.version
+
+        if newActim.boardType != "":
+            self.boardType  = newActim.boardType
+        if newActim.version != "":
+            self.version    = newActim.version
+        self.sensorStr  = newActim.sensorStr
         self.serverId   = newActim.serverId
         self.bootTime   = newActim.bootTime
         self.lastSeen   = newActim.lastSeen
         self.lastReport = newActim.lastReport
-        self.sensorStr  = newActim.sensorStr
         self.rating     = newActim.rating
         self.rssi       = newActim.rssi
         self.repoNums   = newActim.repoNums
@@ -546,13 +548,21 @@ class Actimetre:
     def htmlCartouche(self):
         return f'{self.actimName()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
 
-    def frequencyText(self):
-        if self.frequency == 0:
-            return "(stopped)"
-        elif self.frequency >= 1000:
-            return f"{self.frequency // 1000}kHz"
+    def frequencyText(self, sensorStr = None):
+        if self.isDead > 0 or self.frequency == 0:
+            if sensorStr is not None:
+                return f"({sensorStr})<br>stopped"
+            else:
+                return "(stopped)"
         else:
-            return f"{self.frequency}Hz"
+            if self.frequency >= 1000:
+                text = f"{self.frequency // 1000}kHz"
+            else:
+                text = f"{self.frequency}Hz"
+            if sensorStr is not None:
+                return f"{sensorStr}<br>{text}"
+            else:
+                return text
     
     def uptime(self):
         if self.isDead > 0 or self.frequency == 0:
@@ -771,7 +781,7 @@ def htmlActimetre1(actimId):
         else:
             line('td', "")
         with tag('td'):
-            doc.asis(f"{a.sensorStr}<br>{a.frequencyText()}")
+            doc.asis(a.frequencyText(a.sensorStr))
         if alive == 'up':
             with tag('td'):
                 doc.asis(htmlRssi(a.rssi))
@@ -797,7 +807,6 @@ def htmlActimetre1(actimId):
             if a.repoNums > 0:
                 text(f'{a.repoNums} files')
                 doc.stag('br')
-            if a.repoSize > 0:
                 text(printSize(a.repoSize))
             if alive != 'up' and a.hasData():
                 doc.asis('<br>')
@@ -844,7 +853,7 @@ def htmlActimetres():
             else:
                 line('td', "")
             with tag('td'):
-                doc.asis(f"{a.sensorStr}<br>{a.frequencyText()}")
+                doc.asis(a.frequencyText(a.sensorStr))
             if alive == 'up':
                 with tag('td'):
                     doc.asis(htmlRssi(a.rssi))
@@ -870,7 +879,6 @@ def htmlActimetres():
                 if a.repoNums > 0:
                     text(f'{a.repoNums} files')
                     doc.stag('br')
-                if a.repoSize > 0:
                     text(printSize(a.repoSize))
             doc.asis('</form>\n')
 
