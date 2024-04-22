@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v348"
+VERSION_STR     = "v349"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -178,8 +178,12 @@ class Project:
             self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
         return self
 
-    def addActim(self, a):
-        self.actimetreList.add(a.actimId)
+    def addActim(self, actimId):
+        if actimId not in self.actimetreList:
+            self.actimetreList.add(actimId)
+            return True
+        else:
+            return False
         
 Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
 ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
@@ -258,13 +262,9 @@ class Actimetre:
         self.rating     = float(d['rating'])
         if d.get('rssi') is not None:
             self.rssi   = int(d['rssi'])
-        if self.serverId == 0:
-            self.repoNums = 0
-            self.repoSize = 0
-        else:
-            if d.get('repoNums'):
-                self.repoNums   = int(d['repoNums'])
-            self.repoSize   = int(d['repoSize'])
+        if d.get('repoNums'):
+            self.repoNums   = int(d['repoNums'])
+        self.repoSize   = int(d['repoSize'])
         
         if d.get('projectId') is not None:
             self.projectId  = int(d['projectId'])
@@ -806,10 +806,9 @@ def htmlActimetre1(actimId):
         with tag('td', klass='no-borders'):
             if a.serverId == 0:
                 with tag('button', type='submit', name='action', value='actim-change-project'):
-                    text('Change project')
+                    doc.asis('Change<br>project')
             if a.version >= '301' and alive == 'up' and \
             (Actiservers.get(a.serverId) != None and Actiservers[a.serverId].version >= '301') :
-                doc.asis('<br>')
                 with tag('button', type='submit', name='action', value='remote-button'):
                     text('Button')
                 doc.asis('<br>')
@@ -928,7 +927,7 @@ def htmlActiservers():
                     with tag('td', klass='right'):
                         for actimId in s.actimetreList:
                             a = Actimetres[actimId]
-                            if a.repoSize == 0:
+                            if a.repoNums == 0:
                                 continue
                             with tag('div'):
                                 if s.version >= "345":
@@ -1058,6 +1057,7 @@ def repoStats():
         p.repoNums = 0
 
     save = False
+    saveP = False
     for a in Actimetres.values():
         if NOW - a.lastReport > ACTIM_HIDE_P:
             continue
@@ -1065,13 +1065,15 @@ def repoStats():
             save = True
         if Projects.get(a.projectId) is None:
             Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
-        Projects[a.projectId].addActim(a)
+            saveP = True
+        saveP = Projects[a.projectId].addActim(a.actimId)
         Projects[a.projectId].repoNums += a.repoNums
         Projects[a.projectId].repoSize += a.repoSize
 
     if save:
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-#    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+    if saveP:
+        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
     with open(STAT_FILE, "w") as stat:
         stat.write(NOW.strftime(TIMEFORMAT_DISP));
