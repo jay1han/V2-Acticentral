@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v350"
+VERSION_STR     = "v353"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -222,6 +222,7 @@ class Actimetre:
         self.repoSize   = repoSize
         self.lastDrawn  = TIMEZERO
         self.graphSince = TIMEZERO
+        self.reportStr  = ""
 
     def toD(self):       
         return {'actimId'   : self.actimId,
@@ -242,6 +243,7 @@ class Actimetre:
                 'repoSize'  : self.repoSize,
                 'lastDrawn' : self.lastDrawn.strftime(TIMEFORMAT_FN),
                 'graphSince': self.graphSince.strftime(TIMEFORMAT_FN),
+                'reportStr' : self.reportStr,
                 }
 
     def fromD(self, d):
@@ -284,6 +286,10 @@ class Actimetre:
             self.lastDrawn = datetime.strptime(d['lastDrawn'], TIMEFORMAT_FN)
         if d.get('graphSince') is not None:
             self.graphSince = datetime.strptime(d['graphSince'], TIMEFORMAT_FN)
+        if d.get('reportStr') is not None:
+            self.reportStr = d['reportStr']
+        else:
+            self.reportStr = ""
         return self
 
     def cutHistory(self, cutLength=None):
@@ -811,7 +817,7 @@ def htmlActimetre1(actimId):
             if alive != 'up' and a.hasData():
                 doc.asis('<br>')
                 with tag('button', type='submit', name='action', value='actim-cleanup'):
-                    text('Clean up')
+                    text('Sync')
         with tag('td', klass='no-borders'):
             if a.serverId == 0:
                 with tag('button', type='submit', name='action', value='actim-change-project'):
@@ -880,6 +886,10 @@ def htmlActimetres():
                     text(f'{a.repoNums} files')
                     doc.stag('br')
                     text(printSize(a.repoSize))
+            if a.reportStr != "":
+                with tag('td', klass="report"):
+                    text(a.reportStr)
+                    doc.asis('<br><button type="submit" name="action" value="clear-report">Clear</button>\n')
             doc.asis('</form>\n')
 
     global HTML_ACTIMETRES
@@ -1378,6 +1388,27 @@ def processAction():
 #        serverId = int(args['serverId'][0])
         plain()
         listProjects()
+
+    elif action == 'report':
+        if secret != SECRET_KEY:
+            return
+        serverId  = int(args['serverId'][0])
+        actimId = int(args['actimId'][0])
+        if Actimetres.get(actimId) is not None:
+            message = sys.stdin.read()
+            printLog(f'Actim{actimId:04d} {message}')
+            Actimetres[actimId].reportStr = message
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        plain('OK')
+        
+    elif action == 'clear-report':
+        actimId = int(args['actimId'][0])
+        if Actimetres.get(actimId) is not None:
+            printLog(f'Actim{actimId:04d} CLEAR {Actimetres[actimId].reportStr}')
+            Actimetres[actimId].reportStr = ""
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            htmlUpdate()
+        print("Location:\\index.html\n\n")
 
     elif action == 'actimetre-new':
         if secret != SECRET_KEY:
