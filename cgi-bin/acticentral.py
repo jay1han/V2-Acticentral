@@ -4,8 +4,8 @@ import os, sys, json, fcntl
 from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
-LOG_SIZE_MAX    = 1_000_000
-VERSION_STR     = "v353"
+LOG_SIZE_MAX    = 10_000_000
+VERSION_STR     = "v354"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -690,7 +690,6 @@ class Actiserver:
             f'Hardware {self.machine}\nVersion {self.version}\n' +\
             f'IP {self.ip}\nChannel {self.channel}\n' +\
             f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' +\
-            f'({100.0 * self.diskFree / self.diskSize:.1f}%)\n' +\
             f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' +\
             f'Last known Actimetres:\n    '
         for actimId in self.actimetreList:
@@ -701,12 +700,11 @@ class Actiserver:
 
     def alertDisk(self):
         printLog(f'{self.serverName()} disk low')
-        subject = f'{self.serverName()} storage {100.0 * self.diskFree / self.diskSize :.1f}% remaining'
+        subject = f'{self.serverName()} storage low'
         content = f'{self.serverName()}\n' +\
             f'Hardware {self.machine}\nVersion {self.version}\n' +\
             f'IP {self.ip}\nChannel {self.channel}\n' +\
             f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' +\
-            f'({100.0 * self.diskFree / self.diskSize :.1f}%)\n' +\
             f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' +\
             f'Last known Actimetres:\n    '
         for actimId in self.actimetreList:
