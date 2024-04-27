@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v354"
+VERSION_STR     = "v355"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -184,6 +184,9 @@ class Project:
             return True
         else:
             return False
+
+    def name(self):
+        return f"{self.title} (#{self.projectId:02d})"
         
 Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
 ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
@@ -497,7 +500,7 @@ class Actimetre:
         subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
         content = f'{self.actimName()}\n'
         if Projects.get(self.projectId) is not None:
-            content += f'Project "{Projects[self.projectId].title}"\n'
+            content += f'Project "{Projects[self.projectId].name()}"\n'
         content += f'Type {self.boardType}\nMAC {self.mac}\n' +\
             f'Sensors {self.sensorStr}\n' +\
             f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' +\
@@ -513,7 +516,7 @@ class Actimetre:
         subject = f"{self.actimName()}'s server disk low"
         content = f'{self.actimName()}\n'
         if Projects.get(self.projectId) is not None:
-            content += f'Project "{Projects[self.projectId].title}"\n'
+            content += f'Project "{Projects[self.projectId].name()}"\n'
         content += f'Type {self.boardType}\nMAC {self.mac}\n' +\
             f'Sensors {self.sensorStr}\n' +\
             f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' +\
@@ -876,9 +879,9 @@ def htmlActimetres():
                 with tag('div'):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
-            with tag('td', ('data-comparator', Projects[a.projectId].title), klass='left'):
+            with tag('td', ('data-comparator', Projects[a.projectId].projectId), klass='left'):
                 with tag('a', href=f'/project{a.projectId:02d}.html'):
-                    text(Projects[a.projectId].title)
+                    text(Projects[a.projectId].name())
             with tag('td', ('data-comparator', f'{a.repoSize // 1000000 :06d}'), klass='right'):
                 if a.repoNums > 0:
                     text(f'{a.repoNums} files')
@@ -987,7 +990,7 @@ def htmlProjects():
             with open(f"{HTML_DIR}/templateProject.html") as template:
                 print(template.read()\
                       .replace("{buttons}", buttons)\
-                      .replace("{projectTitle}", p.title)\
+                      .replace("{projectTitle}", p.name())\
                       .replace("{projectOwner}", p.owner)\
                       .replace("{projectEmail}", p.email)\
                       .replace("{projectActimHTML}", projectActimHTML)\
@@ -1004,7 +1007,7 @@ def htmlProjects():
         with tag('tr'):
             with tag('td', klass='left'):
                 with tag('a', href=f'/project{projectId:02d}.html'):
-                    text(p.title)
+                    text(p.name())
             line('td', p.owner)
             with tag('td', klass='left'):
                 for actimId in p.actimetreList:
@@ -1102,7 +1105,7 @@ def projectChangeInfo(projectId):
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{project-change-info}", "project-change-info")\
-              .replace("{projectTitle}", Projects[projectId].title)\
+              .replace("{projectTitle}", Projects[projectId].name())\
               .replace("{projectOwner}", Projects[projectId].owner)\
               .replace("{projectId}", str(projectId)))
 
@@ -1112,7 +1115,7 @@ def projectEditInfo(projectId):
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{project-change-info}", "project-edit-info")\
-              .replace("{projectTitle}", Projects[projectId].title)\
+              .replace("{projectTitle}", Projects[projectId].name())\
               .replace("{projectOwner}", Projects[projectId].owner)\
               .replace("{projectId}", str(projectId)))
 
@@ -1124,7 +1127,7 @@ def actimChangeProject(actimId):
         htmlProjectList += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
         if p.projectId == Actimetres[actimId].projectId:
             htmlProjectList += ' checked="true"'
-        htmlProjectList += f'><label for="{p.projectId}">{p.title} ({p.owner})</label><br>\n'
+        htmlProjectList += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
 
     with open(f"{HTML_DIR}/formActim.html") as form:
         print(form.read()\
@@ -1156,7 +1159,7 @@ def removeProject(projectId):
     with open(f"{HTML_DIR}/formRemove.html") as form:
         print(form.read()\
               .replace("{projectId}", str(projectId))\
-              .replace("{projectTitle}", Projects[projectId].title)\
+              .replace("{projectTitle}", Projects[projectId].name())\
               .replace("{actimetreList}", actimList))
 
 def retireActim(actimId):
@@ -1179,7 +1182,7 @@ def retireActim(actimId):
               .replace("{repoNums}", repoNumsStr)\
               .replace("{repoSize}", printSize(a.repoSize))\
               .replace("{owner}", ownerStr)\
-              .replace("{projectTitle}", Projects[a.projectId].title))
+              .replace("{projectTitle}", Projects[a.projectId].name()))
 
 def loadRemotes():
     try:
@@ -1285,7 +1288,7 @@ def processForm(formId):
            (a.projectId == 0 and owner == 'CONFIRM') or \
            (Projects.get(a.projectId) is not None and Projects[a.projectId].owner == owner):
 
-            printLog(f"Retire Actimetre{actimId:04d} from {Projects[a.projectId].title}")
+            printLog(f"Retire Actimetre{actimId:04d} from {Projects[a.projectId].name()}")
             save = False
             for s in Actiservers.values():
                 if actimId in s.actimetreList:
