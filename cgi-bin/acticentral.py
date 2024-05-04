@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v355"
+VERSION_STR     = "v360"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -193,7 +193,8 @@ ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.ut
 
 def listProjects():
     for (projectId, p) in Projects.items():
-        print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
+        if len(p.actimetreList) > 0:
+            print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
@@ -767,6 +768,8 @@ def htmlActimetre1(actimId):
         return ""
     
     a = Actimetres[actimId]
+    if a.serverId != 0:
+        s = Actiservers.get(a.serverId)
     doc, tag, text, line = Doc().ttl()
     with tag('tr'):
         doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
@@ -784,7 +787,10 @@ def htmlActimetre1(actimId):
             doc.asis('<br>')
             text(f"v{a.version}")
         if a.serverId != 0:
-            line('td', f"Actis{a.serverId:03d}")
+            if s is not None and s.isDown == 0:
+                line('td', f"Actis{a.serverId:03d}")
+            else:
+                line('td', f"Actis{a.serverId:03d}", klass="down")
         else:
             line('td', "")
         with tag('td'):
@@ -815,7 +821,7 @@ def htmlActimetre1(actimId):
                 text(f'{a.repoNums} files')
                 doc.stag('br')
                 text(printSize(a.repoSize))
-            if alive != 'up' and a.hasData():
+            if alive != 'up' and a.hasData() and s is not None and s.isDown == 0:
                 doc.asis('<br>')
                 with tag('button', type='submit', name='action', value='actim-cleanup'):
                     text('Sync')
