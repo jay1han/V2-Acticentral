@@ -960,20 +960,22 @@ def htmlActiservers():
                 line('td', '')
             else:
                 with tag('td', klass='no-padding'):
-                    with tag('table'):
-                        with tag('tr'):
-                            with tag('td', klass='left-tight'):
-                                text('CPU')
-                                doc.asis('<br>')
-                                text('RAM')
-                                doc.asis('<br>')
-                                text('Disk')
-                            with tag('td', klass='left-tight'):
-                                text(f'{s.cpuIdle:.1f}% idle')
-                                doc.asis('<br>')
-                                text(f'{s.memAvail:.1f}% free')
-                                doc.asis('<br>')
-                                text(f'{s.diskTput:.0f}kB/s({s.diskUtil:.1f}%)')
+                    if s.version >= "370":
+                        with tag('table'):
+                            with tag('tr'):
+                                with tag('td', klass='left-tight'):
+                                    text('CPU')
+                                    doc.asis('<br>')
+                                    text('RAM')
+                                    doc.asis('<br>')
+                                    text('Disk')
+                                with tag('td', klass='left-tight'):
+                                    text(f'{s.cpuIdle:.1f}% idle')
+                                    doc.asis('<br>')
+                                    text(f'{s.memAvail:.1f}% free')
+                                    doc.asis('<br>')
+                                    text(f'{s.diskTput:.0f}kB/s({s.diskUtil:.1f}%)')
+                    else: text('')
                 with tag('td', klass='left'):
                     for actimId in s.actimetreList:
                         with tag('div'):
