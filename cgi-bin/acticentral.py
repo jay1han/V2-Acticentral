@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v360"
+VERSION_STR     = "v370"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -608,6 +608,10 @@ class Actiserver:
         self.isDown     = isDown
         self.actimetreList = actimetreList
         self.diskLow    = 0
+        self.cpuIdle    = 0.0
+        self.memAvail   = 0.0
+        self.diskTput   = 0.0
+        self.diskUtil   = 0.0
 
     def toD(self):
         return {'serverId'  : self.serverId,
@@ -623,6 +627,10 @@ class Actiserver:
                 'dbTime'    : self.dbTime.strftime(TIMEFORMAT_FN),
                 'isDown'    : self.isDown,
                 'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']',
+                'cpuIdle'   : self.cpuIdle,
+                'memAvail'  : self.memAvail,
+                'diskTput'  : self.diskTput,
+                'diskUtil'  : self.diskUtil,
                 }
 
     def fromD(self, d, actual=False):
@@ -671,6 +679,12 @@ class Actiserver:
             self.diskLow = 1
         else:
             self.diskLow = d['diskLow']
+            
+        if d.get('cpuIdle')  is not None: self.cpuIdle  = float(d['cpuIdle'])
+        if d.get('memAvail') is not None: self.memAvail = float(d['memAvail'])
+        if d.get('diskTput') is not None: self.diskTput = float(d['diskTput'])
+        if d.get('diskUtil') is not None: self.diskUtil = float(d['diskUtil'])
+            
         return self
 
     def serverName(self):
@@ -940,10 +954,26 @@ def htmlActiservers():
             else:
                 line('td', s.lastUpdate.strftime(TIMEFORMAT_DISP), klass=alive)
             if alive != 'up':
+                line('td', '')
                 line('td', "None")
                 line('td', '')
                 line('td', '')
             else:
+                with tag('td', klass='no-padding'):
+                    with tag('table'):
+                        with tag('tr'):
+                            with tag('td', klass='left-tight'):
+                                text('CPU')
+                                doc.asis('<br>')
+                                text('RAM')
+                                doc.asis('<br>')
+                                text('Disk')
+                            with tag('td', klass='left-tight'):
+                                text(f'{s.cpuIdle:.1f}% idle')
+                                doc.asis('<br>')
+                                text(f'{s.memAvail:.1f}% free')
+                                doc.asis('<br>')
+                                text(f'{s.diskTput:.0f}kB/s({s.diskUtil:.1f}%)')
                 with tag('td', klass='left'):
                     for actimId in s.actimetreList:
                         with tag('div'):
