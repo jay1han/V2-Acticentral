@@ -116,23 +116,18 @@
   <body>
     <p class="log" id="log"></p>
     
-    <h1>Actimetres</h1>
-    <table id="actimetres">
+    <h1>Projects</h1>
+    <table>
       <tr>
-	<th onclick="sortTable(0)">Name</th>
-	<th>Type<br>Version</th>
-	<th>Server</th>
-	<th>Sensors</th>
-	<th>Signal<br>Losses</th>
-	<th>Health</th>
-	<th onclick="sortTable(7)">Project</th>
-	<th onclick="sortTable(8)">Local<br>files</th>
-        <th class="no-borders"></th>
+	<th>Title</th>
+	<th>Owner</th>
+	<th>Actimetres</th>
       </tr>
-      {Actimetres}
+      {Projects}
     </table>
     
     <h1>Servers</h1>
+    <p><a href="/servers.html">Full list</a></p>
     <table>
       <tr>
 	<th>Name</th>
@@ -145,17 +140,6 @@
         <th>Disk space</th>
       </tr>
       {Actiservers}
-    </table>
-    
-    <h1>Projects</h1>
-    <table>
-      <tr>
-	<th>Title</th>
-	<th>Owner</th>
-	<th>Actimetres</th>
-      </tr>
-
-      {Projects}
     </table>
     
     <form action="/bin/{cgi-bin}" method="get">

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v383"
+VERSION_STR     = "v384"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -30,9 +30,12 @@ IMAGES_INDEX    = "/var/www/html/images/index.txt"
 
 HTML_DIR        = "/var/www/html"
 INDEX_HTML      = "/var/www/html/index.html"
+SERVERS_HTML    = "/var/www/html/servers.html"
 CGI_BIN         = "acticentral.py"
 
-TEMPLATE_HTML   = "/var/www/html/template.html"
+INDEX_TEMPLATE  = "/var/www/html/template.html"
+PROJECT_TEMPLATE= "/var/www/html/templateProject.html"
+SERVERS_TEMPLATE= "/var/www/html/templateServers.html"
 SECRET_KEY      = "YouDontKnowThis"
 
 HTML_ACTIMETRES = ""
@@ -867,27 +870,33 @@ def htmlActimetre1(actimId):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
         with tag('td', klass='right'):
-            if a.repoNums == 0:
+            if not a.hasData():
                 text('No data')
             else:
                 text(f'{a.repoNums} files')
                 doc.stag('br')
                 text(printSize(a.repoSize))
-            if alive != 'up' and a.hasData() and s is not None and s.isDown == 0:
+            if a.serverId == 0 or not a.hasData():
+                doc.asis('<br>')
+                with tag('button', type='submit', name='action', value='actim-change-project'):
+                    doc.asis('Move')
+            elif alive == 'up' and a.hasData() and \
+               (Actiservers.get(a.serverId) is not None and Actiservers[a.serverId].version >= '380'):
+                doc.asis('<br>')
+                with tag('button', type='submit', name='action', value='actim-stop'):
+                    doc.asis('Stop')
+            elif alive != 'up' and a.hasData() and s is not None and s.isDown == 0:
                 doc.asis('<br>')
                 with tag('button', type='submit', name='action', value='actim-sync'):
                     text('Sync')
-        with tag('td', klass='no-borders'):
-            if alive == 'retire' and a.hasData():
+            elif alive == 'retire' and a.hasData():
+                doc.asis('<br>')
                 with tag('button', type='submit', name='action', value='actim-forget'):
-                    doc.asis('Forget<br>data')
-            elif a.serverId == 0 or not a.hasData():
-                with tag('button', type='submit', name='action', value='actim-change-project'):
-                    doc.asis('Change<br>project')
-            elif alive == 'up' and a.hasData() and \
-               (Actiservers.get(a.serverId) is not None and Actiservers[a.serverId].version >= '380'):
-                with tag('button', type='submit', name='action', value='actim-stop'):
-                    doc.asis('Stop')
+                    doc.asis('Forget')
+        if a.reportStr != "":
+            with tag('td', klass="report"):
+                text(a.reportStr)
+                doc.asis('<br><button type="submit" name="action" value="clear-report">Clear</button>\n')
         doc.asis('</form>\n')
     return indent(doc.getvalue())
 
@@ -981,8 +990,8 @@ def htmlActiservers():
                 text(s.serverName())
                 doc.asis('<br>')
                 line('span', s.ip, klass='small')
-                if alive == 'retire':
-                    line('button', "Retire", type='submit', name='action', value='retire-server')
+#                if alive == 'retire':
+#                    line('button', 'Retire', type='submit', name='action', value='retire-server')
             line('td', s.machine)
             with tag('td'):
                 if alive == 'up':
@@ -1054,6 +1063,103 @@ def htmlActiservers():
     if modServers:
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
 
+def htmlAllServers():
+    doc, tag, text, line = Doc().ttl()
+
+    modServers = False
+    for serverId in sorted(Actiservers.keys()):
+        s = Actiservers[serverId]
+        with tag('tr'):
+            doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
+            doc.asis(f'<input type="hidden" name="serverId" value="{s.serverId}" />')
+            if NOW - s.lastUpdate < ACTIS_FAIL_TIME:
+                alive = 'up'
+            elif NOW - s.lastUpdate > ACTIS_RETIRE_P:
+                alive = 'retire'
+            elif NOW - s.lastUpdate > ACTIM_HIDE_P:
+                alive = 'hidden'
+            else:
+                alive = 'down'
+
+            with tag('td', klass=alive):
+                text(s.serverName())
+                doc.asis('<br>')
+                line('span', s.ip, klass='small')
+#                if alive == 'retire':
+#                    line('button', 'Retire', type='submit', name='action', value='retire-server')
+            line('td', s.machine)
+            with tag('td'):
+                if alive == 'up':
+                    text(f"v{s.version}")
+                    doc.asis("<br>")
+                    if s.channel != 0:
+                        text(f"Ch. {s.channel}")
+                else:
+                    text("?")
+            if s.lastUpdate == TIMEZERO:
+                line('td', "?", klass=alive)
+            else:
+                line('td', s.lastUpdate.strftime(TIMEFORMAT_DISP), klass=alive)
+            with tag('td', klass='no-padding'):
+                if s.version >= "370":
+                    with tag('table'):
+                        with tag('tr'):
+                            with tag('td', klass='left-tight'):
+                                text('CPU')
+                                doc.asis('<br>')
+                                text('RAM')
+                                doc.asis('<br>')
+                                text('Disk')
+                            with tag('td', klass='left-tight'):
+                                text(f'{s.cpuIdle:.1f}% idle')
+                                doc.asis('<br>')
+                                text(f'{s.memAvail:.1f}% free')
+                                doc.asis('<br>')
+                                text(f'{s.diskTput:.0f}kB/s({s.diskUtil:.1f}%)')
+                else: text('')
+            with tag('td', klass='left'):
+                for actimId in s.actimetreList:
+                    with tag('div'):
+                        doc.asis(Actimetres[actimId].htmlCartouche())
+            if s.isLocal:
+                with tag('td', klass='right'):
+                    for actimId in s.actimetreList:
+                        a = Actimetres[actimId]
+                        with tag('div'):
+                            if not a.hasData():
+                                doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
+                                doc.asis(f'<input type="hidden" name="actimId" value="{a.actimId}"/>')
+                                doc.asis(f'<input type="hidden" name="serverId" value="{s.serverId}"/>')
+                                with tag('button', type='submit', name='action', value='actim-decouple'):
+                                    doc.asis('Remove')
+                                doc.asis('</form>')
+                            else:
+                                if s.version >= "345":
+                                    link = f'http://{s.ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
+                                else:
+                                    link = f'http://{s.ip}/index{a.actimId:04d}.html'
+                                with tag('a', href=link):
+                                    doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
+                if s.diskSize > 0:
+                    diskState = ''
+                    if s.diskFree < s.diskSize // 10:
+                        diskState = 'disk-low'
+                    line('td', f'{printSize(s.diskFree)} ({100.0*s.diskFree/s.diskSize:.1f}%)', klass=diskState)
+                else:
+                    line('td', '')
+            else:
+                line('td', '')
+                line('td', '')
+
+    if modServers:
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+
+    with open(SERVERS_HTML, "w") as html:
+        with open(SERVERS_TEMPLATE, "r") as template:
+            print(template.read() \
+                  .replace("{Actiservers}", indent(doc.getvalue())) \
+                  , file=html)
+    
 def htmlProjects():
     for projectId in Projects.keys():
         p = Projects[projectId]
@@ -1067,14 +1173,21 @@ def htmlProjects():
                       <button type="submit" name="action" value="project-edit-info">Edit info</button>
                       <button type="submit" name="action" value="remove-project">Remove project</button>
                       '''
-        
+
+        if projectId == 0:
+            projectOwner = ""
+            projectEmail = ""
+        else:
+            projectOwner = f"<h3>Project Owner: {p.owner}</h3>"
+            projectEmail = f"<h3>Email: {p.email}</h3>"
+            
         with open(f"{HTML_DIR}/project{projectId:02d}.html", "w") as html:
-            with open(f"{HTML_DIR}/templateProject.html") as template:
+            with open(PROJECT_TEMPLATE, "r") as template:
                 print(template.read()\
                       .replace("{buttons}", buttons)\
                       .replace("{projectTitle}", p.name())\
-                      .replace("{projectOwner}", p.owner)\
-                      .replace("{projectEmail}", p.email)\
+                      .replace("{projectOwner}", projectOwner)\
+                      .replace("{projectEmail}", projectEmail)\
                       .replace("{projectActimHTML}", projectActimHTML)\
                       .replace("{projectId}", str(projectId)) \
                       , file=html)
@@ -1090,12 +1203,18 @@ def htmlProjects():
             with tag('td', klass='left'):
                 with tag('a', href=f'/project{projectId:02d}.html'):
                     text(p.name())
-            line('td', p.owner)
-            with tag('td', klass='left'):
-                for actimId in p.actimetreList:
-                    if Actimetres.get(actimId) is not None:
-                        with tag('div'):
-                            doc.asis(Actimetres[actimId].htmlCartouche())
+            if projectId == 0:
+                line('td', '')
+                with tag('td'):
+                    with tag('a', href=f'/project{projectId:02d}.html'):
+                        text('List')
+            else:
+                line('td', p.owner)
+                with tag('td', klass='left'):
+                    for actimId in p.actimetreList:
+                        if Actimetres.get(actimId) is not None:
+                            with tag('div'):
+                                doc.asis(Actimetres[actimId].htmlCartouche())
 
     global HTML_PROJECTS
     HTML_PROJECTS = indent(doc.getvalue())
@@ -1104,11 +1223,12 @@ def htmlUpdate():
     htmlActimetres()
     htmlActiservers()
     htmlProjects()
+    htmlAllServers()
     
     global LAST_UPDATED
     LAST_UPDATED = NOW.strftime(TIMEFORMAT_DISP)
     
-    htmlTemplate = open(TEMPLATE_HTML, "r").read()
+    htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
         .replace("{Actimetres}", HTML_ACTIMETRES)\
         .replace("{Actiservers}", HTML_ACTISERVERS)\
@@ -1597,6 +1717,19 @@ def processAction():
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
             htmlUpdate()
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        print("Location:\\index.html\n\n")
+
+    elif action == 'actim-decouple':
+        actimId = int(args['actimId'][0])
+        serverId = int(args['serverId'][0])
+        if Actimetres.get(actimId) is not None:
+            Actimetres[actimId].forgetData()
+        if Actiservers.get(serverId) is not None and actimId in Actiservers[serverId].actimetreList:
+            Actiservers[serverId].actimetreList.remove(actimId)
+            printLog(f"Removed Actim{actimId:04d} from Actis{serverId:04d}")
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif action == 'remote-restart':
