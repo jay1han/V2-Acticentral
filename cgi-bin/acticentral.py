@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v382"
+VERSION_STR     = "v383"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -335,6 +335,16 @@ class Actimetre:
             with open(historyFile, "r+") as history:
                 for line in freshLines:
                     print(line.strip(), file=history)
+
+    def forgetData(self):
+        self.isDead = 3
+        self.repoNums = 0
+        self.repoSize = 0
+        s = Actiservers.get(self.serverId)
+        if s is not None and self.actimId in s.actimetreList:
+            s.actimetreList.remove(self.actimId)
+        self.serverId = 0
+        printLog(f"{self.actimName()} data forgotten")
 
     def scaleFreq(self, origFreq):
         if origFreq == 0:
@@ -868,7 +878,10 @@ def htmlActimetre1(actimId):
                 with tag('button', type='submit', name='action', value='actim-sync'):
                     text('Sync')
         with tag('td', klass='no-borders'):
-            if a.serverId == 0 or not a.hasData():
+            if alive == 'retire' and a.hasData():
+                with tag('button', type='submit', name='action', value='actim-forget'):
+                    doc.asis('Forget<br>data')
+            elif a.serverId == 0 or not a.hasData():
                 with tag('button', type='submit', name='action', value='actim-change-project'):
                     doc.asis('Change<br>project')
             elif alive == 'up' and a.hasData() and \
@@ -1575,6 +1588,15 @@ def processAction():
     elif action == 'actim-sync':
         actimId = int(args['actimId'][0])
         remoteAction(actimId, 0x20)
+        print("Location:\\index.html\n\n")
+
+    elif action == 'actim-forget':
+        actimId = int(args['actimId'][0])
+        if Actimetres.get(actimId) is not None:
+            Actimetres[actimId].forgetData()
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            htmlUpdate()
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
         print("Location:\\index.html\n\n")
 
     elif action == 'remote-restart':
