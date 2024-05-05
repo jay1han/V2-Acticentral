@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v371"
+VERSION_STR     = "v382"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -209,7 +209,7 @@ FSCALEV3     = {100:3, 1000:5, 4000:8, 8000:10}
 FSCALEV3TAG  = {100:3, 1000:5, 4000:8}
 
 class Actimetre:
-    def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, \
+    def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, isStopped=False,\
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,\
                  projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,  repoNums = 0, repoSize = 0):
         self.actimId    = int(actimId)
@@ -218,6 +218,7 @@ class Actimetre:
         self.version    = version
         self.serverId   = int(serverId)
         self.isDead     = isDead
+        self.isStopped  = isStopped
         self.bootTime   = bootTime
         self.lastSeen   = lastSeen
         self.lastReport = lastReport
@@ -239,6 +240,7 @@ class Actimetre:
                 'version'   : self.version,
                 'serverId'  : self.serverId,
                 'isDead'    : int(self.isDead),
+                'isStopped' : str(self.isStopped).upper(),
                 'bootTime'  : self.bootTime.strftime(TIMEFORMAT_FN),
                 'lastSeen'  : self.lastSeen.strftime(TIMEFORMAT_FN),
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
@@ -264,6 +266,10 @@ class Actimetre:
             self.isDead = int(d['isDead'])
         else:
             self.isDead = int(str(d['isDead']).strip().upper() == "TRUE")
+        if d.get('isStopped') is not None:
+            self.isStopped = (str(d['isStopped']).strip().upper() == "TRUE")
+        else:
+            self.isStopped = False
         self.bootTime   = utcStrptime(d['bootTime'])
         self.lastSeen   = utcStrptime(d['lastSeen'])
         self.lastReport = utcStrptime(d['lastReport'])
@@ -481,6 +487,7 @@ class Actimetre:
                 redraw = True
             if newActim.isDead == 0:
                 self.isDead = 0
+            self.isStopped = newActim.isStopped
 
         if newActim.boardType != "":
             self.boardType  = newActim.boardType
@@ -555,7 +562,9 @@ class Actimetre:
 
     def htmlInfo(self):
         if self.isDead > 0 or self.frequency == 0:
-            return f'<span class="down">(down)</span>'
+            return f'<span class="down">(dead)</span>'
+        elif self.isStopped:
+            return f'({self.sensorStr})'
         else:
             return f'{self.sensorStr}@{self.frequencyText()}'
         
@@ -565,9 +574,9 @@ class Actimetre:
     def frequencyText(self, sensorStr = None):
         if self.isDead > 0 or self.frequency == 0:
             if sensorStr is not None:
-                return f"({sensorStr})<br>stopped"
+                return f"({sensorStr})<br>dead"
             else:
-                return "(stopped)"
+                return "(dead)"
         else:
             if self.frequency >= 1000:
                 text = f"{self.frequency // 1000}kHz"
@@ -827,7 +836,10 @@ def htmlActimetre1(actimId):
             with tag('td'):
                 doc.asis(htmlRssi(a.rssi))
                 doc.stag('br')
-                text("{:.3f}%".format(100.0 * a.rating))
+                if a.isStopped:
+                    text('stopped')
+                else:
+                    text("{:.3f}%".format(100.0 * a.rating))
         else: 
             line('td', "")
 
@@ -845,18 +857,24 @@ def htmlActimetre1(actimId):
                     doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
 
         with tag('td', klass='right'):
-            if a.repoNums > 0:
+            if a.repoNums == 0:
+                text('No data')
+            else:
                 text(f'{a.repoNums} files')
                 doc.stag('br')
                 text(printSize(a.repoSize))
             if alive != 'up' and a.hasData() and s is not None and s.isDown == 0:
                 doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='actim-cleanup'):
+                with tag('button', type='submit', name='action', value='actim-sync'):
                     text('Sync')
         with tag('td', klass='no-borders'):
-            if a.serverId == 0:
+            if a.serverId == 0 or not a.hasData():
                 with tag('button', type='submit', name='action', value='actim-change-project'):
                     doc.asis('Change<br>project')
+            elif alive == 'up' and a.hasData() and \
+               (Actiservers.get(a.serverId) is not None and Actiservers[a.serverId].version >= '380'):
+                with tag('button', type='submit', name='action', value='actim-stop'):
+                    doc.asis('Stop')
         doc.asis('</form>\n')
     return indent(doc.getvalue())
 
@@ -892,7 +910,10 @@ def htmlActimetres():
                 with tag('td'):
                     doc.asis(htmlRssi(a.rssi))
                     doc.stag('br')
-                    text("{:.3f}%".format(100.0 * a.rating))
+                    if a.isStopped:
+                        text('stopped')
+                    else:
+                        text("{:.3f}%".format(100.0 * a.rating))
             else: 
                 line('td', "")
 
@@ -910,7 +931,9 @@ def htmlActimetres():
                 with tag('a', href=f'/project{a.projectId:02d}.html'):
                     text(Projects[a.projectId].name())
             with tag('td', ('data-comparator', f'{a.repoSize // 1000000 :06d}'), klass='right'):
-                if a.repoNums > 0:
+                if a.repoNums == 0:
+                    text('No data')
+                else:
                     text(f'{a.repoNums} files')
                     doc.stag('br')
                     text(printSize(a.repoSize))
@@ -991,15 +1014,16 @@ def htmlActiservers():
                     with tag('td', klass='right'):
                         for actimId in s.actimetreList:
                             a = Actimetres[actimId]
-                            if a.repoNums == 0:
-                                continue
                             with tag('div'):
-                                if s.version >= "345":
-                                    link = f'http://{s.ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
+                                if a.repoNums == 0:
+                                    text('(No data)')
                                 else:
-                                    link = f'http://{s.ip}/index{a.actimId:04d}.html'
-                                with tag('a', href=link):
-                                    doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
+                                    if s.version >= "345":
+                                        link = f'http://{s.ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
+                                    else:
+                                        link = f'http://{s.ip}/index{a.actimId:04d}.html'
+                                    with tag('a', href=link):
+                                        doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
                     if s.diskSize > 0:
                         diskState = ''
                         if s.diskFree < s.diskSize // 10:
@@ -1180,14 +1204,6 @@ def actimChangeProject(actimId):
               .replace("{actimName}", Actimetres[actimId].actimName())\
               .replace("{actimInfo}", Actimetres[actimId].htmlInfo())\
               .replace("{htmlProjectList}", htmlProjectList))
-
-def actimCleanup(actimId):
-    if Actimetres.get(actimId) is not None:
-        a = Actimetres[actimId]
-        remoteAction(actimId, 0x20)
-        print(f"Location:\\project{a.projectId:02d}.html\n\n")
-    else:
-        print("Location:\\index.html\n\n")
 
 def removeProject(projectId):
     print("Content-type: text/html\n\n")
@@ -1535,10 +1551,6 @@ def processAction():
         htmlUpdate()
         plain("Ok")
 
-    elif action == 'actim-cleanup':
-        actimId = int(args['actimId'][0])
-        actimCleanup(actimId)
-
     elif action == 'actim-change-project':
         actimId = int(args['actimId'][0])
         actimChangeProject(actimId)
@@ -1560,9 +1572,19 @@ def processAction():
         remoteAction(actimId, 0x10)
         print("Location:\\index.html\n\n")
 
+    elif action == 'actim-sync':
+        actimId = int(args['actimId'][0])
+        remoteAction(actimId, 0x20)
+        print("Location:\\index.html\n\n")
+
     elif action == 'remote-restart':
         actimId = int(args['actimId'][0])
         remoteAction(actimId, 0xF0)
+        print("Location:\\index.html\n\n")
+
+    elif action == 'actim-stop':
+        actimId = int(args['actimId'][0])
+        remoteAction(actimId, 0x30)
         print("Location:\\index.html\n\n")
 
     elif action == 'retire-actim':
