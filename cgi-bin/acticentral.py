@@ -5,10 +5,11 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v370"
+VERSION_STR     = "v371"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
+TIMEFORMAT_UTC  = "%Y%m%d%H%M%S%z"
 TIMEFORMAT_FN   = "%Y%m%d%H%M%S"
 TIMEFORMAT_DISP = "%Y/%m/%d %H:%M:%S"
 TIMEFORMAT_ALERT= "%Y/%m/%d %H:%M (UTC)"
@@ -52,7 +53,7 @@ ACTIM_RETIRE_P  = timedelta(days=1)
 ACTIM_HIDE_P    = timedelta(days=1)
 
 TIMEZERO        = datetime(year=2023, month=1, day=1, tzinfo=timezone.utc)
-NOW             = datetime.utcnow()
+NOW             = datetime.now(timezone.utc)
 
 def printLog(text=''):
     try:
@@ -108,7 +109,10 @@ def printSize(size, unit='', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
-import subprocess, textwrap
+def utcStrptime(string):
+    return datetime.strptime(string.strip() + "+0000", TIMEFORMAT_UTC)
+
+import subprocess
 
 def sendEmail(recipient, subject, text):
     content = f"""\
@@ -260,9 +264,9 @@ class Actimetre:
             self.isDead = int(d['isDead'])
         else:
             self.isDead = int(str(d['isDead']).strip().upper() == "TRUE")
-        self.bootTime   = datetime.strptime(d['bootTime'], TIMEFORMAT_FN)
-        self.lastSeen   = datetime.strptime(d['lastSeen'], TIMEFORMAT_FN)
-        self.lastReport = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
+        self.bootTime   = utcStrptime(d['bootTime'])
+        self.lastSeen   = utcStrptime(d['lastSeen'])
+        self.lastReport = utcStrptime(d['lastReport'])
         self.sensorStr  = d['sensorStr']
         self.frequency  = int(d['frequency'])
         self.rating     = float(d['rating'])
@@ -287,9 +291,9 @@ class Actimetre:
                     self.projectId = p.projectId
             
         if d.get('lastDrawn') is not None:
-            self.lastDrawn = datetime.strptime(d['lastDrawn'], TIMEFORMAT_FN)
+            self.lastDrawn = utcStrptime(d['lastDrawn'])
         if d.get('graphSince') is not None:
-            self.graphSince = datetime.strptime(d['graphSince'], TIMEFORMAT_FN)
+            self.graphSince = utcStrptime(d['graphSince'])
         if d.get('reportStr') is not None:
             self.reportStr = d['reportStr']
         else:
@@ -297,7 +301,7 @@ class Actimetre:
         return self
 
     def cutHistory(self, cutLength=None):
-        if cutLength == None:
+        if cutLength is None:
             cutLength = NOW - self.bootTime
             
         historyFile = f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist"
@@ -306,7 +310,7 @@ class Actimetre:
             with open(historyFile, "r") as history:
                 for line in history:
                     timeStr, part, freqStr = line.partition(':')
-                    time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
+                    time = utcStrptime(timeStr.strip())
                     freq = int(freqStr)
                     if NOW - time <= cutLength:
                         time = NOW - cutLength
@@ -345,7 +349,7 @@ class Actimetre:
             
         try:
             with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
-                self.graphSince = datetime.strptime(history.readline().partition(':')[0], TIMEFORMAT_FN)
+                self.graphSince = utcStrptime(history.readline().partition(':')[0])
         except (FileNotFoundError, ValueError):
             with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
                 print(NOW.strftime(TIMEFORMAT_FN), ':', self.frequency, sep="", file=history)
@@ -360,7 +364,7 @@ class Actimetre:
         with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
             for line in history:
                 timeStr, part, freqStr = line.partition(':')
-                time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
+                time = utcStrptime(timeStr.strip())
                 freq = self.scaleFreq(int(freqStr))
                 if len(timeline) == 0 or freq != frequencies[-1]:
                     timeline.append(time)
@@ -439,7 +443,7 @@ class Actimetre:
             with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r+") as history:
                 for line in history:
                     timeStr, part, freqStr = line.partition(':')
-                    time = datetime.strptime(timeStr.strip(), TIMEFORMAT_FN)
+                    time = utcStrptime(timeStr.strip())
                     freq = int(freqStr)
                 if now < time: now = time
                 if frequency != freq:
@@ -659,11 +663,11 @@ class Actiserver:
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
                 a.dies()
         if d.get('lastUpdate'):
-            self.lastUpdate = datetime.strptime(d['lastUpdate'], TIMEFORMAT_FN)
+            self.lastUpdate = utcStrptime(d['lastUpdate'])
         else:
-            self.lastUpdate = datetime.strptime(d['lastReport'], TIMEFORMAT_FN)
+            self.lastUpdate = utcStrptime(d['lastReport'])
         if d.get('dbTime'):
-            self.dbTime = datetime.strptime(d['dbTime'], TIMEFORMAT_FN)
+            self.dbTime = utcStrptime(d['dbTime'])
         if d.get('isDown'):
             self.isDown = int(d['isDown'])
         else:
@@ -796,6 +800,11 @@ def htmlActimetre1(actimId):
 
         with tag('td', klass=alive):
             doc.asis('Actim&shy;{:04d}'.format(actimId))
+            if a.version >= '301' and alive == 'up' and \
+               (Actiservers.get(a.serverId) is not None and Actiservers[a.serverId].version >= '301') :
+                doc.asis('<br>')
+                with tag('button', type='submit', name='action', value='remote-restart'):
+                    text('Reboot')
         with tag('td'):
             text(a.boardType)
             doc.asis('<br>')
@@ -809,6 +818,11 @@ def htmlActimetre1(actimId):
             line('td', "")
         with tag('td'):
             doc.asis(a.frequencyText(a.sensorStr))
+            if a.version >= '301' and alive == 'up' and \
+               (Actiservers.get(a.serverId) is not None and Actiservers[a.serverId].version >= '301') :
+                doc.asis('<br>')
+                with tag('button', type='submit', name='action', value='remote-button'):
+                    text('Button')
         if alive == 'up':
             with tag('td'):
                 doc.asis(htmlRssi(a.rssi))
@@ -843,13 +857,6 @@ def htmlActimetre1(actimId):
             if a.serverId == 0:
                 with tag('button', type='submit', name='action', value='actim-change-project'):
                     doc.asis('Change<br>project')
-            if a.version >= '301' and alive == 'up' and \
-            (Actiservers.get(a.serverId) != None and Actiservers[a.serverId].version >= '301') :
-                with tag('button', type='submit', name='action', value='remote-button'):
-                    text('Button')
-                doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='remote-restart'):
-                    text('Restart')
         doc.asis('</form>\n')
     return indent(doc.getvalue())
 
@@ -1133,7 +1140,7 @@ def repoStats():
         dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
 
     with open(STAT_FILE, "w") as stat:
-        stat.write(NOW.strftime(TIMEFORMAT_DISP));
+        stat.write(NOW.strftime(TIMEFORMAT_DISP))
 
     htmlUpdate()
     
@@ -1456,7 +1463,7 @@ def processAction():
         boardType = args['boardType'][0]
         serverId  = int(args['serverId'][0])
         version   = args['version'][0]
-        bootTime  = datetime.strptime(args['bootTime'][0], TIMEFORMAT_FN)
+        bootTime  = utcStrptime(args['bootTime'][0])
 
         thisServer = Actiservers.get(serverId)
         if thisServer is None:
@@ -1539,7 +1546,7 @@ def processAction():
     elif action == 'actim-cut-graph':
         actimId = int(args['actimId'][0])
         if Actimetres.get(actimId) is not None:
-            Actimetres[actimId].cutHistory(None)
+            Actimetres[actimId].cutHistory()
             Actimetres[actimId].drawGraph()
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
             htmlUpdate()
@@ -1615,6 +1622,6 @@ if 'action' in args.keys():
         secret = args['secret'][0]
     else:
         secret = "YouDontKnowThis"
-    processAction();
+    processAction()
 
 lock.close()
