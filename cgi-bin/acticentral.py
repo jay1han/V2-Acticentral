@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v384"
+VERSION_STR     = "v385"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -1158,6 +1158,7 @@ def htmlAllServers():
         with open(SERVERS_TEMPLATE, "r") as template:
             print(template.read() \
                   .replace("{Actiservers}", indent(doc.getvalue())) \
+                  .replace("{Updated}", LAST_UPDATED)\
                   , file=html)
     
 def htmlProjects():
@@ -1190,6 +1191,7 @@ def htmlProjects():
                       .replace("{projectEmail}", projectEmail)\
                       .replace("{projectActimHTML}", projectActimHTML)\
                       .replace("{projectId}", str(projectId)) \
+                      .replace("{Updated}", LAST_UPDATED)\
                       , file=html)
         try:
             os.chmod(f"{HTML_DIR}/project{projectId:02d}.html", 0o777)
@@ -1220,13 +1222,13 @@ def htmlProjects():
     HTML_PROJECTS = indent(doc.getvalue())
 
 def htmlUpdate():
+    global LAST_UPDATED
+    LAST_UPDATED = NOW.strftime(TIMEFORMAT_DISP)
+    
     htmlActimetres()
     htmlActiservers()
     htmlProjects()
     htmlAllServers()
-    
-    global LAST_UPDATED
-    LAST_UPDATED = NOW.strftime(TIMEFORMAT_DISP)
     
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
