@@ -1436,18 +1436,18 @@ def assignActim(data):
     airNotRain = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 37 and actisInfo.cpuIdle >= 0.5]
     if len(airNotRain) > 0:
         airNotRain.sort(key=lambda actisInfo: actisInfo.cpuIdle, reverse=True)
-        return airNotRain[0]
+        return airNotRain[0].index
     sunNotMud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 64 and actisInfo.cpuIdle >= 0.8]
     if len(sunNotMud) > 0:
         sunNotMud.sort(key=lambda actisInfo: actisInfo.rssi)
-        return sunNotMud[0]
+        return sunNotMud[0].index
     waterAndCloud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 64 and actisInfo.cpuIdle >= 0.5]
     if len(waterAndCloud) > 0:
         waterAndCloud.sort(key=lambda actisInfo: actisInfo.cpuIdle, reverse=True)
-        return waterAndCloud[0]
+        return waterAndCloud[0].index
     ### TODO: send alert
     actisList.sort(key=lambda actisInfo: actisInfo.rssi)
-    return actisList[0]
+    return actisList[0].index
 
 def plain(text=''):
     print("Content-type: text/plain\n\n")
@@ -1710,7 +1710,9 @@ def processAction():
 
     elif action == 'actimetre-query':
         checkSecret()
-        plain(str(assignActim(sys.stdin.read())))
+        assigned = assignActim(sys.stdin.read())
+        printLog(f'Assigned {assigned}')
+        plain(str(assigned))
 
     elif action == 'actimetre-removed':
         checkSecret()
