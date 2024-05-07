@@ -2,10 +2,12 @@
 
 import os, sys, json, fcntl
 from datetime import datetime, timedelta, timezone
+from json import JSONDecodeError
+
 from yattag import Doc, indent
 
 LOG_SIZE_MAX    = 10_000_000
-VERSION_STR     = "v385"
+VERSION_STR     = "v390"
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = "/etc/actimetre/administrators"
 
@@ -1527,10 +1529,16 @@ def processForm(formId):
     else:
         print("Location:\\index.html\n\n")
 
+def checkSecret():
+    if secret != SECRET_KEY:
+        printLog(f"Wrong secret {secret}")
+        print(f"Wrong secret {secret}", file=sys.stdout)
+        plain("Wrong secret")
+        return
+
 def processAction():
     if action == 'actiserver' or action == 'actiserver3':
-        if secret != SECRET_KEY:
-            return
+        checkSecret()
         serverId = int(args['serverId'][0])
             
         if serverId != 0:
@@ -1574,21 +1582,18 @@ def processAction():
                 plain('OK')
 
     elif action == 'registry':
-        if secret != SECRET_KEY:
-            return
+        checkSecret()
 #        serverId = int(args['serverId'][0])
         plain(json.dumps(Registry))
 
     elif action == 'projects':
-        if secret != SECRET_KEY:
-            return
+        checkSecret()
 #        serverId = int(args['serverId'][0])
         plain()
         listProjects()
 
     elif action == 'report':
-        if secret != SECRET_KEY:
-            return
+        checkSecret()
         serverId  = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
         if Actimetres.get(actimId) is not None:
@@ -1608,8 +1613,7 @@ def processAction():
         print("Location:\\index.html\n\n")
 
     elif action == 'actimetre-new':
-        if secret != SECRET_KEY:
-            return
+        checkSecret()
         mac       = args['mac'][0]
         boardType = args['boardType'][0]
         serverId  = int(args['serverId'][0])
@@ -1651,8 +1655,7 @@ def processAction():
         plain(responseStr)
 
     elif action == 'actimetre-off':
-        if secret != SECRET_KEY:
-            return
+        checkSecret()
         serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
@@ -1665,9 +1668,18 @@ def processAction():
             htmlUpdate()
         plain("Ok")
 
-    elif action == 'actimetre-removed':
-        if secret != SECRET_KEY:
+    elif action == 'actimetre-query':
+        checkSecret()
+        ### TODO
+        try:
+            actisList = json.load(sys.stdin)
+        except JSONDecodeError:
+            plain("Parse error")
             return
+        plain("0")
+
+    elif action == 'actimetre-removed':
+        checkSecret()
         serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
