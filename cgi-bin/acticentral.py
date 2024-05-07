@@ -1409,6 +1409,46 @@ def remoteAction(actimId, command):
     remotes[actimId] = command
     saveRemotes(remotes)
 
+class ActisInfo:
+    def __init__(self, index, serverId, rssi):
+        self.index = index
+        self.serverId = serverId
+        self.rssi = rssi
+        self.cpuIdle = 0.0
+        if Actiservers.get(serverId) is not None:
+            self.cpuIdle = Actiservers[serverId].cpuIdle
+
+def assignActim(data):
+    try:
+        parseList = json.loads(data)
+    except JSONDecodeError:
+        return 101
+
+    actisList = []
+    index = 0
+    for actisInfo in parseList:
+        serverId = int(actisInfo['serverId'])
+        rssi = int(actisInfo['rssi'])
+        printLog(f'[{index:2d}] Actis{serverId:03d}: -{rssi}dB')
+        actisList.append(ActisInfo(index, serverId, rssi))
+        index += 1
+
+    airNotRain = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 37 and actisInfo.cpuIdle >= 0.5]
+    if len(airNotRain) > 0:
+        airNotRain.sort(key=lambda actisInfo: actisInfo.cpuIdle, reverse=True)
+        return airNotRain[0]
+    sunNotMud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 64 and actisInfo.cpuIdle >= 0.8]
+    if len(sunNotMud) > 0:
+        sunNotMud.sort(key=lambda actisInfo: actisInfo.rssi)
+        return sunNotMud[0]
+    waterAndCloud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 64 and actisInfo.cpuIdle >= 0.5]
+    if len(waterAndCloud) > 0:
+        waterAndCloud.sort(key=lambda actisInfo: actisInfo.cpuIdle, reverse=True)
+        return waterAndCloud[0]
+    ### TODO: send alert
+    actisList.sort(key=lambda actisInfo: actisInfo.rssi)
+    return actisList[0]
+
 def plain(text=''):
     print("Content-type: text/plain\n\n")
     print(text)
@@ -1670,16 +1710,7 @@ def processAction():
 
     elif action == 'actimetre-query':
         checkSecret()
-        ### TODO
-        try:
-            actisList = json.load(sys.stdin)
-        except JSONDecodeError:
-            plain('101 Parse error')
-            return
-
-        for (serverId, rssi) in actisList:
-            printLog(f'Actis{serverId:03d}: -{rssi}dB')
-        plain('0')
+        plain(str(assignActim(sys.stdin.read())))
 
     elif action == 'actimetre-removed':
         checkSecret()
