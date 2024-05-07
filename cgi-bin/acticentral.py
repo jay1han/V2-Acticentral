@@ -1674,9 +1674,12 @@ def processAction():
         try:
             actisList = json.load(sys.stdin)
         except JSONDecodeError:
-            plain("101 Parse error")
+            plain('101 Parse error')
+            return
 
-        plain("0")
+        for (serverId, rssi) in actisList:
+            printLog(f'Actis{serverId:03d}: -{rssi}dB')
+        plain('0')
 
     elif action == 'actimetre-removed':
         checkSecret()
