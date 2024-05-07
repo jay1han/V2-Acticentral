@@ -1674,8 +1674,8 @@ def processAction():
         try:
             actisList = json.load(sys.stdin)
         except JSONDecodeError:
-            plain("Parse error")
-            return
+            plain("101 Parse error")
+
         plain("0")
 
     elif action == 'actimetre-removed':
