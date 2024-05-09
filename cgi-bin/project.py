@@ -119,7 +119,7 @@ class ProjectsClass:
     def html(self, *, picker=None):
         htmlString = ""
         for projectId in sorted(self.projects.keys()):
-            if picker is not None and picker(self.projects[projectId]):
+            if picker is None or picker(self.projects[projectId]):
                 htmlString += self.projects[projectId].html()
         return htmlString
 
