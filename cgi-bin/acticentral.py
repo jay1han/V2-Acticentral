@@ -10,12 +10,11 @@ fcntl.lockf(lock, fcntl.LOCK_EX)
 printLog("===================================================")
 
 import globals as x
-from project import Project, loadProjects, htmlProjects, listProjects
+from project import Projects
 from actimetre import Actimetre, loadActimetres
 from actiserver import Actiserver, loadActiservers, htmlActiservers
 
 x.loadRegistry()
-loadProjects()
 loadActimetres()
 loadActiservers()
 
@@ -34,7 +33,7 @@ def htmlUpdate():
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
         .replace("{Actiservers}", htmlActiservers(liveActiservers))\
-        .replace("{Projects}", htmlProjects(x.Projects))\
+        .replace("{Projects}", Projects.html())\
         .replace("{Updated}", LAST_UPDATED)\
         .replace("{Version}", VERSION_STR)\
         .replace("{cgi-bin}", CGI_BIN)
@@ -75,9 +74,7 @@ def checkAlerts():
         dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
 
 def repoStats():
-    for p in x.Projects.values():
-        p.repoSize = 0
-        p.repoNums = 0
+    Projects.clearRepos()
 
     save = False
     saveP = False
@@ -86,17 +83,15 @@ def repoStats():
             continue
         if a.drawGraphMaybe():
             save = True
-        if x.Projects.get(a.projectId) is None:
-            x.Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
-            saveP = True
-        saveP = x.Projects[a.projectId].addActim(a.actimId)
-        x.Projects[a.projectId].repoNums += a.repoNums
-        x.Projects[a.projectId].repoSize += a.repoSize
+        p = Projects.get(a.projectId)
+        saveP = p.addActim(a.actimId)
+        p.repoNums += a.repoNums
+        p.repoSize += a.repoSize
 
     if save:
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
     if saveP:
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+        Projects.save()
 
     with open(STAT_FILE, "w") as stat:
         stat.write(NOW.strftime(TIMEFORMAT_DISP))
@@ -109,8 +104,8 @@ def projectChangeInfo(projectId):
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{project-change-info}", "project-change-info")\
-              .replace("{projectTitle}", x.Projects[projectId].name())\
-              .replace("{projectOwner}", x.Projects[projectId].owner)\
+              .replace("{projectTitle}", Projects.get(projectId).name())\
+              .replace("{projectOwner}", Projects.get(projectId).owner)\
               .replace("{projectId}", str(projectId)))
 
 def projectEditInfo(projectId):
@@ -119,15 +114,15 @@ def projectEditInfo(projectId):
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{project-change-info}", "project-edit-info")\
-              .replace("{projectTitle}", x.Projects[projectId].name())\
-              .replace("{projectOwner}", x.Projects[projectId].owner)\
+              .replace("{projectTitle}", Projects.get(projectId).name())\
+              .replace("{projectOwner}", Projects.get(projectId).owner)\
               .replace("{projectId}", str(projectId)))
 
 def actimChangeProject(actimId):
     print("Content-type: text/html\n\n")
 
     htmlProjectList = ""
-    for p in x.Projects.values():
+    for p in Projects.values():
         htmlProjectList += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
         if p.projectId == x.Actimetres[actimId].projectId:
             htmlProjectList += ' checked="true"'
@@ -144,18 +139,18 @@ def removeProject(projectId):
     print("Content-type: text/html\n\n")
 
     actimList = ""
-    if len(x.Projects[projectId].actimetreList) == 0:
+    if len(Projects.get(projectId).actimetreList) == 0:
         actimList = "(no Actimetres assigned to this project)\n"
     else:
         actimList = ""
-        for actimId in x.Projects[projectId].actimetreList:
+        for actimId in Projects.get(projectId).actimetreList:
             if x.Actimetres.get(actimId) is not None:
                 actimList += f'<li>{x.Actimetres[actimId].htmlCartouche()}</li>\n'
             
     with open(f"{HTML_DIR}/formRemove.html") as form:
         print(form.read()\
               .replace("{projectId}", str(projectId))\
-              .replace("{projectTitle}", x.Projects[projectId].name())\
+              .replace("{projectTitle}", Projects.get(projectId).name())\
               .replace("{actimetreList}", actimList))
 
 def retireActim(actimId):
@@ -178,7 +173,7 @@ def retireActim(actimId):
               .replace("{repoNums}", repoNumsStr)\
               .replace("{repoSize}", printSize(a.repoSize))\
               .replace("{owner}", ownerStr)\
-              .replace("{projectTitle}", x.Projects[a.projectId].name()))
+              .replace("{projectTitle}", Projects.get(a.projectId).name()))
 
 def loadRemotes():
     try:
@@ -265,10 +260,8 @@ def processForm(formId):
         printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
 
         if title != "" and owner != "":
-            x.Projects[projectId].title = title
-            x.Projects[projectId].owner = owner
-            x.Projects[projectId].email = email
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+            Projects.set(projectId, title, owner, email)
+            Projects.save()
             htmlUpdate()
         print(f'Location:\\index.html\n\n')
 
@@ -280,10 +273,8 @@ def processForm(formId):
         printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
 
         if title != "" and owner != "":
-            x.Projects[projectId].title = title
-            x.Projects[projectId].owner = owner
-            x.Projects[projectId].email = email
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+            Projects.set(projectId, title, owner, email)
+            Projects.save()
             htmlUpdate()
         print(f"Location:\\project{projectId:02d}.html\n\n")
 
@@ -293,10 +284,10 @@ def processForm(formId):
         oldProject = x.Actimetres[actimId].projectId
         printLog(f"Changing {actimId} from {oldProject} to {projectId}")
 
-        x.Projects[oldProject].actimetreList.remove(actimId)
-        x.Projects[projectId].actimetreList.add(actimId)
+        Projects.removeActim(oldProject, actimId)
+        Projects.get(projectId).actimetreList.add(actimId)
         x.Actimetres[actimId].projectId = projectId
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+        Projects.save()
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
         htmlUpdate()
         print("Location:\\index.html\n\n")
@@ -307,11 +298,8 @@ def processForm(formId):
         printLog(f"Create new project with data: {title}, {owner}")
 
         if title != "" and owner != "":
-            projectId = 1
-            while projectId in set(x.Projects.keys()):
-                projectId += 1
-            x.Projects[projectId] = Project(projectId, title, owner)
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+            Projects.new(title, owner)
+            Projects.save()
             htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -322,9 +310,8 @@ def processForm(formId):
         a = x.Actimetres.get(actimId)
         if a is not None and \
            (a.projectId == 0 and owner == 'CONFIRM') or \
-           (x.Projects.get(a.projectId) is not None and x.Projects[a.projectId].owner == owner):
-
-            printLog(f"Retire Actimetre{actimId:04d} from {x.Projects[a.projectId].name()}")
+           Projects.get(a.projectId).owner == owner:
+            printLog(f"Retire Actimetre{actimId:04d} from {Projects.get(a.projectId).name()}")
             save = False
             for s in x.Actiservers.values():
                 if actimId in s.actimetreList:
@@ -334,12 +321,7 @@ def processForm(formId):
                 dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
 
             save = False
-            for p in x.Projects.values():
-                if actimId in p.actimetreList:
-                    p.actimetreList.remove(actimId)
-                    save = True
-            if save:
-                dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+            Projects.removeActim(actimId)
 
             del x.Registry[x.Actimetres[actimId].mac]
             x.saveRegistry()
@@ -355,11 +337,11 @@ def processForm(formId):
     elif formId == 'remove-project':
         projectId = int(args['projectId'][0])
         if projectId != 0:
-            for a in x.Projects[projectId].actimetreList:
+            for a in Projects.get(projectId).actimetreList:
                 if x.Actimetres.get(a) is not None:
                     x.Actimetres[a].projectId = 0
-            del x.Projects[projectId]
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+            Projects.delete(projectId)
+            Projects.save()
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             repoStats()
         print(f"Location:\\index.html\n\n")
@@ -406,8 +388,8 @@ def processAction():
                 plain(json.dumps(x.Registry))
             else:
                 if x.RegistryTime > thisServer.dbTime.replace(tzinfo=timezone.utc) \
-                   or x.ProjectsTime > thisServer.dbTime.replace(tzinfo=timezone.utc):
-                    printLog(f'{thisServer.dbTime} < {x.ProjectsTime}, needs update')
+                   or Projects.fileTime > thisServer.dbTime.replace(tzinfo=timezone.utc):
+                    printLog(f'{thisServer.dbTime} < {Projects.fileTime}, needs update')
                     plain('!')
                 else:
                     remotes = loadRemotes()
@@ -428,7 +410,7 @@ def processAction():
         if not checkSecret(): return
 #        serverId = int(args['serverId'][0])
         plain()
-        listProjects()
+        Projects.list()
 
     elif action == 'report':
         if not checkSecret(): return

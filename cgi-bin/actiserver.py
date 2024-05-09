@@ -96,7 +96,7 @@ class Actiserver:
                   f'IP {self.ip}\nChannel {self.channel}\n' + \
                   f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' + \
                   f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' + \
-                  f'Last known x.Actimetres:\n    '
+                  f'Last known Actimetres:\n    '
         for actimId in self.actimetreList:
             content += f'Actim{actimId:04d} '
         content += '\n'
@@ -111,7 +111,7 @@ class Actiserver:
                   f'IP {self.ip}\nChannel {self.channel}\n' + \
                   f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' + \
                   f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' + \
-                  f'Last known x.Actimetres:\n    '
+                  f'Last known Actimetres:\n    '
         for actimId in self.actimetreList:
             content += f'Actim{actimId:04d} '
             if x.Actimetres.get(actimId) is not None:

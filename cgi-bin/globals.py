@@ -8,8 +8,6 @@ Registry     = {}
 RegistryTime = TIMEZERO
 Actiservers  = {}
 Actimetres   = {}
-Projects     = {}
-ProjectsTime = TIMEZERO
 
 def saveRegistry():
     registryBackup = REGISTRY_BACKUP + datetime.now().strftime(TIMEFORMAT_FN)

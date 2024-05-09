@@ -4,12 +4,15 @@ from const import *
 import globals as x
 
 class Project:
-    def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
+    def __init__(self, projectId=0, title="", owner="", email="", actimetreList=None):
         self.projectId     = projectId
         self.title         = title
         self.owner         = owner
         self.email         = email
-        self.actimetreList = actimetreList
+        if actimetreList is None:
+            self.actimetreList = set()
+        else:
+            self.actimetreList = actimetreList
         self.repoNums      = 0
         self.repoSize      = 0
 
@@ -100,20 +103,72 @@ class Project:
 
         return indent(doc.getvalue())
 
-def listProjects():
-    for (projectId, p) in x.Projects.items():
-        if len(p.actimetreList) > 0:
-            print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
+class ProjectsClass:
+    def __init__(self):
+        self.projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+        if self.projects.get(0) is None:
+            self.projects[0] = Project(0, "Not assigned", "No owner")
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
+        self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
-def loadProjects():
-    x.Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
-    if x.Projects.get(0) is None:
-        x.Projects[0] = Project(0, "Not assigned", "No owner")
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
-    x.ProjectTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+    def list(self):
+        for (projectId, p) in self.projects.items():
+            if len(p.actimetreList) > 0:
+                print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
 
-def htmlProjects(projects):
-    htmlString = ""
-    for projectId in sorted(projects.keys()):
-        htmlString += projects[projectId].html()
-    return htmlString
+    def html(self, *, picker=None):
+        htmlString = ""
+        for projectId in sorted(self.projects.keys()):
+            if picker is not None and picker(self.projects[projectId]):
+                htmlString += self.projects[projectId].html()
+        return htmlString
+
+    def get(self, projectId):
+        if projectId not in self.projects.keys():
+            self.projects[projectId] = Project(projectId, "Not assigned", "Unknown")
+        return self.projects[projectId]
+
+    def clearRepos(self):
+        for p in self.projects.values():
+            p.repoNums = 0
+            p.repoSize = 0
+
+    def set(self, projectId, title="Not assigned", owner="", email=""):
+        if projectId not in self.projects.keys():
+            self.projects[projectId] = Project(projectId, title, owner, email)
+        else:
+            self.projects[projectId].title = title
+            self.projects[projectId].owner = owner
+        return self.projects[projectId]
+
+    def save(self, save=True):
+        if save:
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
+
+    def values(self):
+        return self.projects.values()
+
+    def removeActim(self, actimId, projectId=None):
+        if projectId is not None:
+            if projectId in self.projects.keys():
+                if actimId in self.projects[projectId].actimetreList:
+                    self.projects[projectId].actimetreList.remove(actimId)
+        else:
+            save = False
+            for p in self.projects.values():
+                if actimId in p.actimetreList:
+                    p.actimetreList.remove(actimId)
+                    save = True
+            self.save(save)
+
+    def new(self, title, owner):
+        projectId = 1
+        while projectId in set(self.projects.keys()):
+            projectId += 1
+        self.projects[projectId] = Project(projectId, title, owner)
+
+    def delete(self, projectId):
+        if projectId in self.projects.keys():
+            del self.projects[projectId]
+
+Projects = ProjectsClass()
