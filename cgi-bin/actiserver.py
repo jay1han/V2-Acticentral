@@ -1,5 +1,7 @@
-from globals import *
-from actimetre import *
+if not 'Registry' in dir():
+    from globals import *
+if not 'Actimetre' in dir():
+    from actimetre import *
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False, \
@@ -232,4 +234,3 @@ class Actiserver:
 
 if len(Actiservers) == 0:
     Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
-

@@ -1,5 +1,7 @@
-from globals import *
-from actimetre import *
+if not 'Registry' in dir():
+    from globals import *
+if not 'Actimetre' in dir():
+    from actimetre import *
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
