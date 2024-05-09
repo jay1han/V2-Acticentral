@@ -230,10 +230,10 @@ class Actiserver:
 
         return indent(doc.getvalue())
 
-def htmlAllServers():
+def htmlAllServers(actiservers):
     htmlString = ""
-    for serverId in sorted(Actiservers.keys()):
-        htmlString += Actiservers[serverId].html(True)
+    for serverId in sorted(actiservers.keys()):
+        htmlString += actiservers[serverId].html(True)
 
     with open(SERVERS_HTML, "w") as html:
         with open(SERVERS_TEMPLATE, "r") as template:

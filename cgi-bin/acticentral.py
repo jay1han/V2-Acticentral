@@ -20,7 +20,7 @@ ProjectsTime = initProjectsTime
 def htmlUpdate():
 #    htmlActiservers()
 #    htmlProjects()
-    htmlAllServers()
+    htmlAllServers(Actiservers)
     
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
