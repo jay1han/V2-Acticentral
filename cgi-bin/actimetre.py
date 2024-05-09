@@ -508,6 +508,6 @@ class Actimetre:
             doc.asis('</form>\n')
         return indent(doc.getvalue())
 
-if Actimetres is None:
+if len(Actimetres) == 0:
     Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 

@@ -230,6 +230,6 @@ class Actiserver:
 
         return indent(doc.getvalue())
 
-if Actiservers is None:
+if len(Actiservers) == 0:
     Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
 
