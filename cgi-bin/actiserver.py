@@ -55,11 +55,13 @@ class Actiserver:
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
                 a = Actimetre().fromD(actimData, fromFile=False)
-                if Actimetres.get(a.actimId) is None:
-                    Actimetres[a.actimId] = a
-                else:
+                if a.actimId in Actimetres.keys():
                     Actimetres[a.actimId].update(a, actual)
+                else:
+                    Actimetres[a.actimId] = a
                 self.actimetreList.add(a.actimId)
+                if Actimetres[a.actimId].projectId in Projects.keys():
+                    Projects[Actimetres[a.actimId].projectId].htmlUpdate()
         for a in Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
                 a.dies()
