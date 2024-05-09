@@ -104,12 +104,14 @@ class Project:
 
         return indent(doc.getvalue())
 
-if len(Projects) == 0:
-    Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
-    if Projects.get(0) is None:
-        Projects[0] = Project(0, "Not assigned", "No owner")
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-    ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+def initProjects():
+    global Projects, ProjectsTime
+    if len(Projects) == 0:
+        Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+        if Projects.get(0) is None:
+            Projects[0] = Project(0, "Not assigned", "No owner")
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+        ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
 def listProjects():
     for (projectId, p) in Projects.items():

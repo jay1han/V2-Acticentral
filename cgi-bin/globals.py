@@ -60,10 +60,12 @@ ACTIM_HIDE_P    = timedelta(days=1)
 TIMEZERO        = datetime(year=2023, month=1, day=1, tzinfo=timezone.utc)
 NOW             = datetime.now(timezone.utc)
 
-Registry    = {}
-Projects    = {}
-Actimetres  = {}
-Actiservers = {}
+Registry     = {}
+RegistryTime = TIMEZERO
+Projects     = {}
+ProjectsTime = TIMEZERO
+Actimetres   = {}
+Actiservers  = {}
 
 def printLog(text=''):
     try:
@@ -94,8 +96,8 @@ def dumpData(filename, data):
     with open(filename, "r+") as registry:
         json.dump(data, registry)
 
-if not 'Registry' in globals():
-    Registry = {}
+def initRegistry():
+    global Registry, RegistryTime
     RegistryTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
     with open(REGISTRY, "r") as registry:
         try:

@@ -17,6 +17,11 @@ if not 'Actimetre' in dir():
 if not 'Actiserver' in dir():
     from actiserver import *
 
+initRegistry()
+initProjects()
+initActimetres()
+initActiservers()
+
 def htmlAllServers():
     html = ""
     for serverId in sorted(Actiservers.keys()):

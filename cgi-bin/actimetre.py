@@ -511,6 +511,8 @@ class Actimetre:
             doc.asis('</form>\n')
         return indent(doc.getvalue())
 
-if len(Actimetres) == 0:
-    Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+def initActimetres():
+    global Actimetres
+    if len(Actimetres) == 0:
+        Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 

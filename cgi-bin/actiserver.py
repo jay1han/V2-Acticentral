@@ -232,5 +232,7 @@ class Actiserver:
 
         return indent(doc.getvalue())
 
-if len(Actiservers) == 0:
-    Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
+def initActiservers():
+    global Actiservers
+    if len(Actiservers) == 0:
+        Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
