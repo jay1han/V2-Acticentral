@@ -128,19 +128,19 @@ For more information, please visit actimetre.fr
 .
 """
     if recipient != "":
-        result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", recipient], \
+        result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", recipient],
                                 input = content, text=True, stderr=subprocess.STDOUT)
         printLog(f'Email sent to "{recipient}", sendmail returns {result.returncode}: {result.stdout}')
     else:
         try:
             admins = open(ADMINISTRATORS, "r")
         except OSError:
-            result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", ADMIN_EMAIL], \
+            result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", ADMIN_EMAIL],
                                     input = content, text=True, stderr=subprocess.STDOUT)
             printLog(f'Email sent to "{ADMIN_EMAIL}", sendmail returns {result.returncode}: {result.stdout}')
         else:
             for email in admins:
-                result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", email.strip()], \
+                result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", email.strip()],
                                         input = content, text=True, stderr=subprocess.STDOUT)
                 printLog(f'Email sent to "{email.strip()}", sendmail returns {result.returncode}: {result.stdout}')
             admins.close()

@@ -1,5 +1,3 @@
-from yattag import Doc, indent
-
 from const import *
 import globals as x
 from project import Projects
@@ -13,8 +11,8 @@ FSCALEV3     = {100:3, 1000:5, 4000:8, 8000:10}
 FSCALEV3TAG  = {100:3, 1000:5, 4000:8}
 
 class Actimetre:
-    def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, isStopped=False, \
-                 bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO, \
+    def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, isStopped=False,
+                 bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,
                  projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,  repoNums = 0, repoSize = 0):
         self.actimId    = int(actimId)
         self.mac        = mac
@@ -175,7 +173,7 @@ class Actimetre:
 
         timeline.append(NOW)
         frequencies.append(self.scaleFreq(self.frequency))
-        freq = [self.scaleFreq(self.frequency) for i in range(len(timeline))]
+        freq = [self.scaleFreq(self.frequency) for _ in range(len(timeline))]
 
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
@@ -493,7 +491,7 @@ class Actimetre:
                     text(self.reportStr)
                     doc.asis('<br><button type="submit" name="action" value="clear-report">Clear</button>\n')
             doc.asis('</form>\n')
-        return indent(doc.getvalue())
+        return doc.getvalue()
 
 def loadActimetres():
     x.Actimetres = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}

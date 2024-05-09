@@ -1,7 +1,6 @@
-from yattag import Doc, indent
-
 from const import *
 import globals as x
+from actimetre import Actimetre
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=None):
@@ -75,8 +74,8 @@ class Project:
                       .replace("{projectEmail}", projectEmail) \
                       .replace("{projectActimHTML}", projectActimHTML) \
                       .replace("{projectId}", str(self.projectId)) \
-                      .replace("{Updated}", LAST_UPDATED) \
-                      , file=html)
+                      .replace("{Updated}", LAST_UPDATED),
+                      file=html)
         try:
             os.chmod(f"{HTML_DIR}/project{self.projectId:02d}.html", 0o777)
         except OSError:
@@ -101,7 +100,7 @@ class Project:
                             with tag('div'):
                                 doc.asis(x.Actimetres[actimId].htmlCartouche())
 
-        return indent(doc.getvalue())
+        return doc.getvalue()
 
 class ProjectsClass:
     def __init__(self):
@@ -110,6 +109,7 @@ class ProjectsClass:
             self.projects[0] = Project(0, "Not assigned", "No owner")
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+        self.dirty = False
 
     def list(self):
         for (projectId, p) in self.projects.items():
@@ -177,5 +177,22 @@ class ProjectsClass:
     def htmlUpdate(self, projectId):
         if projectId in self.projects.keys():
             self.projects[projectId].htmlUpdate()
+
+    def addActim(self, actim: Actimetre):
+        p = self.get(actim.projectId)
+        isNew = p.addActim(actim.actimId)
+        if isNew:
+            p.repoNums += actim.repoNums
+            p.repoSize += actim.repoSize
+        return isNew
+
+    def htmlList(self, projectId=None):
+        htmlString = ""
+        for p in self.projects.values():
+            htmlString += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
+            if p.projectId == projectId:
+                htmlString += ' checked="true"'
+            htmlString += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
+        return htmlString
 
 Projects = ProjectsClass()

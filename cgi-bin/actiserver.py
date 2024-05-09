@@ -1,13 +1,11 @@
-from yattag import Doc, indent
-
 from const import *
 import globals as x
 from actimetre import Actimetre
 from project import Projects
 
 class Actiserver:
-    def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False, \
-                 isDown = 0, lastUpdate=TIMEZERO, dbTime=TIMEZERO, actimetreList=set()):
+    def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False,
+                 isDown = 0, lastUpdate=TIMEZERO, dbTime=TIMEZERO, actimetreList=None):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
@@ -19,7 +17,10 @@ class Actiserver:
         self.lastUpdate = lastUpdate
         self.dbTime     = dbTime
         self.isDown     = isDown
-        self.actimetreList = actimetreList
+        if actimetreList is None:
+            self.actimetreList = set()
+        else:
+            self.actimetreList = actimetreList
         self.diskLow    = 0
         self.cpuIdle    = 0.0
         self.memAvail   = 0.0
@@ -205,7 +206,7 @@ class Actiserver:
                     line('td', '')
                     line('td', '')
 
-        return indent(doc.getvalue())
+        return doc.getvalue()
 
 def htmlActiservers(actiservers):
     htmlString = ""

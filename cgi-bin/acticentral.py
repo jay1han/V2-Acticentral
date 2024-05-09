@@ -24,8 +24,8 @@ def htmlUpdate():
         with open(SERVERS_TEMPLATE, "r") as template:
             print(template.read() \
                   .replace('{Actiservers}', htmlString) \
-                  .replace('{Updated}', LAST_UPDATED) \
-                  , file=html)
+                  .replace('{Updated}', LAST_UPDATED),
+                  file=html)
 
     liveActiservers = {key: value for (key, value) in x.Actiservers.items() \
                        if NOW - value.lastUpdate < ACTIS_HIDE_P}
@@ -83,10 +83,7 @@ def repoStats():
             continue
         if a.drawGraphMaybe():
             save = True
-        p = Projects.get(a.projectId)
-        saveP = p.addActim(a.actimId)
-        p.repoNums += a.repoNums
-        p.repoSize += a.repoSize
+        saveP = Projects.addActim(a)
 
     if save:
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
@@ -121,24 +118,16 @@ def projectEditInfo(projectId):
 def actimChangeProject(actimId):
     print("Content-type: text/html\n\n")
 
-    htmlProjectList = ""
-    for p in Projects.values():
-        htmlProjectList += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
-        if p.projectId == x.Actimetres[actimId].projectId:
-            htmlProjectList += ' checked="true"'
-        htmlProjectList += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
-
     with open(f"{HTML_DIR}/formActim.html") as form:
         print(form.read()\
               .replace("{actimId}", str(actimId))\
               .replace("{actimName}", x.Actimetres[actimId].actimName())\
               .replace("{actimInfo}", x.Actimetres[actimId].htmlInfo())\
-              .replace("{htmlProjectList}", htmlProjectList))
+              .replace("{htmlProjectList}", Projects.htmlList(x.Actimetres[actimId].projectId)))
 
 def removeProject(projectId):
     print("Content-type: text/html\n\n")
 
-    actimList = ""
     if len(Projects.get(projectId).actimetreList) == 0:
         actimList = "(no Actimetres assigned to this project)\n"
     else:
@@ -228,18 +217,18 @@ def assignActim(data):
 
     airNotRain = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 37 and actisInfo.cpuIdle >= 0.5]
     if len(airNotRain) > 0:
-        airNotRain.sort(key=lambda actisInfo: actisInfo.cpuIdle, reverse=True)
+        airNotRain.sort(key=lambda actis: actis.cpuIdle, reverse=True)
         return airNotRain[0].index
     sunNotMud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 64 and actisInfo.cpuIdle >= 0.8]
     if len(sunNotMud) > 0:
-        sunNotMud.sort(key=lambda actisInfo: actisInfo.rssi)
+        sunNotMud.sort(key=lambda actis: actis.rssi)
         return sunNotMud[0].index
     waterAndCloud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 64 and actisInfo.cpuIdle >= 0.5]
     if len(waterAndCloud) > 0:
-        waterAndCloud.sort(key=lambda actisInfo: actisInfo.cpuIdle, reverse=True)
+        waterAndCloud.sort(key=lambda actis: actis.cpuIdle, reverse=True)
         return waterAndCloud[0].index
     ### TODO: send alert
-    actisList.sort(key=lambda actisInfo: actisInfo.rssi)
+    actisList.sort(key=lambda actis: actis.rssi)
     return actisList[0].index
 
 def plain(text=''):
@@ -320,7 +309,6 @@ def processForm(formId):
             if save:
                 dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
 
-            save = False
             Projects.removeActim(actimId)
 
             del x.Registry[x.Actimetres[actimId].mac]
@@ -414,7 +402,7 @@ def processAction():
 
     elif action == 'report':
         if not checkSecret(): return
-        serverId  = int(args['serverId'][0])
+#        serverId  = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
         if x.Actimetres.get(actimId) is not None:
             message = sys.stdin.read()
@@ -476,7 +464,7 @@ def processAction():
 
     elif action == 'actimetre-off':
         if not checkSecret(): return
-        serverId = int(args['serverId'][0])
+#        serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
         a = x.Actimetres.get(actimId)
@@ -620,8 +608,8 @@ if cmdargs.action == 'prepare-stats':
 
 import urllib.parse
 qs = os.environ['QUERY_STRING']
-remote = os.environ['REMOTE_ADDR']
-printLog(f"From {remote}: {qs}")
+client = os.environ['REMOTE_ADDR']
+printLog(f"From {client}: {qs}")
 
 args = urllib.parse.parse_qs(qs, keep_blank_values=True)
 if 'action' in args.keys():
