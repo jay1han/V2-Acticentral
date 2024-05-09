@@ -74,6 +74,8 @@ class Actiserver:
         if not actual:
             self.lastUpdate = utcStrptime(d['lastUpdate'])
             self.diskLow = int(d['diskLow'])
+        else:
+            self.lastUpdate = NOW
 
         return self
 

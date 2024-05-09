@@ -187,7 +187,7 @@ For more information, please visit actimetre.fr
             printLog(f'Email sent to "{ADMIN_EMAIL}", sendmail returns {result.returncode}: {result.stdout}')
         else:
             for email in admins:
-                result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", email], \
+                result = subprocess.run(["/usr/sbin/sendmail", "-F", "Acticentral", email.strip()], \
                                         input = content, text=True, stderr=subprocess.STDOUT)
-                printLog(f'Email sent to "{email}", sendmail returns {result.returncode}: {result.stdout}')
+                printLog(f'Email sent to "{email.strip()}", sendmail returns {result.returncode}: {result.stdout}')
             admins.close()
