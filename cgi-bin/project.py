@@ -1,4 +1,3 @@
-from globals import *
 from actimetre import *
 
 class Project:

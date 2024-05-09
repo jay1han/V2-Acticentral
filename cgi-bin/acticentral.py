@@ -11,13 +11,12 @@ with open(SECRET_FILE, "r") as secret:
     SECRET_KEY = secret.read().strip()
 
 from project import *
-from actimetre import *
 from actiserver import *
 
 initRegistry()
-initProjects()
 initActimetres()
 initActiservers()
+initProjects()
 
 def htmlAllServers():
     html = ""

@@ -1,6 +1,5 @@
 from globals import *
 from project import *
-from actiserver import *
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
@@ -429,7 +428,7 @@ class Actimetre:
                 alive = 'down'
 
             with tag('td', klass=alive):
-                doc.asis('Actim&shy;{:04d}'.format(actimId))
+                doc.asis('Actim&shy;{:04d}'.format(self.actimId))
                 if self.version >= '301' and alive == 'up' and \
                         (Actiservers.get(self.serverId) is not None and Actiservers[self.serverId].version >= '301') :
                     doc.asis('<br>')
@@ -475,7 +474,7 @@ class Actimetre:
                     doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
                     line('span', f' {self.uptime()}', klass=alive)
                     with tag('div'):
-                        doc.stag('img', src=f'/images/Actim{actimId:04d}.svg', klass='health')
+                        doc.stag('img', src=f'/images/Actim{self.actimId:04d}.svg', klass='health')
 
             with tag('td', klass='right'):
                 if not self.hasData():
