@@ -3,6 +3,7 @@ from yattag import Doc, indent
 from const import *
 import globals as x
 from actimetre import Actimetre
+from project import Projects
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False, \
@@ -70,8 +71,8 @@ class Actiserver:
                 else:
                     x.Actimetres[a.actimId] = a
                 self.actimetreList.add(a.actimId)
-                if x.Actimetres[a.actimId].projectId in x.Projects.keys():
-                    x.Projects[x.Actimetres[a.actimId].projectId].htmlUpdate()
+                Projects.htmlUpdate(x.Actimetres[a.actimId].projectId)
+
         for a in x.Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
                 printLog(f"Actim{a.actimId:04d} orphaned by Actis{self.serverId}")

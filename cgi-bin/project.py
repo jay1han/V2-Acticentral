@@ -125,7 +125,7 @@ class ProjectsClass:
 
     def get(self, projectId):
         if projectId not in self.projects.keys():
-            self.projects[projectId] = Project(projectId, "Not assigned", "Unknown")
+            self.projects[projectId] = Project(projectId, "", "")
         return self.projects[projectId]
 
     def clearRepos(self):
@@ -170,5 +170,12 @@ class ProjectsClass:
     def delete(self, projectId):
         if projectId in self.projects.keys():
             del self.projects[projectId]
+
+    def exists(self, projectId):
+        return projectId in self.projects.keys()
+
+    def htmlUpdate(self, projectId):
+        if projectId in self.projects.keys():
+            self.projects[projectId].htmlUpdate()
 
 Projects = ProjectsClass()

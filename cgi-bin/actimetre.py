@@ -2,6 +2,7 @@ from yattag import Doc, indent
 
 from const import *
 import globals as x
+from project import Projects
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
@@ -79,13 +80,13 @@ class Actimetre:
 
         if fromFile:
             self.projectId  = int(d['projectId'])
-            for p in x.Projects.values():
+            for p in Projects.values():
                 if self.actimId in p.actimetreList and p.projectId != self.projectId:
                     p.actimetreList.remove(self.actimId)
-            if x.Projects.get(self.projectId) is None:
+            if Projects.exists(self.projectId) is None:
                 self.projectId = 0
             else:
-                x.Projects[self.projectId].actimetreList.add(self.actimId)
+                Projects.get(self.projectId).actimetreList.add(self.actimId)
             self.lastDrawn = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr = d['reportStr']
@@ -307,24 +308,21 @@ class Actimetre:
         printLog(f'Alert {self.actimName()}')
         subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
         content = f'{self.actimName()}\n'
-        if x.Projects.get(self.projectId) is not None:
-            content += f'Project "{x.Projects[self.projectId].name()}"\n'
+        if Projects.exists(self.projectId):
+            content += f'Project "{Projects.get(self.projectId).name()}"\n'
         content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
                    f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
 
-        if x.Projects.get(self.projectId) is not None \
-                and x.Projects[self.projectId].email != "":
-            sendEmail(x.Projects[self.projectId].email, subject, content)
-        sendEmail("", subject, content)
+        sendEmail(Projects.get(self.projectId).email, subject, content)
 
     def alertDisk(self):
         printLog(f"{self.actimName()}'s server disk low")
         subject = f"{self.actimName()}'s server disk low"
         content = f'{self.actimName()}\n'
-        if x.Projects.get(self.projectId) is not None:
-            content += f'Project "{x.Projects[self.projectId].name()}"\n'
+        if Projects.exists(self.projectId):
+            content += f'Project "{Projects.get(self.projectId).name()}"\n'
         content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
@@ -339,11 +337,7 @@ class Actimetre:
                        f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
         content += '\n'
 
-        if x.Projects.get(self.projectId) is not None \
-                and x.Projects[self.projectId].email != "":
-            sendEmail(x.Projects[self.projectId].email, subject, content)
-        else:
-            sendEmail("", subject, content)
+        sendEmail(Projects.get(self.projectId).email, subject, content)
 
     def dies(self):
         if self.isDead == 0:
@@ -359,9 +353,9 @@ class Actimetre:
             self.serverId = 0
             self.repoSize = 0
             self.repoNums = 0
-            if x.Projects.get(self.projectId) is not None:
+            if Projects.exists(self.projectId):
                 printLog(f"Actim{self.actimId:04d} dies, update Project{self.projectId:02d}")
-                x.Projects[self.projectId].htmlUpdate()
+                Projects.htmlUpdate(self.projectId)
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
