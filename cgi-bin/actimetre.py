@@ -56,7 +56,7 @@ class Actimetre:
                 'reportStr' : self.reportStr,
                 }
 
-    def fromD(self, d):
+    def fromD(self, d, fromFile=True):
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
@@ -73,18 +73,19 @@ class Actimetre:
         self.rssi   = int(d['rssi'])
         self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
-        self.projectId  = int(d['projectId'])
-        for p in Projects.values():
-            if self.actimId in p.actimetreList and p.projectId != self.projectId:
-                p.actimetreList.remove(self.actimId)
-        if Projects.get(self.projectId) is None:
-            self.projectId = 0
-        else:
-            Projects[self.projectId].actimetreList.add(self.actimId)
-
-        self.lastDrawn = utcStrptime(d['lastDrawn'])
-        self.graphSince = utcStrptime(d['graphSince'])
         self.reportStr = d['reportStr']
+
+        if fromFile:
+            self.projectId  = int(d['projectId'])
+            for p in Projects.values():
+                if self.actimId in p.actimetreList and p.projectId != self.projectId:
+                    p.actimetreList.remove(self.actimId)
+            if Projects.get(self.projectId) is None:
+                self.projectId = 0
+            else:
+                Projects[self.projectId].actimetreList.add(self.actimId)
+            self.lastDrawn = utcStrptime(d['lastDrawn'])
+            self.graphSince = utcStrptime(d['graphSince'])
 
         return self
 

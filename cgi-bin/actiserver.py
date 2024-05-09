@@ -54,7 +54,7 @@ class Actiserver:
         self.actimetreList = set()
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
-                a = Actimetre().fromD(actimData)
+                a = Actimetre().fromD(actimData, fromFile=False)
                 if Actimetres.get(a.actimId) is None:
                     Actimetres[a.actimId] = a
                 else:
