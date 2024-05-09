@@ -1,4 +1,7 @@
-from globals import *
+from yattag import Doc, indent
+
+from const import *
+import globals as x
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
@@ -76,13 +79,13 @@ class Actimetre:
 
         if fromFile:
             self.projectId  = int(d['projectId'])
-            for p in Projects.values():
+            for p in x.Projects.values():
                 if self.actimId in p.actimetreList and p.projectId != self.projectId:
                     p.actimetreList.remove(self.actimId)
-            if Projects.get(self.projectId) is None:
+            if x.Projects.get(self.projectId) is None:
                 self.projectId = 0
             else:
-                Projects[self.projectId].actimetreList.add(self.actimId)
+                x.Projects[self.projectId].actimetreList.add(self.actimId)
             self.lastDrawn = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr = d['reportStr']
@@ -123,7 +126,7 @@ class Actimetre:
         self.isDead = 3
         self.repoNums = 0
         self.repoSize = 0
-        s = Actiservers.get(self.serverId)
+        s = x.Actiservers.get(self.serverId)
         if s is not None and self.actimId in s.actimetreList:
             s.actimetreList.remove(self.actimId)
         self.serverId = 0
@@ -259,7 +262,7 @@ class Actimetre:
     def update(self, newActim, actual=False):
         redraw = False
         if actual:
-            s = Actiservers.get(self.serverId)
+            s = x.Actiservers.get(self.serverId)
             if self.serverId != newActim.serverId:
                 if s is not None and self.actimId in s.actimetreList:
                     s.actimetreList.remove(self.actimId)
@@ -304,30 +307,30 @@ class Actimetre:
         printLog(f'Alert {self.actimName()}')
         subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
         content = f'{self.actimName()}\n'
-        if Projects.get(self.projectId) is not None:
-            content += f'Project "{Projects[self.projectId].name()}"\n'
+        if x.Projects.get(self.projectId) is not None:
+            content += f'Project "{x.Projects[self.projectId].name()}"\n'
         content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
                    f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
 
-        if Projects.get(self.projectId) is not None \
-                and Projects[self.projectId].email != "":
-            sendEmail(Projects[self.projectId].email, subject, content)
+        if x.Projects.get(self.projectId) is not None \
+                and x.Projects[self.projectId].email != "":
+            sendEmail(x.Projects[self.projectId].email, subject, content)
         sendEmail("", subject, content)
 
     def alertDisk(self):
         printLog(f"{self.actimName()}'s server disk low")
         subject = f"{self.actimName()}'s server disk low"
         content = f'{self.actimName()}\n'
-        if Projects.get(self.projectId) is not None:
-            content += f'Project "{Projects[self.projectId].name()}"\n'
+        if x.Projects.get(self.projectId) is not None:
+            content += f'Project "{x.Projects[self.projectId].name()}"\n'
         content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
                    f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
-        if Actiservers.get(self.serverId) is not None:
-            s = Actiservers[self.serverId]
+        if x.Actiservers.get(self.serverId) is not None:
+            s = x.Actiservers[self.serverId]
             content += f'{s.serverName()}\n' + \
                        f'Hardware {s.machine}\nVersion {s.version}\n' + \
                        f'IP {s.ip}\nChannel {s.channel}\n' + \
@@ -336,9 +339,9 @@ class Actimetre:
                        f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
         content += '\n'
 
-        if Projects.get(self.projectId) is not None \
-                and Projects[self.projectId].email != "":
-            sendEmail(Projects[self.projectId].email, subject, content)
+        if x.Projects.get(self.projectId) is not None \
+                and x.Projects[self.projectId].email != "":
+            sendEmail(x.Projects[self.projectId].email, subject, content)
         else:
             sendEmail("", subject, content)
 
@@ -398,7 +401,7 @@ class Actimetre:
 
     def html(self):
         if self.serverId != 0:
-            s = Actiservers.get(self.serverId)
+            s = x.Actiservers.get(self.serverId)
         doc, tag, text, line = Doc().ttl()
         with tag('tr'):
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
@@ -412,7 +415,7 @@ class Actimetre:
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
                 if self.version >= '301' and alive == 'up' and \
-                        (Actiservers.get(self.serverId) is not None and Actiservers[self.serverId].version >= '301') :
+                        (x.Actiservers.get(self.serverId) is not None and x.Actiservers[self.serverId].version >= '301') :
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-restart'):
                         text('Reboot')
@@ -430,7 +433,7 @@ class Actimetre:
             with tag('td'):
                 doc.asis(self.frequencyText(self.sensorStr))
                 if self.version >= '301' and alive == 'up' and \
-                        (Actiservers.get(self.serverId) is not None and Actiservers[self.serverId].version >= '301') :
+                        (x.Actiservers.get(self.serverId) is not None and x.Actiservers[self.serverId].version >= '301') :
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-button'):
                         text('Button')
@@ -470,7 +473,7 @@ class Actimetre:
                     with tag('button', type='submit', name='action', value='actim-change-project'):
                         doc.asis('Move')
                 elif alive == 'up' and self.hasData() and \
-                        (Actiservers.get(self.serverId) is not None and Actiservers[self.serverId].version >= '380'):
+                        (x.Actiservers.get(self.serverId) is not None and x.Actiservers[self.serverId].version >= '380'):
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='actim-stop'):
                         doc.asis('Stop')

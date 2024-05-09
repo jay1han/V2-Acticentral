@@ -1,4 +1,7 @@
-from globals import *
+from yattag import Doc, indent
+
+from const import *
+import globals as x
 from actimetre import Actimetre
 
 class Actiserver:
@@ -35,7 +38,7 @@ class Actiserver:
                 'lastUpdate': self.lastUpdate.strftime(TIMEFORMAT_FN),
                 'dbTime'    : self.dbTime.strftime(TIMEFORMAT_FN),
                 'isDown'    : self.isDown,
-                'actimetreList': '[' + ','.join([json.dumps(Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']',
+                'actimetreList': '[' + ','.join([json.dumps(x.Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']',
                 'cpuIdle'   : self.cpuIdle,
                 'memAvail'  : self.memAvail,
                 'diskTput'  : self.diskTput,
@@ -52,26 +55,26 @@ class Actiserver:
         self.diskSize = int(d['diskSize'])
         self.diskFree = int(d['diskFree'])
         self.actimetreList = set()
-        if d['actimetreList'] != "[]":
-            for actimData in json.loads(d['actimetreList']):
-                a = Actimetre().fromD(actimData, fromFile=False)
-                if a.actimId in Actimetres.keys():
-                    Actimetres[a.actimId].update(a, actual)
-                else:
-                    Actimetres[a.actimId] = a
-                self.actimetreList.add(a.actimId)
-                if Actimetres[a.actimId].projectId in Projects.keys():
-                    Projects[Actimetres[a.actimId].projectId].htmlUpdate()
-        for a in Actimetres.values():
-            if a.serverId == self.serverId and not a.actimId in self.actimetreList:
-                a.dies()
-
         self.dbTime = utcStrptime(d['dbTime'])
         self.isDown = int(d['isDown'])
         self.cpuIdle  = float(d['cpuIdle'])
         self.memAvail = float(d['memAvail'])
         self.diskTput = float(d['diskTput'])
         self.diskUtil = float(d['diskUtil'])
+
+        if d['actimetreList'] != "[]":
+            for actimData in json.loads(d['actimetreList']):
+                a = Actimetre().fromD(actimData, fromFile=False)
+                if a.actimId in x.Actimetres.keys():
+                    x.Actimetres[a.actimId].update(a, actual)
+                else:
+                    x.Actimetres[a.actimId] = a
+                self.actimetreList.add(a.actimId)
+                if x.Actimetres[a.actimId].projectId in x.Projects.keys():
+                    x.Projects[x.Actimetres[a.actimId].projectId].htmlUpdate()
+        for a in x.Actimetres.values():
+            if a.serverId == self.serverId and not a.actimId in self.actimetreList:
+                a.dies()
 
         if not actual:
             self.lastUpdate = utcStrptime(d['lastUpdate'])
@@ -92,7 +95,7 @@ class Actiserver:
                   f'IP {self.ip}\nChannel {self.channel}\n' + \
                   f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' + \
                   f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' + \
-                  f'Last known Actimetres:\n    '
+                  f'Last known x.Actimetres:\n    '
         for actimId in self.actimetreList:
             content += f'Actim{actimId:04d} '
         content += '\n'
@@ -107,11 +110,11 @@ class Actiserver:
                   f'IP {self.ip}\nChannel {self.channel}\n' + \
                   f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' + \
                   f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' + \
-                  f'Last known Actimetres:\n    '
+                  f'Last known x.Actimetres:\n    '
         for actimId in self.actimetreList:
             content += f'Actim{actimId:04d} '
-            if Actimetres.get(actimId) is not None:
-                Actimetres[actimId].alertDisk()
+            if x.Actimetres.get(actimId) is not None:
+                x.Actimetres[actimId].alertDisk()
         content += '\n'
 
         sendEmail("", subject, content)
@@ -174,11 +177,11 @@ class Actiserver:
                 with tag('td', klass='left'):
                     for actimId in self.actimetreList:
                         with tag('div'):
-                            doc.asis(Actimetres[actimId].htmlCartouche())
+                            doc.asis(x.Actimetres[actimId].htmlCartouche())
                 if self.isLocal:
                     with tag('td', klass='right'):
                         for actimId in self.actimetreList:
-                            a = Actimetres[actimId]
+                            a = x.Actimetres[actimId]
                             with tag('div'):
                                 if a.repoNums == 0:
                                     text('(No data)')

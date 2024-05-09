@@ -1,4 +1,7 @@
-from globals import *
+from yattag import Doc, indent
+
+from const import *
+import globals as x
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
@@ -43,8 +46,8 @@ class Project:
     def htmlUpdate(self):
         projectActimHTML = ""
         for actimId in self.actimetreList:
-            if Actimetres.get(actimId) is not None:
-                projectActimHTML += Actimetres[actimId].html()
+            if x.Actimetres.get(actimId) is not None:
+                projectActimHTML += x.Actimetres[actimId].html()
         if self.projectId == 0:
             buttons = ""
         else:
@@ -91,14 +94,14 @@ class Project:
                 line('td', self.owner)
                 with tag('td', klass='left'):
                     for actimId in self.actimetreList:
-                        if Actimetres.get(actimId) is not None:
+                        if x.Actimetres.get(actimId) is not None:
                             with tag('div'):
-                                doc.asis(Actimetres[actimId].htmlCartouche())
+                                doc.asis(x.Actimetres[actimId].htmlCartouche())
 
         return indent(doc.getvalue())
 
 def listProjects():
-    for (projectId, p) in Projects.items():
+    for (projectId, p) in x.Projects.items():
         if len(p.actimetreList) > 0:
             print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
 
@@ -106,7 +109,7 @@ def loadProjects():
     projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
     if projects.get(0) is None:
         projects[0] = Project(0, "Not assigned", "No owner")
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
     return projects, datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
 def htmlProjects(projects):

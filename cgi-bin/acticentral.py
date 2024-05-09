@@ -1,25 +1,26 @@
 #!/usr/bin/python3
 
-import sys
-import fcntl
-from globals import *
+import sys, fcntl
+from json import JSONDecodeError
+
+from const import *
 
 lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
+printLog("===================================================")
 
-from project import *
-from actimetre import *
-from actiserver import *
+import globals as x
+from project import Project, loadProjects, htmlProjects, listProjects
+from actimetre import Actimetre, loadActimetres
+from actiserver import Actiserver, loadActiservers, htmlActiservers
 
-global Registry
-loadRegistry()
-printLog(Registry)
-Actimetres             = loadActimetres()
-Actiservers            = loadActiservers()
-Projects, ProjectsTime = loadProjects()
+x.loadRegistry()
+loadProjects()
+loadActimetres()
+loadActiservers()
 
 def htmlUpdate():
-    htmlString = htmlActiservers(Actiservers)
+    htmlString = htmlActiservers(x.Actiservers)
     with open(SERVERS_HTML, "w") as html:
         with open(SERVERS_TEMPLATE, "r") as template:
             print(template.read() \
@@ -27,13 +28,13 @@ def htmlUpdate():
                   .replace('{Updated}', LAST_UPDATED) \
                   , file=html)
 
-    liveActiservers = {key: value for (key, value) in Actiservers.items() \
+    liveActiservers = {key: value for (key, value) in x.Actiservers.items() \
                        if NOW - value.lastUpdate < ACTIS_HIDE_P}
 
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
         .replace("{Actiservers}", htmlActiservers(liveActiservers))\
-        .replace("{Projects}", htmlProjects(Projects))\
+        .replace("{Projects}", htmlProjects(x.Projects))\
         .replace("{Updated}", LAST_UPDATED)\
         .replace("{Version}", VERSION_STR)\
         .replace("{cgi-bin}", CGI_BIN)
@@ -44,7 +45,7 @@ def htmlUpdate():
 
 def checkAlerts():
     save = False
-    for a in Actimetres.values():
+    for a in x.Actimetres.values():
         if a.isDead == 1 and (NOW - a.lastSeen) > ACTIM_ALERT1:
             a.alert()
             a.isDead = 2
@@ -54,10 +55,10 @@ def checkAlerts():
             a.isDead = 3
             save = True
     if save:
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
 
     save = False
-    for s in Actiservers.values():
+    for s in x.Actiservers.values():
         if s.isDown == 0 and (NOW - s.lastUpdate) > ACTIS_ALERT1:
             s.alert()
             s.isDown = 1
@@ -71,31 +72,31 @@ def checkAlerts():
             s.isDown = 3
             save = True
     if save:
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
 
 def repoStats():
-    for p in Projects.values():
+    for p in x.Projects.values():
         p.repoSize = 0
         p.repoNums = 0
 
     save = False
     saveP = False
-    for a in Actimetres.values():
+    for a in x.Actimetres.values():
         if NOW - a.lastReport > ACTIM_HIDE_P:
             continue
         if a.drawGraphMaybe():
             save = True
-        if Projects.get(a.projectId) is None:
-            Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
+        if x.Projects.get(a.projectId) is None:
+            x.Projects[a.projectId] = Project(a.projectId, "Not assigned", "No owner")
             saveP = True
-        saveP = Projects[a.projectId].addActim(a.actimId)
-        Projects[a.projectId].repoNums += a.repoNums
-        Projects[a.projectId].repoSize += a.repoSize
+        saveP = x.Projects[a.projectId].addActim(a.actimId)
+        x.Projects[a.projectId].repoNums += a.repoNums
+        x.Projects[a.projectId].repoSize += a.repoSize
 
     if save:
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
     if saveP:
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
 
     with open(STAT_FILE, "w") as stat:
         stat.write(NOW.strftime(TIMEFORMAT_DISP))
@@ -108,8 +109,8 @@ def projectChangeInfo(projectId):
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{project-change-info}", "project-change-info")\
-              .replace("{projectTitle}", Projects[projectId].name())\
-              .replace("{projectOwner}", Projects[projectId].owner)\
+              .replace("{projectTitle}", x.Projects[projectId].name())\
+              .replace("{projectOwner}", x.Projects[projectId].owner)\
               .replace("{projectId}", str(projectId)))
 
 def projectEditInfo(projectId):
@@ -118,49 +119,49 @@ def projectEditInfo(projectId):
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{project-change-info}", "project-edit-info")\
-              .replace("{projectTitle}", Projects[projectId].name())\
-              .replace("{projectOwner}", Projects[projectId].owner)\
+              .replace("{projectTitle}", x.Projects[projectId].name())\
+              .replace("{projectOwner}", x.Projects[projectId].owner)\
               .replace("{projectId}", str(projectId)))
 
 def actimChangeProject(actimId):
     print("Content-type: text/html\n\n")
 
     htmlProjectList = ""
-    for p in Projects.values():
+    for p in x.Projects.values():
         htmlProjectList += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
-        if p.projectId == Actimetres[actimId].projectId:
+        if p.projectId == x.Actimetres[actimId].projectId:
             htmlProjectList += ' checked="true"'
         htmlProjectList += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
 
     with open(f"{HTML_DIR}/formActim.html") as form:
         print(form.read()\
               .replace("{actimId}", str(actimId))\
-              .replace("{actimName}", Actimetres[actimId].actimName())\
-              .replace("{actimInfo}", Actimetres[actimId].htmlInfo())\
+              .replace("{actimName}", x.Actimetres[actimId].actimName())\
+              .replace("{actimInfo}", x.Actimetres[actimId].htmlInfo())\
               .replace("{htmlProjectList}", htmlProjectList))
 
 def removeProject(projectId):
     print("Content-type: text/html\n\n")
 
     actimList = ""
-    if len(Projects[projectId].actimetreList) == 0:
+    if len(x.Projects[projectId].actimetreList) == 0:
         actimList = "(no Actimetres assigned to this project)\n"
     else:
         actimList = ""
-        for actimId in Projects[projectId].actimetreList:
-            if Actimetres.get(actimId) is not None:
-                actimList += f'<li>{Actimetres[actimId].htmlCartouche()}</li>\n'
+        for actimId in x.Projects[projectId].actimetreList:
+            if x.Actimetres.get(actimId) is not None:
+                actimList += f'<li>{x.Actimetres[actimId].htmlCartouche()}</li>\n'
             
     with open(f"{HTML_DIR}/formRemove.html") as form:
         print(form.read()\
               .replace("{projectId}", str(projectId))\
-              .replace("{projectTitle}", Projects[projectId].name())\
+              .replace("{projectTitle}", x.Projects[projectId].name())\
               .replace("{actimetreList}", actimList))
 
 def retireActim(actimId):
     print("Content-type: text/html\n\n")
 
-    a = Actimetres[actimId]
+    a = x.Actimetres[actimId]
     if a.projectId > 0:
         ownerStr = 'the name of the owner'
     else:
@@ -177,7 +178,7 @@ def retireActim(actimId):
               .replace("{repoNums}", repoNumsStr)\
               .replace("{repoSize}", printSize(a.repoSize))\
               .replace("{owner}", ownerStr)\
-              .replace("{projectTitle}", Projects[a.projectId].name()))
+              .replace("{projectTitle}", x.Projects[a.projectId].name()))
 
 def loadRemotes():
     try:
@@ -212,8 +213,8 @@ class ActisInfo:
         self.serverId = serverId
         self.rssi = rssi
         self.cpuIdle = 0.0
-        if Actiservers.get(serverId) is not None:
-            self.cpuIdle = Actiservers[serverId].cpuIdle
+        if x.Actiservers.get(serverId) is not None:
+            self.cpuIdle = x.Actiservers[serverId].cpuIdle
 
 def assignActim(data):
     try:
@@ -264,10 +265,10 @@ def processForm(formId):
         printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
 
         if title != "" and owner != "":
-            Projects[projectId].title = title
-            Projects[projectId].owner = owner
-            Projects[projectId].email = email
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+            x.Projects[projectId].title = title
+            x.Projects[projectId].owner = owner
+            x.Projects[projectId].email = email
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
             htmlUpdate()
         print(f'Location:\\index.html\n\n')
 
@@ -279,24 +280,24 @@ def processForm(formId):
         printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
 
         if title != "" and owner != "":
-            Projects[projectId].title = title
-            Projects[projectId].owner = owner
-            Projects[projectId].email = email
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+            x.Projects[projectId].title = title
+            x.Projects[projectId].owner = owner
+            x.Projects[projectId].email = email
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
             htmlUpdate()
         print(f"Location:\\project{projectId:02d}.html\n\n")
 
     elif formId == 'actim-change-project':
         actimId = int(args['actimId'][0])
         projectId = int(args['projectId'][0])
-        oldProject = Actimetres[actimId].projectId
+        oldProject = x.Actimetres[actimId].projectId
         printLog(f"Changing {actimId} from {oldProject} to {projectId}")
 
-        Projects[oldProject].actimetreList.remove(actimId)
-        Projects[projectId].actimetreList.add(actimId)
-        Actimetres[actimId].projectId = projectId
-        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        x.Projects[oldProject].actimetreList.remove(actimId)
+        x.Projects[projectId].actimetreList.add(actimId)
+        x.Actimetres[actimId].projectId = projectId
+        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -307,10 +308,10 @@ def processForm(formId):
 
         if title != "" and owner != "":
             projectId = 1
-            while projectId in set(Projects.keys()):
+            while projectId in set(x.Projects.keys()):
                 projectId += 1
-            Projects[projectId] = Project(projectId, title, owner)
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+            x.Projects[projectId] = Project(projectId, title, owner)
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
             htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -318,32 +319,32 @@ def processForm(formId):
         actimId = int(args['actimId'][0])
         owner = args['owner'][0]
 
-        a = Actimetres.get(actimId)
+        a = x.Actimetres.get(actimId)
         if a is not None and \
            (a.projectId == 0 and owner == 'CONFIRM') or \
-           (Projects.get(a.projectId) is not None and Projects[a.projectId].owner == owner):
+           (x.Projects.get(a.projectId) is not None and x.Projects[a.projectId].owner == owner):
 
-            printLog(f"Retire Actimetre{actimId:04d} from {Projects[a.projectId].name()}")
+            printLog(f"Retire Actimetre{actimId:04d} from {x.Projects[a.projectId].name()}")
             save = False
-            for s in Actiservers.values():
+            for s in x.Actiservers.values():
                 if actimId in s.actimetreList:
                     s.actimetreList.remove(actimId)
                     save = True
             if save:
-                dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+                dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
 
             save = False
-            for p in Projects.values():
+            for p in x.Projects.values():
                 if actimId in p.actimetreList:
                     p.actimetreList.remove(actimId)
                     save = True
             if save:
-                dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+                dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
 
-            del Registry[Actimetres[actimId].mac]
-            saveRegistry()
-            del Actimetres[actimId]
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            del x.Registry[x.Actimetres[actimId].mac]
+            x.saveRegistry()
+            del x.Actimetres[actimId]
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             try:
                 os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
             except FileNotFoundError: pass
@@ -354,12 +355,12 @@ def processForm(formId):
     elif formId == 'remove-project':
         projectId = int(args['projectId'][0])
         if projectId != 0:
-            for a in Projects[projectId].actimetreList:
-                if Actimetres.get(a) is not None:
-                    Actimetres[a].projectId = 0
-            del Projects[projectId]
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            for a in x.Projects[projectId].actimetreList:
+                if x.Actimetres.get(a) is not None:
+                    x.Actimetres[a].projectId = 0
+            del x.Projects[projectId]
+            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             repoStats()
         print(f"Location:\\index.html\n\n")
 
@@ -381,8 +382,8 @@ def processAction():
         if serverId != 0:
             printLog(f"Actis{serverId} alive")
             thisServer = Actiserver(serverId).fromD(json.load(sys.stdin), actual=True)
-            if Actiservers.get(serverId) is not None:
-                s = Actiservers[serverId]
+            if x.Actiservers.get(serverId) is not None:
+                s = x.Actiservers[serverId]
                 thisServer.diskLow = s.diskLow
                 if thisServer.diskLow == 0:
                     if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 10:
@@ -395,9 +396,9 @@ def processAction():
                 else:
                     if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
                         thisServer.diskLow = 0
-            Actiservers[serverId] = thisServer
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            x.Actiservers[serverId] = thisServer
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             htmlUpdate()
 
         remotes = loadRemotes()
@@ -409,11 +410,11 @@ def processAction():
                 return
 
         if action == 'actiserver':
-            plain(json.dumps(Registry))
+            plain(json.dumps(x.Registry))
         else:
-            if RegistryTime > thisServer.dbTime.replace(tzinfo=timezone.utc) \
-               or ProjectsTime > thisServer.dbTime.replace(tzinfo=timezone.utc):
-                printLog(f'{thisServer.dbTime} < {ProjectsTime}, needs update')
+            if x.RegistryTime > thisServer.dbTime.replace(tzinfo=timezone.utc) \
+               or x.ProjectsTime > thisServer.dbTime.replace(tzinfo=timezone.utc):
+                printLog(f'{thisServer.dbTime} < {x.ProjectsTime}, needs update')
                 plain('!')
             else:
                 plain('OK')
@@ -421,7 +422,7 @@ def processAction():
     elif action == 'registry':
         checkSecret()
 #        serverId = int(args['serverId'][0])
-        plain(json.dumps(Registry))
+        plain(json.dumps(x.Registry))
 
     elif action == 'projects':
         checkSecret()
@@ -433,19 +434,19 @@ def processAction():
         checkSecret()
         serverId  = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
-        if Actimetres.get(actimId) is not None:
+        if x.Actimetres.get(actimId) is not None:
             message = sys.stdin.read()
             printLog(f'Actim{actimId:04d} {message}')
-            Actimetres[actimId].reportStr = message
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            x.Actimetres[actimId].reportStr = message
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
         plain('OK')
         
     elif action == 'clear-report':
         actimId = int(args['actimId'][0])
-        if Actimetres.get(actimId) is not None:
-            printLog(f'Actim{actimId:04d} CLEAR {Actimetres[actimId].reportStr}')
-            Actimetres[actimId].reportStr = ""
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        if x.Actimetres.get(actimId) is not None:
+            printLog(f'Actim{actimId:04d} CLEAR {x.Actimetres[actimId].reportStr}')
+            x.Actimetres[actimId].reportStr = ""
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -457,27 +458,27 @@ def processAction():
         version   = args['version'][0]
         bootTime  = utcStrptime(args['bootTime'][0])
 
-        thisServer = Actiservers.get(serverId)
+        thisServer = x.Actiservers.get(serverId)
         if thisServer is None:
             thisServer = Actiserver(serverId, lastUpdate=NOW)
-            Actiservers[serverId] = thisServer
+            x.Actiservers[serverId] = thisServer
         else:
             thisServer.lastUpdate = NOW
 
-        if Registry.get(mac) is None:
-            actimList = [r for r in Registry.values()]
+        if x.Registry.get(mac) is None:
+            actimList = [r for r in x.Registry.values()]
             actimList.sort()
             actimId = len(actimList) + 1
             for newId in range(1, len(actimList) + 1):
                 if not newId in actimList:
                     actimId = newId
                     break
-            Registry[mac] = actimId
+            x.Registry[mac] = actimId
             printLog(f"Allocated new Actim{actimId:04d} for {mac}")
-            saveRegistry()
+            x.saveRegistry()
             responseStr = f"+{actimId}"
         else:
-            actimId = Registry[mac]
+            actimId = x.Registry[mac]
             printLog(f"Found known Actim{actimId:04d} for {mac}")
             responseStr = str(actimId)
 
@@ -485,9 +486,9 @@ def processAction():
         printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
 
         thisServer.actimetreList.add(actimId)
-        Actimetres[actimId] = a
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        x.Actimetres[actimId] = a
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
         htmlUpdate()
         plain(responseStr)
 
@@ -496,12 +497,12 @@ def processAction():
         serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
-        a = Actimetres.get(actimId)
+        a = x.Actimetres.get(actimId)
         if a is not None:
             a.dies()
-#            Actiservers[serverId].actimetreList.remove(actimId)
-#            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+#            x.Actiservers[serverId].actimetreList.remove(actimId)
+#            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             htmlUpdate()
         plain("Ok")
 
@@ -516,17 +517,17 @@ def processAction():
         serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
-        a = Actimetres.get(actimId)
+        a = x.Actimetres.get(actimId)
         if a is not None:
             a.serverId = 0
             a.repoNums = 0
             a.repoSize = 0
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
 
-        s = Actiservers.get(serverId)
+        s = x.Actiservers.get(serverId)
         if s is not None:
             s.actimetreList.remove(actimId)
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
             
         htmlUpdate()
         plain("Ok")
@@ -537,10 +538,10 @@ def processAction():
 
     elif action == 'actim-cut-graph':
         actimId = int(args['actimId'][0])
-        if Actimetres.get(actimId) is not None:
-            Actimetres[actimId].cutHistory()
-            Actimetres[actimId].drawGraph()
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        if x.Actimetres.get(actimId) is not None:
+            x.Actimetres[actimId].cutHistory()
+            x.Actimetres[actimId].drawGraph()
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             htmlUpdate()
         if args.get('projectId') is not None:
             print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
@@ -559,23 +560,23 @@ def processAction():
 
     elif action == 'actim-forget':
         actimId = int(args['actimId'][0])
-        if Actimetres.get(actimId) is not None:
-            Actimetres[actimId].forgetData()
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
+        if x.Actimetres.get(actimId) is not None:
+            x.Actimetres[actimId].forgetData()
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             htmlUpdate()
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
         print("Location:\\index.html\n\n")
 
     elif action == 'actim-decouple':
         actimId = int(args['actimId'][0])
         serverId = int(args['serverId'][0])
-        if Actimetres.get(actimId) is not None:
-            Actimetres[actimId].forgetData()
-        if Actiservers.get(serverId) is not None and actimId in Actiservers[serverId].actimetreList:
-            Actiservers[serverId].actimetreList.remove(actimId)
+        if x.Actimetres.get(actimId) is not None:
+            x.Actimetres[actimId].forgetData()
+        if x.Actiservers.get(serverId) is not None and actimId in x.Actiservers[serverId].actimetreList:
+            x.Actiservers[serverId].actimetreList.remove(actimId)
             printLog(f"Removed Actim{actimId:04d} from Actis{serverId:04d}")
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in Actimetres.values()})
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -595,9 +596,9 @@ def processAction():
 
     elif action == 'retire-server':
         serverId = int(args['serverId'][0])
-        del Actiservers[serverId]
+        del x.Actiservers[serverId]
         htmlUpdate()
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in Actiservers.values()})
+        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
         print("Location:\\index.html\n\n")
 
     elif action == 'project-change-info':
