@@ -40,7 +40,7 @@ class Project:
     def name(self):
         return f"{self.title} (#{self.projectId:02d})"
 
-    def html(self):
+    def htmlUpdate(self):
         projectActimHTML = ""
         for actimId in self.actimetreList:
             if Actimetres.get(actimId) is not None:
@@ -76,25 +76,24 @@ class Project:
         except OSError:
             pass
 
+    def html(self):
         doc, tag, text, line = Doc().ttl()
-        for projectId in sorted(Projects.keys()):
-            p = Projects[projectId]
-            with tag('tr'):
+        with tag('tr'):
+            with tag('td', klass='left'):
+                with tag('a', href=f'/project{self.projectId:02d}.html'):
+                    text(self.name())
+            if self.projectId == 0:
+                line('td', '')
+                with tag('td'):
+                    with tag('a', href=f'/project{self.projectId:02d}.html'):
+                        text('List')
+            else:
+                line('td', self.owner)
                 with tag('td', klass='left'):
-                    with tag('a', href=f'/project{projectId:02d}.html'):
-                        text(self.name())
-                if projectId == 0:
-                    line('td', '')
-                    with tag('td'):
-                        with tag('a', href=f'/project{projectId:02d}.html'):
-                            text('List')
-                else:
-                    line('td', self.owner)
-                    with tag('td', klass='left'):
-                        for actimId in self.actimetreList:
-                            if Actimetres.get(actimId) is not None:
-                                with tag('div'):
-                                    doc.asis(Actimetres[actimId].htmlCartouche())
+                    for actimId in self.actimetreList:
+                        if Actimetres.get(actimId) is not None:
+                            with tag('div'):
+                                doc.asis(Actimetres[actimId].htmlCartouche())
 
         return indent(doc.getvalue())
 
@@ -109,3 +108,9 @@ def loadProjects():
         projects[0] = Project(0, "Not assigned", "No owner")
         dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
     return projects, datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+
+def htmlProjects(projects):
+    htmlString = ""
+    for projectId in sorted(projects.keys()):
+        htmlString += projects[projectId].html()
+    return htmlString

@@ -17,14 +17,18 @@ Actiservers            = loadActiservers()
 Projects, ProjectsTime = loadProjects()
 
 def htmlUpdate():
-#    htmlActiservers()
-#    htmlProjects()
-    htmlAllServers(Actiservers)
-    
+    htmlString = htmlActiservers(Actiservers)
+    with open(SERVERS_HTML, "w") as html:
+        with open(SERVERS_TEMPLATE, "r") as template:
+            print(template.read() \
+                  .replace('{Actiservers}', htmlString) \
+                  .replace('{Updated}', LAST_UPDATED) \
+                  , file=html)
+
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
-        .replace("{Actiservers}", HTML_ACTISERVERS)\
-        .replace("{Projects}", HTML_PROJECTS)\
+        .replace("{Actiservers}", htmlActiservers(Actiservers))\
+        .replace("{Projects}", htmlProjects(Projects))\
         .replace("{Updated}", LAST_UPDATED)\
         .replace("{Version}", VERSION_STR)\
         .replace("{cgi-bin}", CGI_BIN)

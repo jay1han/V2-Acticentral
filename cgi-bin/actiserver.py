@@ -197,17 +197,11 @@ class Actiserver:
 
         return indent(doc.getvalue())
 
-def htmlAllServers(actiservers):
+def htmlActiservers(actiservers):
     htmlString = ""
     for serverId in sorted(actiservers.keys()):
         htmlString += actiservers[serverId].html(True)
-
-    with open(SERVERS_HTML, "w") as html:
-        with open(SERVERS_TEMPLATE, "r") as template:
-            print(template.read() \
-                  .replace('{Actiservers}', htmlString) \
-                  .replace('{Updated}', LAST_UPDATED) \
-                  , file=html)
+    return htmlString
 
 def loadActiservers():
     return {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
