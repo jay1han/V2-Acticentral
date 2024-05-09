@@ -212,4 +212,4 @@ def htmlActiservers(actiservers):
     return htmlString
 
 def loadActiservers():
-    return {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
+    x.Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}

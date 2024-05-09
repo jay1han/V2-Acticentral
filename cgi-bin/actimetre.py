@@ -493,4 +493,4 @@ class Actimetre:
         return indent(doc.getvalue())
 
 def loadActimetres():
-    return {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+    x.Actimetres = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}

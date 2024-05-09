@@ -106,11 +106,11 @@ def listProjects():
             print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
 
 def loadProjects():
-    projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
-    if projects.get(0) is None:
-        projects[0] = Project(0, "Not assigned", "No owner")
+    x.Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+    if x.Projects.get(0) is None:
+        x.Projects[0] = Project(0, "Not assigned", "No owner")
         dumpData(PROJECTS, {int(p.projectId):p.toD() for p in x.Projects.values()})
-    return projects, datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+    x.ProjectTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
 def htmlProjects(projects):
     htmlString = ""
