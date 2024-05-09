@@ -19,14 +19,14 @@ initActiservers()
 initProjects()
 
 def htmlAllServers():
-    html = ""
+    htmlString = ""
     for serverId in sorted(Actiservers.keys()):
-        html += Actiservers[serverId].html()
+        htmlString += Actiservers[serverId].html()
 
     with open(SERVERS_HTML, "w") as html:
         with open(SERVERS_TEMPLATE, "r") as template:
             print(template.read() \
-                  .replace('{Actiservers}', html) \
+                  .replace('{Actiservers}', htmlString) \
                   .replace('{Updated}', LAST_UPDATED) \
                   , file=html)
     
