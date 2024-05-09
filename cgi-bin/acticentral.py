@@ -18,8 +18,7 @@ Projects     = initProjects()
 ProjectsTime = initProjectsTime
 
 def htmlUpdate():
-    global LAST_UPDATED
-    LAST_UPDATED = NOW.strftime(TIMEFORMAT_DISP)
+    globalUpdate(NOW.strftime(TIMEFORMAT_DISP))
     
 #    htmlActiservers()
 #    htmlProjects()

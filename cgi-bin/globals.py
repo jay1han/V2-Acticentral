@@ -193,4 +193,7 @@ For more information, please visit actimetre.fr
                                         input = content, text=True, stderr=subprocess.STDOUT)
                 printLog(f'Email sent to "{email}", sendmail returns {result.returncode}: {result.stdout}')
             admins.close()
-                
+
+def globalUpdate(lastUpdate):
+    global LAST_UPDATED
+    LAST_UPDATED = lastUpdate
