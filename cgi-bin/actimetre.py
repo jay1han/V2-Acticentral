@@ -352,6 +352,9 @@ class Actimetre:
             self.isDead = 1
             self.addFreqEvent(NOW, 0)
             self.drawGraph()
+        if self.serverId != 0 and x.Actiservers.get(self.serverId) is not None:
+            x.Actiservers[self.serverId].actimetreList.remove(self.actimId)
+            self.serverId = 0
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
