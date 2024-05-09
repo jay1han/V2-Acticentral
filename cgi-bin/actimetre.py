@@ -1,9 +1,6 @@
-if not 'Registry' in dir():
-    from globals import *
-if not 'Project' in dir():
-    from project import *
-if not 'Actiserver' in dir():
-    from actiserver import *
+from globals import *
+from project import *
+from actiserver import *
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)

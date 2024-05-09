@@ -10,12 +10,9 @@ fcntl.lockf(lock, fcntl.LOCK_EX)
 with open(SECRET_FILE, "r") as secret:
     SECRET_KEY = secret.read().strip()
 
-if not 'Project' in dir():
-    from project import *
-if not 'Actimetre' in dir():
-    from actimetre import *
-if not 'Actiserver' in dir():
-    from actiserver import *
+from project import *
+from actimetre import *
+from actiserver import *
 
 initRegistry()
 initProjects()
