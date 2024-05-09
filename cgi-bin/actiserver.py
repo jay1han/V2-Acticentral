@@ -1,4 +1,8 @@
-from actimetre import *
+from globals import *
+if not 'Actimetres' in dir():
+    from actimetre import *
+
+Actiservers  = {}
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False, \
@@ -141,10 +145,10 @@ class Actiserver:
 
         sendEmail("", subject, content)
 
-    def html(self):
+    def html(self, force=False):
         doc, tag, text, line = Doc().ttl()
 
-        if NOW - self.lastUpdate > ACTIM_HIDE_P:
+        if NOW - self.lastUpdate > ACTIM_HIDE_P and not force:
             return ""
         with tag('tr'):
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
@@ -228,6 +232,18 @@ class Actiserver:
                     line('td', '')
 
         return indent(doc.getvalue())
+
+def htmlAllServers():
+    htmlString = ""
+    for serverId in sorted(Actiservers.keys()):
+        htmlString += Actiservers[serverId].html(True)
+
+    with open(SERVERS_HTML, "w") as html:
+        with open(SERVERS_TEMPLATE, "r") as template:
+            print(template.read() \
+                  .replace('{Actiservers}', htmlString) \
+                  .replace('{Updated}', LAST_UPDATED) \
+                  , file=html)
 
 def initActiservers():
     global Actiservers

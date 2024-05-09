@@ -62,10 +62,6 @@ NOW             = datetime.now(timezone.utc)
 
 Registry     = {}
 RegistryTime = TIMEZERO
-Projects     = {}
-ProjectsTime = TIMEZERO
-Actimetres   = {}
-Actiservers  = {}
 
 def printLog(text=''):
     try:

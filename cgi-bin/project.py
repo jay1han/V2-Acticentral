@@ -1,4 +1,9 @@
-from actimetre import *
+from globals import *
+if not 'Actimetre' in dir():
+    from actimetre import *
+
+Projects     = {}
+ProjectsTime = TIMEZERO
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
@@ -114,4 +119,3 @@ def listProjects():
     for (projectId, p) in Projects.items():
         if len(p.actimetreList) > 0:
             print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
-

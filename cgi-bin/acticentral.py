@@ -7,26 +7,18 @@ from globals import *
 lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
 
-from project import *
-from actiserver import *
+if 'Projects' not in dir():
+    from project import *
+if 'Actiservers' not in dir():
+    from actiserver import *
+if 'Actimetres' not in dir():
+    from actimetre import *
 
 SECRET_KEY = initRegistry()
 initActimetres()
 initActiservers()
 initProjects()
 
-def htmlAllServers():
-    htmlString = ""
-    for serverId in sorted(Actiservers.keys()):
-        htmlString += Actiservers[serverId].html()
-
-    with open(SERVERS_HTML, "w") as html:
-        with open(SERVERS_TEMPLATE, "r") as template:
-            print(template.read() \
-                  .replace('{Actiservers}', htmlString) \
-                  .replace('{Updated}', LAST_UPDATED) \
-                  , file=html)
-    
 def htmlUpdate():
     global LAST_UPDATED
     LAST_UPDATED = NOW.strftime(TIMEFORMAT_DISP)
@@ -636,6 +628,7 @@ if cmdargs.action == 'prepare-stats':
     printLog("Timer prepare-stats")
     checkAlerts()
     repoStats()
+    htmlUpdate()
     lock.close()
     sys.exit(0)
 
