@@ -18,8 +18,6 @@ Projects     = initProjects()
 ProjectsTime = initProjectsTime
 
 def htmlUpdate():
-    globalUpdate(NOW.strftime(TIMEFORMAT_DISP))
-    
 #    htmlActiservers()
 #    htmlProjects()
     htmlAllServers()

@@ -39,11 +39,6 @@ CGI_BIN         = "acticentral.py"
 INDEX_TEMPLATE  = f"{WWW_ROOT}/html/template.html"
 PROJECT_TEMPLATE= f"{WWW_ROOT}/html/templateProject.html"
 SERVERS_TEMPLATE= f"{WWW_ROOT}/html/templateServers.html"
-SECRET_KEY      = "YouDontKnowThis"
-
-HTML_ACTISERVERS= ""
-HTML_PROJECTS   = ""
-LAST_UPDATED    = ""
 
 ACTIM_ALERT1    = timedelta(minutes=5)
 ACTIM_ALERT2    = timedelta(minutes=30)
@@ -59,6 +54,13 @@ ACTIM_HIDE_P    = timedelta(days=1)
 
 TIMEZERO        = datetime(year=2023, month=1, day=1, tzinfo=timezone.utc)
 NOW             = datetime.now(timezone.utc)
+LAST_UPDATED    = NOW.strftime(TIMEFORMAT_DISP)
+
+### Variable globals
+
+SECRET_KEY      = "YouDontKnowThis"
+HTML_ACTISERVERS= ""
+HTML_PROJECTS   = ""
 
 Registry     = {}
 RegistryTime = TIMEZERO
