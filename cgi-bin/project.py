@@ -148,17 +148,20 @@ class ProjectsClass:
         return self.projects.values()
 
     def removeActim(self, actimId, projectId=None):
+        save = False
         if projectId is not None:
             if projectId in self.projects.keys():
-                if actimId in self.projects[projectId].actimetreList:
-                    self.projects[projectId].actimetreList.remove(actimId)
+                p = self.projects[projectId]
+                if actimId in p.actimetreList:
+                    p.actimetreList.remove(actimId)
+                    save = True
         else:
-            save = False
             for p in self.projects.values():
                 if actimId in p.actimetreList:
                     p.actimetreList.remove(actimId)
                     save = True
-            self.save(save)
+        self.save(save)
+        return save
 
     def new(self, title, owner):
         projectId = 1
@@ -169,6 +172,9 @@ class ProjectsClass:
     def delete(self, projectId):
         if projectId in self.projects.keys():
             del self.projects[projectId]
+            self.save()
+            return True
+        return False
 
     def exists(self, projectId):
         return projectId in self.projects.keys()
@@ -176,6 +182,8 @@ class ProjectsClass:
     def htmlUpdate(self, projectId):
         if projectId in self.projects.keys():
             self.projects[projectId].htmlUpdate()
+            return True
+        return False
 
     def addActim(self, actim):
         p = self.get(actim.projectId)

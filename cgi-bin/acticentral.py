@@ -12,27 +12,17 @@ printLog("===================================================")
 import globals as x
 from project import Projects
 from actimetre import Actimetre, loadActimetres
-from actiserver import Actiserver, loadActiservers, htmlActiservers
+from actiserver import Actiservers
 
 x.loadRegistry()
 loadActimetres()
-loadActiservers()
 
 def htmlUpdate():
-    htmlString = htmlActiservers(x.Actiservers)
-    with open(SERVERS_HTML, "w") as html:
-        with open(SERVERS_TEMPLATE, "r") as template:
-            print(template.read() \
-                  .replace('{Actiservers}', htmlString) \
-                  .replace('{Updated}', LAST_UPDATED),
-                  file=html)
-
-    liveActiservers = {key: value for (key, value) in x.Actiservers.items() \
-                       if NOW - value.lastUpdate < ACTIS_HIDE_P}
+    Actiservers.htmlUpdate()
 
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
-        .replace("{Actiservers}", htmlActiservers(liveActiservers))\
+        .replace("{Actiservers}", Actiservers.html(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P))\
         .replace("{Projects}", Projects.html())\
         .replace("{Updated}", LAST_UPDATED)\
         .replace("{Version}", VERSION_STR)\
@@ -56,22 +46,7 @@ def checkAlerts():
     if save:
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
 
-    save = False
-    for s in x.Actiservers.values():
-        if s.isDown == 0 and (NOW - s.lastUpdate) > ACTIS_ALERT1:
-            s.alert()
-            s.isDown = 1
-            save = True
-        elif s.isDown == 1 and (NOW - s.lastUpdate) > ACTIS_ALERT2:
-            s.alert()
-            s.isDown = 2
-            save = True
-        elif s.isDown == 2 and (NOW - s.lastUpdate) > ACTIS_ALERT3:
-            s.alert()
-            s.isDown = 3
-            save = True
-    if save:
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
+    Actiservers.checkAlerts()
 
 def repoStats():
     Projects.clearRepos()
@@ -196,9 +171,7 @@ class ActisInfo:
         self.index = index
         self.serverId = serverId
         self.rssi = rssi
-        self.cpuIdle = 0.0
-        if x.Actiservers.get(serverId) is not None:
-            self.cpuIdle = x.Actiservers[serverId].cpuIdle
+        self.cpuIdle = Actiservers.getCpuIdle(serverId)
 
 def assignActim(data):
     try:
@@ -301,14 +274,7 @@ def processForm(formId):
            (a.projectId == 0 and owner == 'CONFIRM') or \
            Projects.get(a.projectId).owner == owner:
             printLog(f"Retire Actimetre{actimId:04d} from {Projects.get(a.projectId).name()}")
-            save = False
-            for s in x.Actiservers.values():
-                if actimId in s.actimetreList:
-                    s.actimetreList.remove(actimId)
-                    save = True
-            if save:
-                dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
-
+            Actiservers.removeActim(actimId)
             Projects.removeActim(actimId)
 
             del x.Registry[x.Actimetres[actimId].mac]
@@ -350,44 +316,26 @@ def processAction():
         if not checkSecret(): return
         serverId = int(args['serverId'][0])
             
-        if serverId != 0:
-            printLog(f"Actis{serverId} alive")
-            thisServer = Actiserver(serverId).fromD(json.load(sys.stdin), actual=True)
-            if x.Actiservers.get(serverId) is not None:
-                s = x.Actiservers[serverId]
-                thisServer.diskLow = s.diskLow
-                if thisServer.diskLow == 0:
-                    if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 10:
-                        thisServer.diskLow = 1
-                        thisServer.alertDisk()
-                elif thisServer.diskLow == 1:
-                    if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 20:
-                        thisServer.diskLow = 2
-                        thisServer.alertDisk()
-                else:
-                    if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
-                        thisServer.diskLow = 0
-            x.Actiservers[serverId] = thisServer
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-            htmlUpdate()
+        printLog(f"Actis{serverId} alive")
+        s = Actiservers.processAction(serverId, sys.stdin)
+        htmlUpdate()
 
-            if action == 'actiserver':
-                plain(json.dumps(x.Registry))
+        if action == 'actiserver':
+            plain(json.dumps(x.Registry))
+        else:
+            if x.RegistryTime > s.dbTime.replace(tzinfo=timezone.utc) \
+               or Projects.fileTime > s.dbTime.replace(tzinfo=timezone.utc):
+                printLog(f'{s.dbTime} < {Projects.fileTime}, needs update')
+                plain('!')
             else:
-                if x.RegistryTime > thisServer.dbTime.replace(tzinfo=timezone.utc) \
-                   or Projects.fileTime > thisServer.dbTime.replace(tzinfo=timezone.utc):
-                    printLog(f'{thisServer.dbTime} < {Projects.fileTime}, needs update')
-                    plain('!')
-                else:
-                    remotes = loadRemotes()
-                    for actimId in remotes.keys():
-                        if actimId in thisServer.actimetreList:
-                            plain(f'+{actimId}:{remotes[actimId]}')
-                            del remotes[actimId]
-                            saveRemotes(remotes)
-                            return
-                    plain('OK')
+                remotes = loadRemotes()
+                for actimId in remotes.keys():
+                    if actimId in s.actimetreList:
+                        plain(f'+{actimId}:{remotes[actimId]}')
+                        del remotes[actimId]
+                        saveRemotes(remotes)
+                        return
+                plain('OK')
 
     elif action == 'registry':
         if not checkSecret(): return
@@ -494,11 +442,8 @@ def processAction():
             a.repoSize = 0
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
 
-        s = x.Actiservers.get(serverId)
-        if s is not None:
-            s.actimetreList.remove(actimId)
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
-            
+        Actiservers.removeActim(actimId, serverId)
+
         htmlUpdate()
         plain("Ok")
 
@@ -534,7 +479,6 @@ def processAction():
             x.Actimetres[actimId].forgetData()
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             htmlUpdate()
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
         print("Location:\\index.html\n\n")
 
     elif action == 'actim-decouple':
@@ -542,11 +486,8 @@ def processAction():
         serverId = int(args['serverId'][0])
         if x.Actimetres.get(actimId) is not None:
             x.Actimetres[actimId].forgetData()
-        if x.Actiservers.get(serverId) is not None and actimId in x.Actiservers[serverId].actimetreList:
-            x.Actiservers[serverId].actimetreList.remove(actimId)
             printLog(f"Removed Actim{actimId:04d} from Actis{serverId:04d}")
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -566,9 +507,8 @@ def processAction():
 
     elif action == 'retire-server':
         serverId = int(args['serverId'][0])
-        del x.Actiservers[serverId]
+        Actiservers.delete(serverId)
         htmlUpdate()
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
         print("Location:\\index.html\n\n")
 
     elif action == 'project-change-info':

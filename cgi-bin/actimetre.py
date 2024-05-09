@@ -1,6 +1,7 @@
 from const import *
 import globals as x
 from project import Projects
+from actiserver import Actiservers
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
@@ -125,9 +126,7 @@ class Actimetre:
         self.isDead = 3
         self.repoNums = 0
         self.repoSize = 0
-        s = x.Actiservers.get(self.serverId)
-        if s is not None and self.actimId in s.actimetreList:
-            s.actimetreList.remove(self.actimId)
+        Actiservers.removeActim(self.actimId, self.serverId)
         self.serverId = 0
         printLog(f"{self.actimName()} data forgotten")
 
@@ -261,13 +260,11 @@ class Actimetre:
     def update(self, newActim, actual=False):
         redraw = False
         if actual:
-            s = x.Actiservers.get(self.serverId)
             if self.serverId != newActim.serverId:
-                if s is not None and self.actimId in s.actimetreList:
-                    s.actimetreList.remove(self.actimId)
+                Actiservers.removeActim(self.actimId, self.serverId)
                 if self.frequency > 0:
-                    if s is not None:
-                        self.addFreqEvent(s.lastUpdate, 0)
+                    if Actiservers.exists(self.serverId):
+                        self.addFreqEvent(Actiservers.getLastUpdate(self.serverId), 0)
                     else:
                         self.addFreqEvent(newActim.bootTime, 0)
                     self.frequency = 0
@@ -325,14 +322,7 @@ class Actimetre:
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
                    f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
-        if x.Actiservers.get(self.serverId) is not None:
-            s = x.Actiservers[self.serverId]
-            content += f'{s.serverName()}\n' + \
-                       f'Hardware {s.machine}\nVersion {s.version}\n' + \
-                       f'IP {s.ip}\nChannel {s.channel}\n' + \
-                       f'Disk size {printSize(s.diskSize)}, free {printSize(s.diskFree)} ' + \
-                       f'({100.0 * s.diskFree / s.diskSize :.1f}%)\n' + \
-                       f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
+        content += Actiservers.emailInfo(self.serverId)
         content += '\n'
 
         sendEmail(Projects.get(self.projectId).email, subject, content)
@@ -344,16 +334,13 @@ class Actimetre:
             self.isDead = 1
             self.addFreqEvent(NOW, 0)
             self.drawGraph()
-        if self.serverId != 0 and x.Actiservers.get(self.serverId) is not None:
-            if self.actimId in x.Actiservers[self.serverId].actimetreList:
-                printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
-                x.Actiservers[self.serverId].actimetreList.remove(self.actimId)
+        if Actiservers.removeActim(self.actimId, self.serverId):
+            printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
             self.serverId = 0
             self.repoSize = 0
             self.repoNums = 0
-            if Projects.exists(self.projectId):
+            if Projects.htmlUpdate(self.projectId):
                 printLog(f"Actim{self.actimId:04d} dies, update Project{self.projectId:02d}")
-                Projects.htmlUpdate(self.projectId)
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
@@ -402,7 +389,6 @@ class Actimetre:
         return self.repoNums > 0 or self.repoSize > 0
 
     def html(self):
-        s = x.Actiservers.get(self.serverId)
         doc, tag, text, line = Doc().ttl()
         with tag('tr'):
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
@@ -415,8 +401,7 @@ class Actimetre:
 
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
-                if self.version >= '301' and alive == 'up' and \
-                        (s is not None and s.version >= '301') :
+                if self.version >= '301' and alive == 'up' and Actiservers.getVersion(self.serverId) >= '301':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-restart'):
                         text('Reboot')
@@ -425,7 +410,7 @@ class Actimetre:
                 doc.asis('<br>')
                 text(f"v{self.version}")
             if self.serverId != 0:
-                if s is not None and s.isDown == 0:
+                if Actiservers.isDown(self.serverId) == 0:
                     line('td', f"Actis{self.serverId:03d}")
                 else:
                     line('td', f"Actis{self.serverId:03d}", klass="down")
@@ -433,8 +418,7 @@ class Actimetre:
                 line('td', "")
             with tag('td'):
                 doc.asis(self.frequencyText(self.sensorStr))
-                if self.version >= '301' and alive == 'up' and \
-                        (x.Actiservers.get(self.serverId) is not None and x.Actiservers[self.serverId].version >= '301') :
+                if self.version >= '301' and alive == 'up' and Actiservers.getVersion(self.serverId) >= '301':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-button'):
                         text('Button')
@@ -473,12 +457,11 @@ class Actimetre:
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='actim-change-project'):
                         doc.asis('Move')
-                elif alive == 'up' and self.hasData() and \
-                        (x.Actiservers.get(self.serverId) is not None and x.Actiservers[self.serverId].version >= '380'):
+                elif alive == 'up' and self.hasData() and Actiservers.getVersion(self.serverId) >= '380':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='actim-stop'):
                         doc.asis('Stop')
-                elif alive != 'up' and self.hasData() and s is not None and s.isDown == 0:
+                elif alive != 'up' and self.hasData() and Actiservers.isDown(self.serverId) == 0:
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='actim-sync'):
                         text('Sync')

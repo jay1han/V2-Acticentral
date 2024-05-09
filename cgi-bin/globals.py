@@ -6,7 +6,6 @@ from const import *
 
 Registry     = {}
 RegistryTime = TIMEZERO
-Actiservers  = {}
 Actimetres   = {}
 
 def saveRegistry():
