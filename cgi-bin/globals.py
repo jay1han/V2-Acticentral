@@ -97,13 +97,16 @@ def dumpData(filename, data):
         json.dump(data, registry)
 
 def initRegistry():
-    global Registry, RegistryTime
+    global Registry, RegistryTime, SECRET_KEY
     RegistryTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
     with open(REGISTRY, "r") as registry:
         try:
             Registry = json.load(registry)
         except JSONDecodeError:
             pass
+    with open(SECRET_FILE, "r") as secret:
+        SECRET_KEY = secret.read().strip()
+
 
 def saveRegistry():
     registryBackup = REGISTRY_BACKUP + datetime.now().strftime(TIMEFORMAT_FN)

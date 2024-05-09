@@ -7,9 +7,6 @@ from globals import *
 lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
 
-with open(SECRET_FILE, "r") as secret:
-    SECRET_KEY = secret.read().strip()
-
 from project import *
 from actiserver import *
 
