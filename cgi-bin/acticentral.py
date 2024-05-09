@@ -10,7 +10,7 @@ fcntl.lockf(lock, fcntl.LOCK_EX)
 from project import *
 from actiserver import *
 
-initRegistry()
+SECRET_KEY = initRegistry()
 initActimetres()
 initActiservers()
 initProjects()
@@ -373,7 +373,7 @@ def processForm(formId):
 
 def checkSecret():
     if secret != SECRET_KEY:
-        printLog(f"Wrong secret {secret}")
+        printLog(f"Wrong secret {secret} vs. {SECRET_KEY}")
         print(f"Wrong secret {secret}", file=sys.stdout)
         plain("Wrong secret")
         return
