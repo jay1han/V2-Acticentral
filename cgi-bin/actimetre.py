@@ -357,6 +357,8 @@ class Actimetre:
                 printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
                 x.Actiservers[self.serverId].actimetreList.remove(self.actimId)
             self.serverId = 0
+            self.repoSize = 0
+            self.repoNums = 0
             if x.Projects.get(self.projectId) is not None:
                 printLog(f"Actim{self.actimId:04d} dies, update Project{self.projectId:02d}")
                 x.Projects[self.projectId].htmlUpdate()
@@ -408,8 +410,7 @@ class Actimetre:
         return self.repoNums > 0 or self.repoSize > 0
 
     def html(self):
-        if self.serverId != 0:
-            s = x.Actiservers.get(self.serverId)
+        s = x.Actiservers.get(self.serverId)
         doc, tag, text, line = Doc().ttl()
         with tag('tr'):
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
@@ -423,7 +424,7 @@ class Actimetre:
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
                 if self.version >= '301' and alive == 'up' and \
-                        (x.Actiservers.get(self.serverId) is not None and x.Actiservers[self.serverId].version >= '301') :
+                        (s is not None and s.version >= '301') :
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-restart'):
                         text('Reboot')
