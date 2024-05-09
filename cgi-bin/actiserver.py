@@ -109,11 +109,9 @@ class Actiserver:
 
         sendEmail("", subject, content)
 
-    def html(self, force=False):
+    def html(self):
         doc, tag, text, line = Doc().ttl()
 
-        if NOW - self.lastUpdate > ACTIM_HIDE_P and not force:
-            return ""
         with tag('tr'):
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
             doc.asis(f'<input type="hidden" name="serverId" value="{self.serverId}" />')
@@ -200,7 +198,7 @@ class Actiserver:
 def htmlActiservers(actiservers):
     htmlString = ""
     for serverId in sorted(actiservers.keys()):
-        htmlString += actiservers[serverId].html(True)
+        htmlString += actiservers[serverId].html()
     return htmlString
 
 def loadActiservers():
