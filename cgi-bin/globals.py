@@ -60,6 +60,11 @@ ACTIM_HIDE_P    = timedelta(days=1)
 TIMEZERO        = datetime(year=2023, month=1, day=1, tzinfo=timezone.utc)
 NOW             = datetime.now(timezone.utc)
 
+Registry    = None
+Projects    = None
+Actimetres  = None
+Actiservers = None
+
 def printLog(text=''):
     try:
         if os.stat(LOG_FILE).st_size > LOG_SIZE_MAX:

@@ -102,7 +102,7 @@ class Project:
 
         return indent(doc.getvalue())
 
-if not 'Projects' in globals():
+if Projects is None:
     Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
     if Projects.get(0) is None:
         Projects[0] = Project(0, "Not assigned", "No owner")

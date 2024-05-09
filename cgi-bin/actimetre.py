@@ -508,6 +508,6 @@ class Actimetre:
             doc.asis('</form>\n')
         return indent(doc.getvalue())
 
-if not 'Actimetres' in globals():
+if Actimetres is None:
     Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 
