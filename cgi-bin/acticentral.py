@@ -8,20 +8,14 @@ lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
 
 from project import *
+from actimetre import *
 from actiserver import *
 
-SECRET_KEY = initRegistry()
-Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
-Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
-Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
-if Projects.get(0) is None:
-    Projects[0] = Project(0, "Not assigned", "No owner")
-    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-
-printLog(Projects)
-printLog(Actiservers)
-printLog(Actimetres)
+SECRET_KEY   = initRegistry()
+Actimetres   = initActimetres()
+Actiservers  = initActiservers()
+Projects     = initProjects()
+ProjectsTime = initProjectsTime
 
 def htmlUpdate():
     global LAST_UPDATED

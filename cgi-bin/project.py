@@ -105,3 +105,13 @@ def listProjects():
     for (projectId, p) in Projects.items():
         if len(p.actimetreList) > 0:
             print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
+
+def initProjects():
+    projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+    if projects.get(0) is None:
+        projects[0] = Project(0, "Not assigned", "No owner")
+        dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+    return projects
+
+def initProjectsTime():
+    return datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
