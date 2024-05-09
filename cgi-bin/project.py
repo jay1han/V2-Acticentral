@@ -1,6 +1,5 @@
 from const import *
 import globals as x
-from actimetre import Actimetre
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=None):
@@ -178,7 +177,7 @@ class ProjectsClass:
         if projectId in self.projects.keys():
             self.projects[projectId].htmlUpdate()
 
-    def addActim(self, actim: Actimetre):
+    def addActim(self, actim):
         p = self.get(actim.projectId)
         isNew = p.addActim(actim.actimId)
         if isNew:
