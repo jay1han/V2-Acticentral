@@ -372,11 +372,12 @@ def checkSecret():
         printLog(f"Wrong secret {secret} vs. {SECRET_KEY}")
         print(f"Wrong secret {secret}", file=sys.stdout)
         plain("Wrong secret")
-        return
+        return False
+    return True
 
 def processAction():
     if action == 'actiserver' or action == 'actiserver3':
-        checkSecret()
+        if not checkSecret(): return
         serverId = int(args['serverId'][0])
             
         if serverId != 0:
@@ -401,37 +402,36 @@ def processAction():
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
             htmlUpdate()
 
-        remotes = loadRemotes()
-        for actimId in remotes.keys():
-            if actimId in thisServer.actimetreList:
-                plain(f'+{actimId}:{remotes[actimId]}')
-                del remotes[actimId]
-                saveRemotes(remotes)
-                return
-
-        if action == 'actiserver':
-            plain(json.dumps(x.Registry))
-        else:
-            if x.RegistryTime > thisServer.dbTime.replace(tzinfo=timezone.utc) \
-               or x.ProjectsTime > thisServer.dbTime.replace(tzinfo=timezone.utc):
-                printLog(f'{thisServer.dbTime} < {x.ProjectsTime}, needs update')
-                plain('!')
+            if action == 'actiserver':
+                plain(json.dumps(x.Registry))
             else:
-                plain('OK')
+                if x.RegistryTime > thisServer.dbTime.replace(tzinfo=timezone.utc) \
+                   or x.ProjectsTime > thisServer.dbTime.replace(tzinfo=timezone.utc):
+                    printLog(f'{thisServer.dbTime} < {x.ProjectsTime}, needs update')
+                    plain('!')
+                else:
+                    remotes = loadRemotes()
+                    for actimId in remotes.keys():
+                        if actimId in thisServer.actimetreList:
+                            plain(f'+{actimId}:{remotes[actimId]}')
+                            del remotes[actimId]
+                            saveRemotes(remotes)
+                            return
+                    plain('OK')
 
     elif action == 'registry':
-        checkSecret()
+        if not checkSecret(): return
 #        serverId = int(args['serverId'][0])
         plain(json.dumps(x.Registry))
 
     elif action == 'projects':
-        checkSecret()
+        if not checkSecret(): return
 #        serverId = int(args['serverId'][0])
         plain()
         listProjects()
 
     elif action == 'report':
-        checkSecret()
+        if not checkSecret(): return
         serverId  = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
         if x.Actimetres.get(actimId) is not None:
@@ -451,7 +451,7 @@ def processAction():
         print("Location:\\index.html\n\n")
 
     elif action == 'actimetre-new':
-        checkSecret()
+        if not checkSecret(): return
         mac       = args['mac'][0]
         boardType = args['boardType'][0]
         serverId  = int(args['serverId'][0])
@@ -493,7 +493,7 @@ def processAction():
         plain(responseStr)
 
     elif action == 'actimetre-off':
-        checkSecret()
+        if not checkSecret(): return
         serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
@@ -507,13 +507,13 @@ def processAction():
         plain("Ok")
 
     elif action == 'actimetre-query':
-        checkSecret()
+        if not checkSecret(): return
         assigned = assignActim(sys.stdin.read())
         printLog(f'Assigned {assigned}')
         plain(str(assigned))
 
     elif action == 'actimetre-removed':
-        checkSecret()
+        if not checkSecret(): return
         serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
