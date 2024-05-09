@@ -1,10 +1,8 @@
 from globals import *
-if not 'Actiservers' in dir():
+if not 'Actiserver' in dir():
     from actiserver import *
-if not 'Projects' in dir():
+if not 'Project' in dir():
     from project import *
-
-Actimetres   = {}
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)

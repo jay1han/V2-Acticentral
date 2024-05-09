@@ -1,8 +1,6 @@
 from globals import *
-if not 'Actimetres' in dir():
+if not 'Actimetre' in dir():
     from actimetre import *
-
-Actiservers  = {}
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False, \

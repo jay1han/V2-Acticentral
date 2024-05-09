@@ -19,6 +19,10 @@ initActimetres()
 initActiservers()
 initProjects()
 
+printLog(Projects)
+printLog(Actiservers)
+printLog(Actimetres)
+
 def htmlUpdate():
     global LAST_UPDATED
     LAST_UPDATED = NOW.strftime(TIMEFORMAT_DISP)

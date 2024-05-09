@@ -2,9 +2,6 @@ from globals import *
 if not 'Actimetre' in dir():
     from actimetre import *
 
-Projects     = {}
-ProjectsTime = TIMEZERO
-
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
         self.projectId     = projectId
