@@ -1,5 +1,4 @@
 from globals import *
-from actimetre import *
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):

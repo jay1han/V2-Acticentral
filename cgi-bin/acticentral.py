@@ -8,7 +8,6 @@ lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
 
 from project import *
-from actimetre import *
 from actiserver import *
 
 SECRET_KEY = initRegistry()

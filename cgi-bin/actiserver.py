@@ -1,5 +1,5 @@
 from globals import *
-from actimetre import *
+from actimetre import Actimetre
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False, \

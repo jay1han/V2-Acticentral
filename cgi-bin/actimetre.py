@@ -1,6 +1,4 @@
 from globals import *
-from actiserver import *
-from project import *
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
