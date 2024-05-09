@@ -11,11 +11,10 @@ from project import *
 from actimetre import *
 from actiserver import *
 
-SECRET_KEY   = initRegistry()
-Actimetres   = initActimetres()
-Actiservers  = initActiservers()
-Projects     = initProjects()
-ProjectsTime = initProjectsTime
+Registry, RegistryTime = loadRegistry()
+Actimetres             = loadActimetres()
+Actiservers            = loadActiservers()
+Projects, ProjectsTime = loadProjects()
 
 def htmlUpdate():
 #    htmlActiservers()

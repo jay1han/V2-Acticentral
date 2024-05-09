@@ -24,13 +24,10 @@ class Project:
         self.projectId      = int(d['projectId'])
         self.title          = d['title']
         self.owner          = d['owner']
-        if d.get('email'):
-            self.email      = d['email']
-        if d.get('repoNums'):
-            self.repoNums   = int(d['repoNums'])
+        self.email      = d['email']
+        self.repoNums   = int(d['repoNums'])
         self.repoSize       = int(d['repoSize'])
-        if d.get('actimetreList') is not None:
-            self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
+        self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
         return self
 
     def addActim(self, actimId):
@@ -106,12 +103,9 @@ def listProjects():
         if len(p.actimetreList) > 0:
             print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
 
-def initProjects():
+def loadProjects():
     projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
     if projects.get(0) is None:
         projects[0] = Project(0, "Not assigned", "No owner")
         dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-    return projects
-
-def initProjectsTime():
-    return datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+    return projects, datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)

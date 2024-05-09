@@ -48,11 +48,9 @@ class Actiserver:
         self.version    = d['version']
         self.channel    = int(d['channel'])
         self.ip         = d['ip']
-        if d.get('isLocal'):
-            self.isLocal = (str(d['isLocal']).strip().upper() == "TRUE")
-        if d.get('diskSize'):
-            self.diskSize = int(d['diskSize'])
-            self.diskFree = int(d['diskFree'])
+        self.isLocal = (str(d['isLocal']).strip().upper() == "TRUE")
+        self.diskSize = int(d['diskSize'])
+        self.diskFree = int(d['diskFree'])
         self.actimetreList = set()
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
@@ -62,53 +60,22 @@ class Actiserver:
                 else:
                     Actimetres[a.actimId].update(a, actual)
                 self.actimetreList.add(a.actimId)
-        else:
-            self.actimetreList = set()
         for a in Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
                 a.dies()
-        if d.get('lastUpdate'):
-            self.lastUpdate = utcStrptime(d['lastUpdate'])
-        else:
-            self.lastUpdate = utcStrptime(d['lastReport'])
-        if d.get('dbTime'):
-            self.dbTime = utcStrptime(d['dbTime'])
-        if d.get('isDown'):
-            self.isDown = int(d['isDown'])
-        else:
-            if NOW - self.lastUpdate < ACTIS_ALERT3:
-                self.isDown = 0
-            else:
-                self.isDown = 3
-        if d.get('diskLow') is None:
-            self.diskLow = 0
-        elif d['diskLow'] == False:
-            self.diskLow = 0
-        elif d['diskLow'] == True:
-            self.diskLow = 1
-        else:
-            self.diskLow = d['diskLow']
-
-        if d.get('cpuIdle')  is not None: self.cpuIdle  = float(d['cpuIdle'])
-        if d.get('memAvail') is not None: self.memAvail = float(d['memAvail'])
-        if d.get('diskTput') is not None: self.diskTput = float(d['diskTput'])
-        if d.get('diskUtil') is not None: self.diskUtil = float(d['diskUtil'])
+        self.lastUpdate = utcStrptime(d['lastUpdate'])
+        self.dbTime = utcStrptime(d['dbTime'])
+        self.isDown = int(d['isDown'])
+        self.diskLow = int(d['diskLow'])
+        self.cpuIdle  = float(d['cpuIdle'])
+        self.memAvail = float(d['memAvail'])
+        self.diskTput = float(d['diskTput'])
+        self.diskUtil = float(d['diskUtil'])
 
         return self
 
     def serverName(self):
         return f"Actis{self.serverId:03d}"
-
-    def removeActimetres(self):
-        removed = False
-        for actimId in self.actimetreList.copy():
-            a = Actimetres.get(actimId)
-            if a is not None:
-                if a.serverId == self.serverId and a.isDead == 0:
-                    a.dies()
-                self.actimetreList.remove(actimId)
-                removed = True
-        return removed
 
     def alert(self):
         printLog(f'Alert {self.serverName()}')
@@ -242,5 +209,5 @@ def htmlAllServers(actiservers):
                   .replace('{Updated}', LAST_UPDATED) \
                   , file=html)
 
-def initActiservers():
+def loadActiservers():
     return {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}

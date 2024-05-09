@@ -30,15 +30,18 @@ HISTORY_DIR     = f"{FILE_ROOT}/history"
 REMOTE_FILE     = f"{FILE_ROOT}/remotes.data"
 IMAGES_DIR      = f"{WWW_ROOT}/html/images"
 IMAGES_INDEX    = f"{WWW_ROOT}/html/images/index.txt"
-
 HTML_DIR        = f"{WWW_ROOT}/html"
 INDEX_HTML      = f"{WWW_ROOT}/html/index.html"
 SERVERS_HTML    = f"{WWW_ROOT}/html/servers.html"
 CGI_BIN         = "acticentral.py"
-
 INDEX_TEMPLATE  = f"{WWW_ROOT}/html/template.html"
 PROJECT_TEMPLATE= f"{WWW_ROOT}/html/templateProject.html"
 SERVERS_TEMPLATE= f"{WWW_ROOT}/html/templateServers.html"
+
+try:
+    SECRET_KEY = open(SECRET_FILE, "r").read().strip()
+except (OSError, FileNotFoundError):
+    pass
 
 ACTIM_ALERT1    = timedelta(minutes=5)
 ACTIM_ALERT2    = timedelta(minutes=30)
@@ -57,10 +60,6 @@ NOW             = datetime.now(timezone.utc)
 LAST_UPDATED    = NOW.strftime(TIMEFORMAT_DISP)
 
 ### Variable globals
-
-SECRET_KEY      = "YouDontKnowThis"
-HTML_ACTISERVERS= ""
-HTML_PROJECTS   = ""
 
 Registry     = {}
 RegistryTime = TIMEZERO
@@ -98,17 +97,14 @@ def dumpData(filename, data):
     with open(filename, "r+") as registry:
         json.dump(data, registry)
 
-def initRegistry():
-    global Registry, RegistryTime
-    with open(SECRET_FILE, "r") as secret:
-        secret = secret.read().strip()
-    RegistryTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
+def loadRegistry():
     with open(REGISTRY, "r") as registry:
         try:
-            Registry = json.load(registry)
+            data = json.load(registry)
         except JSONDecodeError:
             pass
-    return secret
+    time = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
+    return data, time
 
 def saveRegistry():
     registryBackup = REGISTRY_BACKUP + datetime.now().strftime(TIMEFORMAT_FN)
@@ -195,7 +191,3 @@ For more information, please visit actimetre.fr
                                         input = content, text=True, stderr=subprocess.STDOUT)
                 printLog(f'Email sent to "{email}", sendmail returns {result.returncode}: {result.stdout}')
             admins.close()
-
-def globalUpdate(lastUpdate):
-    global LAST_UPDATED
-    LAST_UPDATED = lastUpdate

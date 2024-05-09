@@ -62,48 +62,30 @@ class Actimetre:
         self.boardType  = d['boardType']
         self.version    = d['version']
         self.serverId   = int(d['serverId'])
-        if str(d['isDead']).isdecimal():
-            self.isDead = int(d['isDead'])
-        else:
-            self.isDead = int(str(d['isDead']).strip().upper() == "TRUE")
-        if d.get('isStopped') is not None:
-            self.isStopped = (str(d['isStopped']).strip().upper() == "TRUE")
-        else:
-            self.isStopped = False
+        self.isDead = int(d['isDead'])
+        self.isStopped = (str(d['isStopped']).strip().upper() == "TRUE")
         self.bootTime   = utcStrptime(d['bootTime'])
         self.lastSeen   = utcStrptime(d['lastSeen'])
         self.lastReport = utcStrptime(d['lastReport'])
         self.sensorStr  = d['sensorStr']
         self.frequency  = int(d['frequency'])
         self.rating     = float(d['rating'])
-        if d.get('rssi') is not None:
-            self.rssi   = int(d['rssi'])
-        if d.get('repoNums'):
-            self.repoNums   = int(d['repoNums'])
+        self.rssi   = int(d['rssi'])
+        self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
-
-        if d.get('projectId') is not None:
-            self.projectId  = int(d['projectId'])
-            for p in Projects.values():
-                if self.actimId in p.actimetreList and p.projectId != self.projectId:
-                    p.actimetreList.remove(self.actimId)
-            if Projects.get(self.projectId) is None:
-                self.projectId = 0
-            else:
-                Projects[self.projectId].actimetreList.add(self.actimId)
+        self.projectId  = int(d['projectId'])
+        for p in Projects.values():
+            if self.actimId in p.actimetreList and p.projectId != self.projectId:
+                p.actimetreList.remove(self.actimId)
+        if Projects.get(self.projectId) is None:
+            self.projectId = 0
         else:
-            for p in Projects.values():
-                if self.actimId in p.actimetreList:
-                    self.projectId = p.projectId
+            Projects[self.projectId].actimetreList.add(self.actimId)
 
-        if d.get('lastDrawn') is not None:
-            self.lastDrawn = utcStrptime(d['lastDrawn'])
-        if d.get('graphSince') is not None:
-            self.graphSince = utcStrptime(d['graphSince'])
-        if d.get('reportStr') is not None:
-            self.reportStr = d['reportStr']
-        else:
-            self.reportStr = ""
+        self.lastDrawn = utcStrptime(d['lastDrawn'])
+        self.graphSince = utcStrptime(d['graphSince'])
+        self.reportStr = d['reportStr']
+
         return self
 
     def cutHistory(self, cutLength=None):
@@ -506,5 +488,5 @@ class Actimetre:
             doc.asis('</form>\n')
         return indent(doc.getvalue())
 
-def initActimetres():
+def loadActimetres():
     return {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
