@@ -61,6 +61,7 @@ LAST_UPDATED    = NOW.strftime(TIMEFORMAT_DISP)
 
 ### Variable globals
 
+global Registry, RegistryTime
 Registry     = {}
 RegistryTime = TIMEZERO
 Actiservers  = {}
@@ -96,27 +97,6 @@ def dumpData(filename, data):
         pass
     with open(filename, "r+") as registry:
         json.dump(data, registry)
-
-def loadRegistry():
-    with open(REGISTRY, "r") as registry:
-        try:
-            data = json.load(registry)
-        except JSONDecodeError:
-            pass
-    time = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
-    return data, time
-
-def saveRegistry():
-    registryBackup = REGISTRY_BACKUP + datetime.now().strftime(TIMEFORMAT_FN)
-    try:
-        shutil.copyfile(REGISTRY, registryBackup)
-    except OSError:
-        pass
-
-    os.truncate(REGISTRY, 0)
-    with open(REGISTRY, "r+") as registry:
-        json.dump(Registry, registry)
-    printLog("Saved Registry " + str(Registry))
 
 def printSize(size, unit='', precision=0):
     if size == 0:
@@ -191,3 +171,25 @@ For more information, please visit actimetre.fr
                                         input = content, text=True, stderr=subprocess.STDOUT)
                 printLog(f'Email sent to "{email.strip()}", sendmail returns {result.returncode}: {result.stdout}')
             admins.close()
+
+def loadRegistry():
+    global Registry, RegistryTime
+    with open(REGISTRY, "r") as registry:
+        try:
+            Registry = json.load(registry)
+        except JSONDecodeError:
+            pass
+    RegistryTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
+    return
+
+def saveRegistry():
+    registryBackup = REGISTRY_BACKUP + datetime.now().strftime(TIMEFORMAT_FN)
+    try:
+        shutil.copyfile(REGISTRY, registryBackup)
+    except OSError:
+        pass
+
+    os.truncate(REGISTRY, 0)
+    with open(REGISTRY, "r+") as registry:
+        json.dump(Registry, registry)
+    printLog("Saved Registry " + str(Registry))

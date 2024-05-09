@@ -62,7 +62,7 @@ class Actimetre:
         self.boardType  = d['boardType']
         self.version    = d['version']
         self.serverId   = int(d['serverId'])
-        self.isDead = int(d['isDead'])
+        self.isDead     = int(d['isDead'])
         self.isStopped = (str(d['isStopped']).strip().upper() == "TRUE")
         self.bootTime   = utcStrptime(d['bootTime'])
         self.lastSeen   = utcStrptime(d['lastSeen'])

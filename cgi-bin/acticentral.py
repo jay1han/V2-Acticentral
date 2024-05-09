@@ -11,7 +11,9 @@ from project import *
 from actimetre import *
 from actiserver import *
 
-Registry, RegistryTime = loadRegistry()
+global Registry
+loadRegistry()
+printLog(Registry)
 Actimetres             = loadActimetres()
 Actiservers            = loadActiservers()
 Projects, ProjectsTime = loadProjects()
