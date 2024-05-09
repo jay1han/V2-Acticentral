@@ -1,6 +1,5 @@
 from globals import *
-if not 'Actimetre' in dir():
-    from actimetre import *
+from actimetre import *
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=set()):
@@ -102,15 +101,6 @@ class Project:
                                     doc.asis(Actimetres[actimId].htmlCartouche())
 
         return indent(doc.getvalue())
-
-def initProjects():
-    global Projects, ProjectsTime
-    if len(Projects) == 0:
-        Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
-        if Projects.get(0) is None:
-            Projects[0] = Project(0, "Not assigned", "No owner")
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
-        ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
 def listProjects():
     for (projectId, p) in Projects.items():

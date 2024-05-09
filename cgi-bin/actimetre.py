@@ -1,8 +1,6 @@
 from globals import *
-if not 'Actiserver' in dir():
-    from actiserver import *
-if not 'Project' in dir():
-    from project import *
+from actiserver import *
+from project import *
 
 REDRAW_TIME  = timedelta(minutes=5)
 REDRAW_DEAD  = timedelta(minutes=30)
@@ -509,9 +507,4 @@ class Actimetre:
                     doc.asis('<br><button type="submit" name="action" value="clear-report">Clear</button>\n')
             doc.asis('</form>\n')
         return indent(doc.getvalue())
-
-def initActimetres():
-    global Actimetres
-    if len(Actimetres) == 0:
-        Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 

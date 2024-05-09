@@ -7,17 +7,18 @@ from globals import *
 lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
 
-if 'Projects' not in dir():
-    from project import *
-if 'Actiservers' not in dir():
-    from actiserver import *
-if 'Actimetres' not in dir():
-    from actimetre import *
+from project import *
+from actimetre import *
+from actiserver import *
 
 SECRET_KEY = initRegistry()
-initActimetres()
-initActiservers()
-initProjects()
+Actimetres  = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+Actiservers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
+Projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+if Projects.get(0) is None:
+    Projects[0] = Project(0, "Not assigned", "No owner")
+    dumpData(PROJECTS, {int(p.projectId):p.toD() for p in Projects.values()})
+ProjectsTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
 printLog(Projects)
 printLog(Actiservers)
