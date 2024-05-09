@@ -73,7 +73,6 @@ class Actimetre:
         self.rssi   = int(d['rssi'])
         self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
-        self.reportStr = d['reportStr']
 
         if fromFile:
             self.projectId  = int(d['projectId'])
@@ -86,6 +85,7 @@ class Actimetre:
                 Projects[self.projectId].actimetreList.add(self.actimId)
             self.lastDrawn = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
+            self.reportStr = d['reportStr']
 
         return self
 

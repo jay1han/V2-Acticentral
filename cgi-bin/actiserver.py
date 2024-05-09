@@ -63,14 +63,17 @@ class Actiserver:
         for a in Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
                 a.dies()
-        self.lastUpdate = utcStrptime(d['lastUpdate'])
+
         self.dbTime = utcStrptime(d['dbTime'])
         self.isDown = int(d['isDown'])
-        self.diskLow = int(d['diskLow'])
         self.cpuIdle  = float(d['cpuIdle'])
         self.memAvail = float(d['memAvail'])
         self.diskTput = float(d['diskTput'])
         self.diskUtil = float(d['diskUtil'])
+
+        if not actual:
+            self.lastUpdate = utcStrptime(d['lastUpdate'])
+            self.diskLow = int(d['diskLow'])
 
         return self
 
