@@ -355,6 +355,8 @@ class Actimetre:
         if self.serverId != 0 and x.Actiservers.get(self.serverId) is not None:
             x.Actiservers[self.serverId].actimetreList.remove(self.actimId)
             self.serverId = 0
+            if x.Projects.get(self.projectId) is not None:
+                x.Projects[self.projectId].htmlUpdate()
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
