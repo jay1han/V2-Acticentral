@@ -74,6 +74,7 @@ class Actiserver:
                     x.Projects[x.Actimetres[a.actimId].projectId].htmlUpdate()
         for a in x.Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
+                printLog(f"Actim{a.actimId:04d} orphaned by Actis{self.serverId}")
                 a.dies()
 
         if not actual:

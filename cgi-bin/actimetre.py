@@ -353,9 +353,12 @@ class Actimetre:
             self.addFreqEvent(NOW, 0)
             self.drawGraph()
         if self.serverId != 0 and x.Actiservers.get(self.serverId) is not None:
-            x.Actiservers[self.serverId].actimetreList.remove(self.actimId)
+            if self.actimId in x.Actiservers[self.serverId].actimetreList:
+                printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
+                x.Actiservers[self.serverId].actimetreList.remove(self.actimId)
             self.serverId = 0
             if x.Projects.get(self.projectId) is not None:
+                printLog(f"Actim{self.actimId:04d} dies, update Project{self.projectId:02d}")
                 x.Projects[self.projectId].htmlUpdate()
 
     def actimName(self):
