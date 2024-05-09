@@ -25,7 +25,7 @@ def htmlUpdate():
                   .replace('{Updated}', LAST_UPDATED) \
                   , file=html)
 
-    liveActiservers = {(key, value) for (key, value) in Actiservers.items() \
+    liveActiservers = {key: value for (key, value) in Actiservers.items() \
                        if NOW - value.lastUpdate < ACTIS_HIDE_P}
 
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
