@@ -17,7 +17,7 @@ class Project:
             self.actimetreList = set()
         else:
             self.actimetreList = actimetreList
-        self.dirty        = False
+        self.dirty        = True
 
     def toD(self):
         return {'projectId'     : self.projectId,
@@ -33,15 +33,18 @@ class Project:
         self.owner         = d['owner']
         self.email         = d['email']
         self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
+        self.dirty         = False
         return self
 
-    def addActim(self, actimId: int):
+    def addActim(self, actimId: int) -> None:
         if actimId not in self.actimetreList:
             self.actimetreList.add(actimId)
             self.dirty = True
-            return True
-        else:
-            return False
+
+    def removeActim(self, actimId: int) -> None:
+        if actimId in self.actimetreList:
+            self.actimetreList.remove(actimId)
+            self.dirty = True
 
     def name(self):
         return f"{self.title} (#{self.projectId:02d})"
@@ -101,7 +104,7 @@ class Project:
                         doc.asis(Actimetres.htmlCartouche(actimId, withTag='div'))
         return doc.getvalue()
 
-    def saveProject(self):
+    def save(self):
         if self.dirty: self.htmlWrite()
 
 class ProjectsClass:
@@ -109,7 +112,6 @@ class ProjectsClass:
         self.projects: dict[int, Project] = {}
         self.fileTime = TIMEZERO
         self.dirty = False
-        self.dummy = Project()
 
     def __getitem__(self, item: int):
         return item in self.projects
@@ -118,11 +120,10 @@ class ProjectsClass:
         self.projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
         if self.projects.get(0) is None:
             self.projects[0] = Project(0, "Not assigned", "No owner")
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
+            self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-        self.dirty = False
 
-    def list(self):
+    def dump(self):
         for (projectId, p) in self.projects.items():
             if len(p.actimetreList) > 0:
                 print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
@@ -154,14 +155,14 @@ class ProjectsClass:
         else:
             self.projects[projectId].title = title
             self.projects[projectId].owner = owner
-        self.projects[projectId].dirty = True
+            self.projects[projectId].dirty = True
         self.dirty = True
         return self[projectId]
 
     def setActimetre(self, projectId: int, actimId: int) -> int:
         for p in self.projects.values():
             if actimId in p.actimetreList and p.projectId != projectId:
-                p.actimetreList.remove(actimId)
+                p.removeActim(actimId)
         if projectId in self.projects:
             self.projects[projectId].addActim(actimId)
             return projectId
@@ -184,7 +185,6 @@ class ProjectsClass:
         while projectId in set(self.projects.keys()):
             projectId += 1
         self.projects[projectId] = Project(projectId, title, owner, email)
-        self.projects[projectId].dirty = True
         self.dirty = True
 
     def deleteProject(self, projectId):
@@ -192,6 +192,7 @@ class ProjectsClass:
         if projectId in self.projects:
             for a in self.projects[projectId].actimetreList:
                 Actimetres.removeProject(a)
+                self.projects[projectId].removeActim(a)
             del self.projects[projectId]
             self.dirty = True
 
@@ -267,18 +268,18 @@ class ProjectsClass:
                 self.new(title, owner, email)
         print("Location:\\index.html\n\n")
 
-    def needUpdate(self, serverTime):
-        return self.fileTime > serverTime
-
     def dirtyProject(self, projectId):
         self.projects[projectId].dirty = True
+
+    def needUpdate(self, serverTime):
+        return self.fileTime > serverTime
 
     def save(self):
         if self.dirty:
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
             self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-            for p in self.projects.values():
-                p.saveProject()
+        for p in self.projects.values():
+            p.save()
 
 Projects = ProjectsClass()
 def initProjects() -> ProjectsClass:

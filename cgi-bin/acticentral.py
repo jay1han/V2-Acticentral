@@ -153,7 +153,6 @@ def processAction():
             
         printLog(f"Actis{serverId} alive")
         s = Actiservers.processAction(serverId, sys.stdin)
-        htmlUpdate()
 
         if action == 'actiserver':
             plain(Registry.dump())
@@ -179,7 +178,7 @@ def processAction():
     elif action == 'projects':
         if not checkSecret(): return
 #        serverId = int(args['serverId'][0])
-        plain(Projects.list())
+        plain(Projects.dump())
 
     elif action == 'report':
         if not checkSecret(): return
@@ -227,7 +226,7 @@ def processAction():
 
     elif action == 'actimetre-removed':
         if not checkSecret(): return
-        serverId = int(args['serverId'][0])
+#        serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
         Actimetres.forget(actimId)
@@ -265,7 +264,7 @@ def processAction():
 
     elif action == 'actim-decouple':
         actimId = int(args['actimId'][0])
-        serverId = int(args['serverId'][0])
+#        serverId = int(args['serverId'][0])
         Actimetres.forget(actimId)
         print("Location:\\index.html\n\n")
 

@@ -37,6 +37,7 @@ class Actimetre:
         self.lastDrawn  = TIMEZERO
         self.graphSince = TIMEZERO
         self.reportStr  = ""
+        self.dirty      = True
 
     def toD(self):
         return {'actimId'   : self.actimId,
@@ -85,7 +86,7 @@ class Actimetre:
             self.lastDrawn  = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr  = d['reportStr']
-
+        self.dirty = actual
         return self
 
     def cutHistory(self, cutLength=None):
@@ -117,6 +118,7 @@ class Actimetre:
             with open(historyFile, "r+") as history:
                 for line in freshLines:
                     print(line.strip(), file=history)
+        self.dirty = True
 
     def forgetData(self):
         self.isDead = 3
@@ -125,6 +127,7 @@ class Actimetre:
         Actiservers.removeActim(self.actimId)
         self.serverId = 0
         printLog(f"{self.actimName()} data forgotten")
+        self.dirty = True
 
     def scaleFreq(self, origFreq):
         if origFreq == 0:
@@ -276,6 +279,7 @@ class Actimetre:
             if newActim.isDead == 0:
                 self.isDead = 0
             self.isStopped = newActim.isStopped
+            self.dirty = True
 
         if newActim.boardType != "":
             self.boardType  = newActim.boardType
@@ -321,7 +325,8 @@ class Actimetre:
         self.serverId = 0
         self.repoSize = 0
         self.repoNums = 0
-        Projects.htmlWrite(self.projectId)
+        Projects.dirtyProject(self.projectId)
+        self.dirty = True
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
@@ -457,13 +462,9 @@ class Actimetre:
             doc.asis('</form>\n')
         return doc.getvalue()
 
-    def dirtyProject(self):
-        Projects.dirtyProject(self.projectId)
-
 class ActimetresClass:
     def __init__(self):
         self.actims: dict[int, Actimetre] = {}
-        self.dirty = False
         self.dummy = Actimetre()
 
     def __getitem__(self, item: int):
@@ -471,7 +472,6 @@ class ActimetresClass:
 
     def init(self):
         self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
-        self.dirty = False
 
     def fromD(self, data, actual=True):
         a = Actimetre().fromD(data, actual)
@@ -479,7 +479,6 @@ class ActimetresClass:
             self.actims[a.actimId].update(a, actual)
         else:
             self.actims[a.actimId] = a
-        Projects.htmlWrite(self.actims[a.actimId].projectId)
         return a.actimId
 
     def removeProject(self, actimId: int):
@@ -525,12 +524,10 @@ class ActimetresClass:
         actimId = Registry.getId(mac)
         printLog(f"Actim{actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
         self.actims[actimId] = Actimetre(actimId, mac, boardType, version, serverId, 0, bootTime, lastSeen=NOW, lastReport=NOW)
-        self.save()
 
     def delete(self, actimId):
         if actimId in self.actims.keys():
             del self.actims[actimId]
-            self.dirty = True
         try:
             os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
         except FileNotFoundError: pass
@@ -538,7 +535,6 @@ class ActimetresClass:
     def forget(self, actimId):
         if actimId in self.actims.keys():
             self.actims[actimId].forgetData()
-            self.dirty = True
 
     def getReportStr(self, actimId):
         if actimId in self.actims.keys():
@@ -547,7 +543,7 @@ class ActimetresClass:
 
     def setReportStr(self, actimId, reportStr):
         self.actims[actimId].reportStr = reportStr
-        self.dirty = True
+        self.actims[actimId].dirty = True
 
     def htmlInfo(self, actimId):
         return self.actims[actimId].htmlInfo()
@@ -557,30 +553,26 @@ class ActimetresClass:
 
     def setProjectId(self, actimId, projectId):
         self.actims[actimId].projectId = projectId
-        self.dirty = True
+        self.actims[actimId].dirty = True
 
     def cutGraph(self, actimId):
         self.actims[actimId].cutHistory()
         self.actims[actimId].drawGraph()
-        self.dirty = True
 
     def dies(self, actimId):
         if actimId in self.actims.keys():
             self.actims[actimId].dies()
-            self.dirty = True
 
     def checkAlerts(self):
-        save = False
         for a in self.actims.values():
             if a.isDead == 1 and (NOW - a.lastSeen) > ACTIM_ALERT1:
                 a.alert()
                 a.isDead = 2
-                save = True
+                a.dirty = True
             elif a.isDead == 2 and (NOW - a.lastSeen) > ACTIM_ALERT2:
                 a.alert()
                 a.isDead = 3
-                save = True
-        self.save(save)
+                a.dirty = True
 
     def alertAll(self, actimetreList, subject, content):
         for actimId in actimetreList:
@@ -649,9 +641,11 @@ class ActimetresClass:
 
         print("Location:\\index.html\n\n")
 
-def save(self, check=True):
-        if check:
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
+    def save(self):
+        for actim in self.actims.values():
+            if actim.dirty:
+                dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
+                return
 
 Actimetres = ActimetresClass()
 def initActimetres() -> ActimetresClass:

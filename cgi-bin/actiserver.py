@@ -26,6 +26,7 @@ class Actiserver:
         self.memAvail   = 0.0
         self.diskTput   = 0.0
         self.diskUtil   = 0.0
+        self.dirty      = False
 
     def toD(self):
         Actimetres = actimetre.Actimetres
@@ -77,11 +78,22 @@ class Actiserver:
             self.diskLow = int(d['diskLow'])
         else:
             self.lastUpdate = NOW
-
+        self.dirty = actual
         return self
 
     def name(self):
         return f"Actis{self.serverId:03d}"
+
+    def addActim(self, actimId):
+        if not actimId in self.actimetreList:
+            self.actimetreList.add(actimId)
+            self.lastUpdate = NOW
+            self.dirty = True
+
+    def removeActim(self, actimId):
+        if actimId in self.actimetreList:
+            self.actimetreList.remove(actimId)
+            self.dirty = True
 
     def alertContent(self):
         content = f'{self.name()}\n' + \
@@ -190,18 +202,12 @@ class Actiserver:
 class ActiserversClass:
     def __init__(self):
         self.servers: dict[int, Actiserver] = {}
-        self.dirty = False
 
     def init(self):
         self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
-        self.dirty = False
 
     def __getitem__(self, item: int):
         return item in self.servers
-
-    def save(self, check=True):
-        if check:
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
 
     def htmlServers(self, *, picker=None):
         htmlString = ""
@@ -235,21 +241,15 @@ class ActiserversClass:
     def delete(self, serverId):
         if serverId in self.servers.keys():
             del self.servers[serverId]
-            self.dirty = True
             return True
-        return False
+        else:return False
 
     def addActim(self, serverId, actimId):
-        self.servers[serverId].actimetreList.add(actimId)
-        self.servers[serverId].lastUpdate = NOW
-        self.dirty = True
+        self.servers[serverId].addActim(actimId)
 
     def removeActim(self, actimId):
         for s in self.servers.values():
-            if actimId in s.actimetreList:
-                s.actimetreList.remove(actimId)
-                s.dirty = True
-                self.dirty = True
+            s.removeActim(actimId)
 
     def emailInfo(self, serverId):
         s = self.servers[serverId]
@@ -262,21 +262,19 @@ class ActiserversClass:
             f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
 
     def checkAlerts(self):
-        save = False
         for s in self.servers.values():
             if s.isDown == 0 and (NOW - s.lastUpdate) > ACTIS_ALERT1:
                 s.alert()
                 s.isDown = 1
-                save = True
+                s.dirty = True
             elif s.isDown == 1 and (NOW - s.lastUpdate) > ACTIS_ALERT2:
                 s.alert()
                 s.isDown = 2
-                save = True
+                s.dirty = True
             elif s.isDown == 2 and (NOW - s.lastUpdate) > ACTIS_ALERT3:
                 s.alert()
                 s.isDown = 3
-                save = True
-        self.save(save)
+                s.dirty = True
 
     def processAction(self, serverId, data):
         thisServer = Actiserver(serverId).fromD(json.load(data), True)
@@ -294,8 +292,13 @@ class ActiserversClass:
                 if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
                     thisServer.diskLow = 0
         self.servers[serverId] = thisServer
-        self.save()
         return thisServer
+
+    def save(self):
+        for server in self.servers.values():
+            if server.dirty:
+                dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
+                return
 
 Actiservers = ActiserversClass()
 def initActiservers() -> ActiserversClass:

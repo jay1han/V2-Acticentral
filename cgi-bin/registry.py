@@ -36,19 +36,19 @@ class RegistryClass:
                 del self.macToId[mac]
                 self.dirty = True
 
-    def save(self, save=True):
-        if not save: return
-        registryBackup = REGISTRY_BACKUP + datetime.now().strftime(TIMEFORMAT_FN)
-        try:
-            shutil.copyfile(REGISTRY, registryBackup)
-        except OSError:
-            pass
+    def save(self):
+        if self.dirty:
+            registryBackup = REGISTRY_BACKUP + datetime.now().strftime(TIMEFORMAT_FN)
+            try:
+                shutil.copyfile(REGISTRY, registryBackup)
+            except OSError:
+                pass
 
-        os.truncate(REGISTRY, 0)
-        with open(REGISTRY, "r+") as registry:
-            json.dump(self.macToId, registry)
-        printLog("Saved Registry " + str(self.macToId))
-        self.fileTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
+            os.truncate(REGISTRY, 0)
+            with open(REGISTRY, "r+") as registry:
+                json.dump(self.macToId, registry)
+            printLog("Saved Registry " + str(self.macToId))
+            self.fileTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
 
     def dump(self):
         return json.dumps(self.macToId)
