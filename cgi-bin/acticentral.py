@@ -19,8 +19,6 @@ Actiservers = actiserver.initActiservers()
 Actimetres = actimetre.initActimetres()
 
 def htmlUpdate():
-    Actiservers.htmlWriteServers()
-
     os.truncate(INDEX_HTML, 0)
     writeTemplateSub(open(INDEX_HTML, "r+"), INDEX_TEMPLATE, {
         "{Actiservers}": Actiservers.htmlServers(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P),
@@ -304,7 +302,14 @@ def processAction():
 
     elif action == 'cancel':
         print("Location:\\index.html\n\n")
-        
+
+
+def saveAll():
+    Registry.save()
+    Projects.save()
+    Actiservers.save()
+    Actimetres.save()
+
 import argparse
 cmdparser = argparse.ArgumentParser()
 cmdparser.add_argument('action', default='', nargs='?')
@@ -314,6 +319,7 @@ if cmdargs.action == 'prepare-stats':
     checkAlerts()
     repoStats()
     htmlUpdate()
+    saveAll()
     lock.close()
     sys.exit(0)
 
@@ -330,5 +336,6 @@ if 'action' in args.keys():
     else:
         secret = "YouDontKnowThis"
     processAction()
+    saveAll()
 
 lock.close()

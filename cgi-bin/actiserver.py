@@ -30,8 +30,7 @@ class Actiserver:
 
     def __str__(self):
         Actimetres = actimetre.Actimetres
-        string = f'Actis{self.serverId:03d}'
-        if self.isDown > 0: string += '(down) '
+        string = f'Actis{self.serverId:03d} '
         string += self.lastUpdate.strftime(TIMEFORMAT_DISP)
         for actimId in self.actimetreList:
             string += f'\n- {Actimetres.str(actimId)}'
@@ -308,6 +307,7 @@ class ActiserversClass:
         for server in self.servers.values():
             if server.dirty:
                 dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
+                self.htmlWriteServers()
                 return
 
 Actiservers = ActiserversClass()
