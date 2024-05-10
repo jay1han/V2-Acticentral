@@ -23,7 +23,7 @@ class Project:
         Actimetres = actimetre.Actimetres
         string = f'Project{self.projectId:02d}({self.title})'
         for actimId in self.actimetreList:
-            string += Actimetres.str(actimId)
+            string += f' - {Actimetres.str(actimId)}'
         return string
 
     def toD(self):
