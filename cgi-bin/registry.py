@@ -3,16 +3,17 @@ from const import *
 
 class RegistryClass:
     def __init__(self):
-        self.macToId = {}
+        self.macToId: dict[str, int] = {}
         with open(REGISTRY, "r") as registry:
             try:
                 self.macToId = json.load(registry)
             except json.JSONDecodeError:
                 pass
         self.fileTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)
+        self.dirty = False
 
     def getId(self, mac):
-        if mac in self.macToId.keys():
+        if mac in self.macToId:
             actimId = self.macToId[mac]
             printLog(f"Found known Actim{actimId:04d} for {mac}")
             return actimId
@@ -26,17 +27,14 @@ class RegistryClass:
                     break
             self.macToId[mac] = actimId
             printLog(f"Allocated new Actim{actimId:04d} for {mac}")
-            self.save()
+            self.dirty = True
             return actimId
 
     def deleteId(self, actimId):
-        save = False
         for mac, macId in self.macToId.items():
             if macId == actimId:
                 del self.macToId[mac]
-                save = True
-        self.save(save)
-        return save
+                self.dirty = True
 
     def save(self, save=True):
         if not save: return

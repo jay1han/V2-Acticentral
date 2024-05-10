@@ -12,9 +12,11 @@ FSCALEV3     = {100:3, 1000:5, 4000:8, 8000:10}
 FSCALEV3TAG  = {100:3, 1000:5, 4000:8}
 
 class Actimetre:
-    def __init__(self, actimId=0, mac='.' * 12, boardType='?', version="", serverId=0, isDead=0, isStopped=False,
+    def __init__(self, actimId=0, mac='.' * 12, boardType='???', version='000',
+                 serverId=0, isDead=0, isStopped=False,
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,
-                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,  repoNums = 0, repoSize = 0):
+                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,
+                 repoNums = 0, repoSize = 0):
         self.actimId    = int(actimId)
         self.mac        = mac
         self.boardType  = boardType
@@ -36,7 +38,7 @@ class Actimetre:
         self.graphSince = TIMEZERO
         self.reportStr  = ""
 
-    def AtoD(self):
+    def toD(self):
         return {'actimId'   : self.actimId,
                 'mac'       : self.mac,
                 'boardType' : self.boardType,
@@ -59,7 +61,7 @@ class Actimetre:
                 'reportStr' : self.reportStr,
                 }
 
-    def AfromD(self, d, actual=False):
+    def fromD(self, d, actual=False):
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
@@ -79,16 +81,10 @@ class Actimetre:
 
         if not actual:
             self.projectId  = int(d['projectId'])
-            for p in Projects.values():
-                if self.actimId in p.actimetreList and p.projectId != self.projectId:
-                    p.actimetreList.remove(self.actimId)
-            if Projects.exists(self.projectId) is None:
-                self.projectId = 0
-            else:
-                Projects.addActimP(self.actimId, self.projectId)
-            self.lastDrawn = utcStrptime(d['lastDrawn'])
+            self.projectId  = Projects.setActimetre(self.projectId, self.actimId)
+            self.lastDrawn  = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
-            self.reportStr = d['reportStr']
+            self.reportStr  = d['reportStr']
 
         return self
 
@@ -126,7 +122,7 @@ class Actimetre:
         self.isDead = 3
         self.repoNums = 0
         self.repoSize = 0
-        Actiservers.removeActimS(self.actimId, self.serverId)
+        Actiservers.removeActim(self.actimId)
         self.serverId = 0
         printLog(f"{self.actimName()} data forgotten")
 
@@ -261,9 +257,9 @@ class Actimetre:
         redraw = False
         if actual:
             if self.serverId != newActim.serverId:
-                Actiservers.removeActimS(self.actimId, self.serverId)
+                Actiservers.removeActim(self.actimId)
                 if self.frequency > 0:
-                    if Actiservers.exists(self.serverId):
+                    if Actiservers[self.serverId]:
                         self.addFreqEvent(Actiservers.getLastUpdate(self.serverId), 0)
                     else:
                         self.addFreqEvent(newActim.bootTime, 0)
@@ -299,7 +295,7 @@ class Actimetre:
             self.drawGraph()
         return redraw
 
-    def alertActim(self, subject=None, info=""):
+    def alert(self, subject=None, info=""):
         printLog(f'Alert {self.actimName()}')
         if subject is None:
             subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
@@ -320,13 +316,12 @@ class Actimetre:
             self.isDead = 1
             self.addFreqEvent(NOW, 0)
             self.drawGraph()
-        if Actiservers.removeActimS(self.actimId, self.serverId):
-            printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
-            self.serverId = 0
-            self.repoSize = 0
-            self.repoNums = 0
-            if Projects.htmlProject(self.projectId):
-                printLog(f"Actim{self.actimId:04d} dies, update Project{self.projectId:02d}")
+        printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
+        Actiservers.removeActim(self.actimId)
+        self.serverId = 0
+        self.repoSize = 0
+        self.repoNums = 0
+        Projects.htmlWrite(self.projectId)
 
     def actimName(self):
         return f"Actim{self.actimId:04d}"
@@ -374,7 +369,7 @@ class Actimetre:
     def hasData(self):
         return self.repoNums > 0 or self.repoSize > 0
 
-    def htmlActimetre(self):
+    def html(self):
         doc, tag, text, line = Doc().ttl()
         with tag('tr'):
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
@@ -462,67 +457,69 @@ class Actimetre:
             doc.asis('</form>\n')
         return doc.getvalue()
 
+    def dirtyProject(self):
+        Projects.dirtyProject(self.projectId)
+
 class ActimetresClass:
     def __init__(self):
-        self.actims = {}
+        self.actims: dict[int, Actimetre] = {}
         self.dirty = False
+        self.dummy = Actimetre()
+
+    def __getitem__(self, item: int):
+        return item in self.actims
 
     def init(self):
-        self.actims = {int(actimId):Actimetre().AfromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+        self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
         self.dirty = False
 
-    def AfromD(self, data, actual=True):
-        a = Actimetre().AfromD(data, actual)
-        if a.actimId in self.actims.keys():
+    def fromD(self, data, actual=True):
+        a = Actimetre().fromD(data, actual)
+        if a.actimId in self.actims:
             self.actims[a.actimId].update(a, actual)
         else:
             self.actims[a.actimId] = a
         Projects.htmlWrite(self.actims[a.actimId].projectId)
         return a.actimId
 
-    def removeProject(self, actimId):
-        if actimId in self.actims.keys():
+    def removeProject(self, actimId: int):
+        if actimId in self.actims:
             self.actims[actimId].projectId = 0
 
-    def values(self):
-        return self.actims.values()
+    def checkOrphan(self, serverId, actimetreList):
+        for a in self.actims.values():
+            if a.serverId == serverId and not a.actimId in actimetreList:
+                printLog(f"Actim{a.actimId:04d} orphaned by Actis{serverId}")
+                a.forgetData()
 
-    def dump(self, actimId):
-        if actimId in self.actims.keys():
-            return json.dumps(self.actims[actimId].AtoD())
-        else: return ""
+    def dump(self, actimId: int):
+        return json.dumps(self.actims[actimId].toD())
 
-    def htmlActimetre(self, actimId):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].htmlActimetre()
-        else: return ""
+    def html(self, actimId: int):
+        return self.actims[actimId].html()
 
-    def htmlCartouche(self, actimId, *, withTag=None):
-        if actimId in self.actims.keys():
-            if withTag is not None:
-                doc, tag, text, line = Doc().ttl()
-                with tag(withTag):
-                    doc.asis(self.actims[actimId].htmlCartouche())
-                return doc.getvalue()
-            else: return self.actims[actimId].htmlCartouche()
-        else: return ""
-
-    def htmlRepo(self, actimId, version, ip):
-        if actimId in self.actims.keys():
-            a = self.actims[actimId]
+    def htmlCartouche(self, actimId: int, *, withTag=None):
+        if withTag is not None:
             doc, tag, text, line = Doc().ttl()
-
-            if a.repoNums == 0:
-                text('(No data)')
-            else:
-                if version >= "345":
-                    link = f'http://{ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
-                else:
-                    link = f'http://{ip}/index{a.actimId:04d}.html'
-                with tag('a', href=link):
-                    doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
+            with tag(withTag):
+                doc.asis(self.actims[actimId].htmlCartouche())
             return doc.getvalue()
-        else: return ""
+        else: return self.actims[actimId].htmlCartouche()
+
+    def htmlRepo(self, actimId: int, version: str, ip: str):
+        a = self.actims[actimId]
+        doc, tag, text, line = Doc().ttl()
+
+        if a.repoNums == 0:
+            text('(No data)')
+        else:
+            if version >= "345":
+                link = f'http://{ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
+            else:
+                link = f'http://{ip}/index{a.actimId:04d}.html'
+            with tag('a', href=link):
+                doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
+        return doc.getvalue()
 
     def new(self, mac, boardType, version, serverId, bootTime=NOW):
         actimId = Registry.getId(mac)
@@ -533,19 +530,15 @@ class ActimetresClass:
     def delete(self, actimId):
         if actimId in self.actims.keys():
             del self.actims[actimId]
-            self.save()
-            try:
-                os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
-            except FileNotFoundError: pass
-            return True
-        else: return False
+            self.dirty = True
+        try:
+            os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
+        except FileNotFoundError: pass
 
     def forget(self, actimId):
         if actimId in self.actims.keys():
             self.actims[actimId].forgetData()
-            self.save()
-            return True
-        else: return False
+            self.dirty = True
 
     def getReportStr(self, actimId):
         if actimId in self.actims.keys():
@@ -553,53 +546,38 @@ class ActimetresClass:
         else: return ""
 
     def setReportStr(self, actimId, reportStr):
-        if actimId in self.actims.keys():
-            self.actims[actimId].reportStr = reportStr
-            self.save()
-            return True
-        else: return False
+        self.actims[actimId].reportStr = reportStr
+        self.dirty = True
 
     def htmlInfo(self, actimId):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].htmlInfo()
-        else: return ""
+        return self.actims[actimId].htmlInfo()
 
     def getProjectId(self, actimId):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].projectId
-        else: return 0
+        return self.actims[actimId].projectId
 
     def setProjectId(self, actimId, projectId):
-        if actimId in self.actims.keys():
-            self.actims[actimId].projectId = projectId
-            self.save()
-            return True
-        else: return False
+        self.actims[actimId].projectId = projectId
+        self.dirty = True
 
     def cutGraph(self, actimId):
-        if actimId in self.actims.keys():
-            self.actims[actimId].cutHistory()
-            self.actims[actimId].drawGraph()
-            self.save()
-            return True
-        else: return False
+        self.actims[actimId].cutHistory()
+        self.actims[actimId].drawGraph()
+        self.dirty = True
 
     def dies(self, actimId):
         if actimId in self.actims.keys():
             self.actims[actimId].dies()
-            self.save()
-            return True
-        else: return False
+            self.dirty = True
 
     def checkAlerts(self):
         save = False
         for a in self.actims.values():
             if a.isDead == 1 and (NOW - a.lastSeen) > ACTIM_ALERT1:
-                a.alertActim()
+                a.alert()
                 a.isDead = 2
                 save = True
             elif a.isDead == 2 and (NOW - a.lastSeen) > ACTIM_ALERT2:
-                a.alertActim()
+                a.alert()
                 a.isDead = 3
                 save = True
         self.save(save)
@@ -607,32 +585,27 @@ class ActimetresClass:
     def alertAll(self, actimetreList, subject, content):
         for actimId in actimetreList:
             if actimId in self.actims.keys():
-                self.actims[actimId].alertActim(subject, content)
+                self.actims[actimId].alert(subject, content)
 
     def repoStat(self):
-        save = False
-        saveP = False
         for a in self.actims.values():
             if NOW - a.lastReport > ACTIM_HIDE_P:
                 continue
-            if a.drawGraphMaybe():
-                save = True
-            saveP = Projects.addActimP(a.projectId, a.actimId)
-        self.save(save)
-        return saveP
+            a.drawGraphMaybe()
+            Projects.addActim(a.projectId, a.actimId)
 
-    def getRepoInfo(self, actimId):
-        if actimId in self.actims.keys():
+    def getRepoInfo(self, actimId: int):
+        if actimId in self.actims:
             a = self.actims[actimId]
             return a.repoNums, a.repoSize
         else: return 0, 0
 
-    def getName(self, actimId):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].name()
+    def getName(self, actimId: int):
+        if actimId in self.actims:
+            return self.actims[actimId].actimName()
         else: return ""
 
-    def formRetire(self, actimId):
+    def formRetire(self, actimId: int):
         a = self.actims[actimId]
         if a.projectId > 0:
             ownerStr = 'the name of the owner'
@@ -654,9 +627,9 @@ class ActimetresClass:
 
     def save(self, check=True):
         if check:
-            dumpData(ACTIMETRES, {int(a.actimId):a.AtoD() for a in self.actims.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
 
 Actimetres = ActimetresClass()
-def initActimetres():
+def initActimetres() -> ActimetresClass:
     Actimetres.init()
     return Actimetres

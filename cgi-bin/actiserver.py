@@ -2,8 +2,10 @@ from const import *
 import actimetre
 
 class Actiserver:
-    def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False,
-                 isDown = 0, lastUpdate=TIMEZERO, dbTime=TIMEZERO, actimetreList=None):
+    def __init__(self, serverId=0, machine="Unknown", version="000",
+                 channel=0, ip = "0.0.0.0", isLocal = False,
+                 isDown = 0, lastUpdate=TIMEZERO, dbTime=TIMEZERO,
+                 actimetreList=None):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
@@ -25,7 +27,7 @@ class Actiserver:
         self.diskTput   = 0.0
         self.diskUtil   = 0.0
 
-    def StoD(self):
+    def toD(self):
         Actimetres = actimetre.Actimetres
         return {'serverId'  : self.serverId,
                 'machine'   : self.machine,
@@ -46,7 +48,7 @@ class Actiserver:
                 'diskUtil'  : self.diskUtil,
                 }
 
-    def SfromD(self, d, actual=False):
+    def fromD(self, d, actual=False):
         Actimetres = actimetre.Actimetres
         self.serverId   = int(d['serverId'])
         self.machine    = d['machine']
@@ -66,13 +68,9 @@ class Actiserver:
 
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
-                actimId = Actimetres.AfromD(actimData, actual)
+                actimId = Actimetres.fromD(actimData, actual)
                 self.actimetreList.add(actimId)
-
-        for a in Actimetres.values():
-            if a.serverId == self.serverId and not a.actimId in self.actimetreList:
-                printLog(f"Actim{a.actimId:04d} orphaned by Actis{self.serverId}")
-                a.dies()
+        Actimetres.checkOrphan(self.serverId, self.actimetreList)
 
         if not actual:
             self.lastUpdate = utcStrptime(d['lastUpdate'])
@@ -82,11 +80,11 @@ class Actiserver:
 
         return self
 
-    def serverName(self):
+    def name(self):
         return f"Actis{self.serverId:03d}"
 
     def alertContent(self):
-        content = f'{self.serverName()}\n' + \
+        content = f'{self.name()}\n' + \
                   f'Hardware {self.machine}\nVersion {self.version}\n' + \
                   f'IP {self.ip}\nChannel {self.channel}\n' + \
                   f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' + \
@@ -97,21 +95,21 @@ class Actiserver:
         content += '\n'
         return content
 
-    def alertServer(self):
+    def alert(self):
         Actimetres = actimetre.Actimetres
-        printLog(f'Alert {self.serverName()}')
-        subject = f'{self.serverName()} unreachable since {self.lastUpdate.strftime(TIMEFORMAT_ALERT)}'
+        printLog(f'Alert {self.name()}')
+        subject = f'{self.name()} unreachable since {self.lastUpdate.strftime(TIMEFORMAT_ALERT)}'
         sendEmail("", subject, self.alertContent())
         Actimetres.alertAll(self.actimetreList, subject, self.alertContent())
 
     def alertDisk(self):
         Actimetres = actimetre.Actimetres
-        printLog(f'{self.serverName()} disk low')
-        subject = f'{self.serverName()} storage low'
+        printLog(f'{self.name()} disk low')
+        subject = f'{self.name()} storage low'
         sendEmail("", subject, self.alertContent())
         Actimetres.alertAll(self.actimetreList, subject, self.alertContent())
 
-    def htmlServer(self):
+    def html(self):
         from actimetre import Actimetres
         doc, tag, text, line = Doc().ttl()
 
@@ -126,7 +124,7 @@ class Actiserver:
                 alive = 'down'
 
             with tag('td', klass=alive):
-                text(self.serverName())
+                text(self.name())
                 doc.asis('<br>')
                 line('span', self.ip, klass='small')
             #                if alive == 'retire':
@@ -191,22 +189,25 @@ class Actiserver:
 
 class ActiserversClass:
     def __init__(self):
-        self.servers = {}
+        self.servers: dict[int, Actiserver] = {}
         self.dirty = False
 
     def init(self):
-        self.servers = {int(serverId):Actiserver().SfromD(d) for serverId, d in loadData(ACTISERVERS).items()}
+        self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
         self.dirty = False
+
+    def __getitem__(self, item: int):
+        return item in self.servers
 
     def save(self, check=True):
         if check:
-            dumpData(ACTISERVERS, {int(s.serverId):s.StoD() for s in self.servers.values()})
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
 
     def htmlServers(self, *, picker=None):
         htmlString = ""
         for serverId in sorted(self.servers.keys()):
             if picker is None or picker(self.servers[serverId]):
-                htmlString += self.servers[serverId].htmlServer()
+                htmlString += self.servers[serverId].html()
         return htmlString
 
     def htmlWriteServers(self):
@@ -217,88 +218,66 @@ class ActiserversClass:
                       .replace('{Updated}', LAST_UPDATED),
                       file=html)
 
-    def exists(self, serverId):
-        return serverId in self.servers.keys()
-
     def getLastUpdate(self, serverId):
-        if serverId in self.servers.keys():
-            return self.servers[serverId].lastUpdate
-        else: return TIMEZERO
+        return self.servers[serverId].lastUpdate
 
     def getVersion(self, serverId):
-        if serverId in self.servers.keys():
-            return self.servers[serverId].version
-        else: return "000"
+        return self.servers[serverId].version
 
     def getCpuIdle(self, serverId):
-        if serverId in self.servers.keys():
-            return self.servers[serverId].cpuIdle
-        else: return 0.0
+        return self.servers[serverId].cpuIdle
 
     def isDown(self, serverId):
-        if serverId in self.servers.keys():
-            return self.servers[serverId].isDown
-        else: return 1
+        return self.servers[serverId].isDown
 
     def delete(self, serverId):
         if serverId in self.servers.keys():
             del self.servers[serverId]
-            self.save()
+            self.dirty = True
             return True
         return False
 
-    def addActimS(self, serverId, actimId):
-        if serverId in self.servers.keys():
-            self.servers[serverId].actimetreList.add(actimId)
-            self.servers[serverId].lastUpdate = NOW
-            self.save()
+    def addActim(self, serverId, actimId):
+        self.servers[serverId].actimetreList.add(actimId)
+        self.servers[serverId].lastUpdate = NOW
+        self.dirty = True
 
-    def removeActimS(self, actimId, serverId=None):
-        save = False
-        if serverId is not None:
-            s = self.servers.get(serverId)
+    def removeActim(self, actimId):
+        for s in self.servers.values():
             if actimId in s.actimetreList:
                 s.actimetreList.remove(actimId)
-                save = True
-        else:
-            for s in self.servers.values():
-                if actimId in s.actimetreList:
-                    s.actimetreList.remove(actimId)
-                    save = True
-        self.save(save)
-        return save
+                s.dirty = True
+                self.dirty = True
 
     def emailInfo(self, serverId):
-        if serverId in self.servers.keys():
-            s = self.servers[serverId]
-            return \
-                f'{s.serverName()}\n' + \
-                f'Hardware {s.machine}\nVersion {s.version}\n' + \
-                f'IP {s.ip}\nChannel {s.channel}\n' + \
-                f'Disk size {printSize(s.diskSize)}, free {printSize(s.diskFree)} ' + \
-                f'({100.0 * s.diskFree / s.diskSize :.1f}%)\n' + \
-                f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
-        else: return ""
+        s = self.servers[serverId]
+        return \
+            f'{s.name()}\n' + \
+            f'Hardware {s.machine}\nVersion {s.version}\n' + \
+            f'IP {s.ip}\nChannel {s.channel}\n' + \
+            f'Disk size {printSize(s.diskSize)}, free {printSize(s.diskFree)} ' + \
+            f'({100.0 * s.diskFree / s.diskSize :.1f}%)\n' + \
+            f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
 
     def checkAlerts(self):
         save = False
         for s in self.servers.values():
             if s.isDown == 0 and (NOW - s.lastUpdate) > ACTIS_ALERT1:
-                s.alertServer()
+                s.alert()
                 s.isDown = 1
                 save = True
             elif s.isDown == 1 and (NOW - s.lastUpdate) > ACTIS_ALERT2:
-                s.alertServer()
+                s.alert()
                 s.isDown = 2
                 save = True
             elif s.isDown == 2 and (NOW - s.lastUpdate) > ACTIS_ALERT3:
-                s.alertServer()
+                s.alert()
                 s.isDown = 3
                 save = True
         self.save(save)
 
     def processAction(self, serverId, data):
-        thisServer = Actiserver(serverId).SfromD(json.load(data), True)
+        thisServer = Actiserver(serverId).fromD(json.load(data), True)
         if serverId in self.servers.keys():
             thisServer.diskLow = self.servers[serverId].diskLow
             if thisServer.diskLow == 0:
@@ -317,6 +296,6 @@ class ActiserversClass:
         return thisServer
 
 Actiservers = ActiserversClass()
-def initActiservers():
+def initActiservers() -> ActiserversClass:
     Actiservers.init()
     return Actiservers

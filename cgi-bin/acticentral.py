@@ -38,9 +38,8 @@ def checkAlerts():
     Actiservers.checkAlerts()
 
 def repoStats():
-    Projects.clearRepos()
-    if Actimetres.repoStat():
-        Projects.save()
+    Actimetres.repoStat()
+
     with open(STAT_FILE, "w") as stat:
         stat.write(NOW.strftime(TIMEFORMAT_DISP))
     htmlUpdate()
@@ -72,8 +71,8 @@ def actimChangeProject(actimId):
         print(form.read()\
               .replace("{actimId}", str(actimId))\
               .replace("{actimName}", Actimetres.getName(actimId))\
-              .replace("{actimInfo}", Actimetres.getInfo(actimId))\
-              .replace("{htmlProjectList}", Projects.htmlList(Actimetres.getProjectId(actimId))))
+              .replace("{actimInfo}", Actimetres.htmlInfo(actimId))\
+              .replace("{htmlProjectList}", Projects.htmlChoice(Actimetres.getProjectId(actimId))))
 
 def removeProject(projectId):
     print("Content-type: text/html\n\n")
@@ -171,7 +170,7 @@ def processForm(formId):
         printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
 
         if title != "" and owner != "":
-            Projects.set(projectId, title, owner, email)
+            Projects.setInfo(projectId, title, owner, email)
             Projects.save()
             htmlUpdate()
         print(f'Location:\\index.html\n\n')
@@ -184,7 +183,7 @@ def processForm(formId):
         printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
 
         if title != "" and owner != "":
-            Projects.set(projectId, title, owner, email)
+            Projects.setInfo(projectId, title, owner, email)
             Projects.save()
             htmlUpdate()
         print(f"Location:\\project{projectId:02d}.html\n\n")
@@ -195,8 +194,7 @@ def processForm(formId):
         oldProject = Actimetres.getProjectId(actimId)
         printLog(f"Changing {actimId} from {oldProject} to {projectId}")
 
-        Projects.removeActimP(actimId, oldProject)
-        Projects.addActimP(projectId, actimId)
+        Projects.moveActim(actimId, projectId)
         Actimetres.setProjectId(actimId, projectId)
         htmlUpdate()
         print("Location:\\index.html\n\n")
@@ -208,7 +206,6 @@ def processForm(formId):
 
         if title != "" and owner != "":
             Projects.new(title, owner)
-            Projects.save()
             htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -216,22 +213,21 @@ def processForm(formId):
         actimId = int(args['actimId'][0])
         owner = args['owner'][0]
 
-        if Actimetres.exists(actimId):
+        if Actimetres[actimId]:
             projectId = Actimetres.getProjectId(actimId)
             if (projectId == 0 and owner == 'CONFIRM') or \
                 Projects.getOwner(projectId) == owner:
                 printLog(f"Retire Actimetre{actimId:04d} from {Projects.getName(projectId)}")
-                Actiservers.removeActimS(actimId)
-                Projects.removeActimP(actimId)
+                Actiservers.removeActim(actimId)
+                Projects.removeActim(actimId)
                 Registry.deleteId(actimId)
                 Actimetres.delete(actimId)
-                Actiservers.removeActimS(actimId)
                 htmlUpdate()
                 
         print("Location:\\index.html\n\n")
 
     elif formId == 'remove-project':
-        if Projects.delete(int(args['projectId'][0])): repoStats()
+        Projects.deleteProject(int(args['projectId'][0]))
         print(f"Location:\\index.html\n\n")
 
     else:
@@ -306,7 +302,7 @@ def processAction():
         bootTime  = utcStrptime(args['bootTime'][0])
 
         actimId = Actimetres.new(mac, boardType, version, serverId, bootTime)
-        Actiservers.addActimS(actimId)
+        Actiservers.addActim(serverId, actimId)
         htmlUpdate()
         plain(str(actimId))
 
@@ -315,7 +311,7 @@ def processAction():
 #        serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
-        if Actimetres.dies(actimId): htmlUpdate()
+        Actimetres.dies(actimId)
         plain("Ok")
 
     elif action == 'actimetre-query':
@@ -330,7 +326,7 @@ def processAction():
         actimId = int(args['actimId'][0])
 
         Actimetres.forget(actimId)
-        Actiservers.removeActimS(actimId, serverId)
+        Actiservers.removeActim(actimId)
 
         htmlUpdate()
         plain("Ok")
@@ -341,7 +337,7 @@ def processAction():
 
     elif action == 'actim-cut-graph':
         actimId = int(args['actimId'][0])
-        if Actimetres.cutGraph(actimId): htmlUpdate()
+        Actimetres.cutGraph(actimId)
         if args.get('projectId') is not None:
             print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
         else:
@@ -359,15 +355,13 @@ def processAction():
 
     elif action == 'actim-forget':
         actimId = int(args['actimId'][0])
-        if Actimetres.forget(actimId): htmlUpdate()
+        Actimetres.forget(actimId)
         print("Location:\\index.html\n\n")
 
     elif action == 'actim-decouple':
         actimId = int(args['actimId'][0])
         serverId = int(args['serverId'][0])
-        if Actimetres.forget(actimId):
-            printLog(f"Removed Actim{actimId:04d} from Actis{serverId:04d}")
-            htmlUpdate()
+        Actimetres.forget(actimId)
         print("Location:\\index.html\n\n")
 
     elif action == 'remote-restart':
