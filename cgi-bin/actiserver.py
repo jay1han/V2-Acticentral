@@ -194,8 +194,8 @@ class ActiserversClass:
         self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
         self.dirty = False
 
-    def save(self, save=True):
-        if save:
+    def save(self, check=True):
+        if check:
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
 
     def html(self, *, picker=None):

@@ -51,8 +51,8 @@ def projectChangeInfo(projectId):
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{project-change-info}", "project-change-info")\
-              .replace("{projectTitle}", Projects.get(projectId).name())\
-              .replace("{projectOwner}", Projects.get(projectId).owner)\
+              .replace("{projectTitle}", Projects.getName(projectId))\
+              .replace("{projectOwner}", Projects.getOwner(projectId))\
               .replace("{projectId}", str(projectId)))
 
 def projectEditInfo(projectId):
@@ -61,8 +61,8 @@ def projectEditInfo(projectId):
     with open(f"{HTML_DIR}/formProject.html") as form:
         print(form.read()\
               .replace("{project-change-info}", "project-edit-info")\
-              .replace("{projectTitle}", Projects.get(projectId).name())\
-              .replace("{projectOwner}", Projects.get(projectId).owner)\
+              .replace("{projectTitle}", Projects.getName(projectId))\
+              .replace("{projectOwner}", Projects.getOwner(projectId))\
               .replace("{projectId}", str(projectId)))
 
 def actimChangeProject(actimId):
@@ -78,18 +78,11 @@ def actimChangeProject(actimId):
 def removeProject(projectId):
     print("Content-type: text/html\n\n")
 
-    if len(Projects.get(projectId).actimetreList) == 0:
-        actimList = "(no Actimetres assigned to this project)\n"
-    else:
-        actimList = ""
-        for actimId in Projects.get(projectId).actimetreList:
-            actimList += Actimetres.htmlCartouche(actimId, 'li')
-
     with open(f"{HTML_DIR}/formRemove.html") as form:
         print(form.read()\
               .replace("{projectId}", str(projectId))\
-              .replace("{projectTitle}", Projects.get(projectId).name())\
-              .replace("{actimetreList}", actimList))
+              .replace("{projectTitle}", Projects.getName(projectId))\
+              .replace("{actimetreList}", Projects.htmlActimChoice(projectId)))
 
 def retireActim(actimId):
     print("Content-type: text/html\n\n")
@@ -111,7 +104,7 @@ def retireActim(actimId):
               .replace("{repoNums}", repoNumsStr)\
               .replace("{repoSize}", printSize(a.repoSize))\
               .replace("{owner}", ownerStr)\
-              .replace("{projectTitle}", Projects.get(a.projectId).name()))
+              .replace("{projectTitle}", Projects.getName(a.projectId)))
 
 def loadRemotes():
     try:
@@ -220,10 +213,9 @@ def processForm(formId):
         oldProject = Actimetres.get(actimId).projectId
         printLog(f"Changing {actimId} from {oldProject} to {projectId}")
 
-        Projects.removeActim(oldProject, actimId)
-        Projects.get(projectId).actimetreList.add(actimId)
+        Projects.removeActim(actimId, oldProject)
         Actimetres.get(actimId).projectId = projectId
-        Projects.save()
+        Projects.addActim(projectId, actimId)
         Actimetres.save()
         htmlUpdate()
         print("Location:\\index.html\n\n")
@@ -246,8 +238,8 @@ def processForm(formId):
         a = Actimetres.get(actimId)
         if a is not None and \
            (a.projectId == 0 and owner == 'CONFIRM') or \
-           Projects.get(a.projectId).owner == owner:
-            printLog(f"Retire Actimetre{actimId:04d} from {Projects.get(a.projectId).name()}")
+           Projects.getOwner(a.projectId) == owner:
+            printLog(f"Retire Actimetre{actimId:04d} from {Projects.getName(a.projectId)}")
             Actiservers.removeActim(actimId)
             Projects.removeActim(actimId)
             Registry.deleteId(actimId)
@@ -258,13 +250,7 @@ def processForm(formId):
         print("Location:\\index.html\n\n")
 
     elif formId == 'remove-project':
-        projectId = int(args['projectId'][0])
-        if projectId != 0:
-            for a in Projects.get(projectId).actimetreList:
-                Actimetres.get(a).projectId = 0
-            Projects.delete(projectId)
-            Actimetres.save()
-            repoStats()
+        if Projects.delete(int(args['projectId'][0])): repoStats()
         print(f"Location:\\index.html\n\n")
 
     else:

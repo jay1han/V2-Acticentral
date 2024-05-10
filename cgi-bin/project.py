@@ -126,10 +126,23 @@ class ProjectsClass:
                 htmlString += self.projects[projectId].html()
         return htmlString
 
-    def get(self, projectId):
-        if projectId not in self.projects.keys():
-            self.projects[projectId] = Project(projectId, "", "")
-        return self.projects[projectId]
+    def getOwner(self, projectId):
+        if projectId in self.projects.keys():
+            return self.projects[projectId].owner
+        else: return ""
+
+    def getName(self, projectId, withFormat=None):
+        if projectId in self.projects.keys():
+            if withFormat is None:
+                return self.projects[projectId].name()
+            else:
+                return withFormat.format(self.projects[projectId].name())
+        else: return ""
+
+    def getEmail(self, projectId):
+        if projectId in self.projects.keys():
+            return self.projects[projectId].email
+        else: return ""
 
     def clearRepos(self):
         for p in self.projects.values():
@@ -144,8 +157,8 @@ class ProjectsClass:
             self.projects[projectId].owner = owner
         return self.projects[projectId]
 
-    def save(self, save=True):
-        if save:
+    def save(self, check=True):
+        if check:
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
             self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
@@ -175,7 +188,11 @@ class ProjectsClass:
         self.projects[projectId] = Project(projectId, title, owner)
 
     def delete(self, projectId):
+        Actimetres = actimetre.Actimetres
         if projectId in self.projects.keys():
+            for a in self.projects[projectId].actimetreList:
+                Actimetres.get(a).projectId = 0
+            Actimetres.save()
             del self.projects[projectId]
             self.save()
             return True
@@ -190,11 +207,16 @@ class ProjectsClass:
             return True
         return False
 
-    def addActim(self, actim):
-        p = self.get(actim.projectId)
-        isNew = p.addActim(actim.actimId)
-        p.repoNums += actim.repoNums
-        p.repoSize += actim.repoSize
+    def addActim(self, projectId, actimId):
+        Actimetres = actimetre.Actimetres
+        if projectId in self.projects.keys():
+            p = self.projects[projectId]
+        else:
+            p = Project(projectId)
+        isNew = p.addActim(actimId)
+        repoNums, repoSize = Actimetres.getRepoInfo(actimId)
+        p.repoNums += repoNums
+        p.repoSize += repoSize
         return isNew
 
     def htmlList(self, projectId=None):
@@ -205,6 +227,15 @@ class ProjectsClass:
                 htmlString += ' checked="true"'
             htmlString += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
         return htmlString
+
+    def htmlActimChoice(self, projectId):
+        if len(self.projects[projectId].actimetreList) == 0:
+            return "(no Actimetres assigned to this project)\n"
+        else:
+            Actimetres = actimetre.Actimetres
+            actimList = ""
+            for actimId in self.projects[projectId].actimetreList:
+                actimList += Actimetres.htmlCartouche(actimId, 'li')
 
     def needUpdate(self, serverTime):
         return self.fileTime > serverTime

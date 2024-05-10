@@ -85,7 +85,7 @@ class Actimetre:
             if Projects.exists(self.projectId) is None:
                 self.projectId = 0
             else:
-                Projects.get(self.projectId).actimetreList.add(self.actimId)
+                Projects.addActim(self.actimId, self.projectId)
             self.lastDrawn = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr = d['reportStr']
@@ -303,21 +303,19 @@ class Actimetre:
         printLog(f'Alert {self.actimName()}')
         subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
         content = f'{self.actimName()}\n'
-        if Projects.exists(self.projectId):
-            content += f'Project "{Projects.get(self.projectId).name()}"\n'
+        content += Projects.getName(self.projectId, 'Project "%s"\n')
         content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
                    f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
 
-        sendEmail(Projects.get(self.projectId).email, subject, content)
+        sendEmail(Projects.getEmail(self.projectId), subject, content)
 
     def alertDisk(self):
         printLog(f"{self.actimName()}'s server disk low")
         subject = f"{self.actimName()}'s server disk low"
         content = f'{self.actimName()}\n'
-        if Projects.exists(self.projectId):
-            content += f'Project "{Projects.get(self.projectId).name()}"\n'
+        content += Projects.getName(self.projectId, 'Project "%s"\n')
         content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
@@ -325,7 +323,7 @@ class Actimetre:
         content += Actiservers.emailInfo(self.serverId)
         content += '\n'
 
-        sendEmail(Projects.get(self.projectId).email, subject, content)
+        sendEmail(Projects.getEmail(self.projectId), subject, content)
 
     def dies(self):
         if self.isDead == 0:
@@ -600,12 +598,19 @@ class ActimetresClass:
                 continue
             if a.drawGraphMaybe():
                 save = True
-            saveP = Projects.addActim(a)
+            saveP = Projects.addActim(a.projectId, a.actimId)
         self.save(save)
         return saveP
 
-    def save(self, save=True):
-        if save:
+    def getRepoInfo(self, actimId):
+        if actimId in self.actims.keys():
+            a = self.actims[actimId]
+            return a.repoNums, a.repoSize
+        else:
+            return 0, 0
+
+    def save(self, check=True):
+        if check:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
 
 Actimetres = ActimetresClass()
