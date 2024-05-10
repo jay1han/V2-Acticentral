@@ -129,7 +129,7 @@ def processForm(formId):
         Actimetres.processForm(formId, args)
 
     elif formId == 'project-remove':
-        Projects.deleteProject(int(args['projectId'][0]))
+        Projects.delete(int(args['projectId'][0]))
         print(f"Location:\\index.html\n\n")
 
     else:

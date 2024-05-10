@@ -36,15 +36,20 @@ class Project:
         self.dirty         = False
         return self
 
-    def addActim(self, actimId: int) -> None:
+    def addActim(self, actimId: int):
         if actimId not in self.actimetreList:
             self.actimetreList.add(actimId)
             self.dirty = True
+            printLog(f'Added Actim{actimId:04d} to Project{self.projectId:02d}')
+            return True
+        else: return False
 
-    def removeActim(self, actimId: int) -> None:
+    def removeActim(self, actimId: int):
         if actimId in self.actimetreList:
             self.actimetreList.remove(actimId)
             self.dirty = True
+            return True
+        else: return False
 
     def name(self):
         return f"{self.title} (#{self.projectId:02d})"
@@ -163,8 +168,10 @@ class ProjectsClass:
         for p in self.projects.values():
             if actimId in p.actimetreList and p.projectId != projectId:
                 p.removeActim(actimId)
+                self.dirty = True
         if projectId in self.projects:
-            self.projects[projectId].addActim(actimId)
+            if self.projects[projectId].addActim(actimId):
+                self.dirty = True
             return projectId
         else:
             return 0
@@ -177,8 +184,8 @@ class ProjectsClass:
                 self.dirty = True
 
     def moveActim(self, actimId, projectId):
-        self.removeActim(actimId)
-        self.addActim(projectId, actimId)
+        if self.removeActim(actimId): self.dirty = True
+        if self.addActim(projectId, actimId): self.dirty = True
 
     def new(self, title, owner, email):
         projectId = 1
@@ -187,7 +194,7 @@ class ProjectsClass:
         self.projects[projectId] = Project(projectId, title, owner, email)
         self.dirty = True
 
-    def deleteProject(self, projectId):
+    def delete(self, projectId):
         Actimetres = actimetre.Actimetres
         if projectId in self.projects:
             for a in self.projects[projectId].actimetreList:
@@ -204,8 +211,7 @@ class ProjectsClass:
             p = self.projects[projectId]
         else:
             p = Project(projectId)
-        p.addActim(actimId)
-        self.dirty = True
+        if p.addActim(actimId): self.dirty = True
 
     def htmlChoice(self, projectId=None):
         htmlString = ""
