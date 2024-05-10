@@ -210,9 +210,6 @@ class ProjectsClass:
             del self.projects[projectId]
             self.dirty = True
 
-    def htmlWrite(self, projectId):
-        self.projects[projectId].htmlWrite()
-
     def addActim(self, projectId, actimId):
         if projectId in self.projects.keys():
             p = self.projects[projectId]

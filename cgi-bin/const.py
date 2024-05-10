@@ -30,7 +30,6 @@ HISTORY_DIR     = f"{FILE_ROOT}/history"
 ACTIMETRE_DIR   = f"{FILE_ROOT}/actimetre"
 REMOTE_FILE     = f"{FILE_ROOT}/remotes.data"
 IMAGES_DIR      = f"{HTML_ROOT}/images"
-IMAGES_INDEX    = f"{HTML_ROOT}/images/index.txt"
 HTML_DIR        = f"{HTML_ROOT}"
 INDEX_HTML      = f"{HTML_ROOT}/index.html"
 SERVERS_HTML    = f"{HTML_ROOT}/servers.html"
@@ -169,3 +168,22 @@ def writeTemplateSub(output, template: str, substitutions: dict[str,str]):
         content = content.replace(before, after)
     print(content, file=output)
     return content
+
+REDRAW_TIME  = timedelta(minutes=5)
+REDRAW_DEAD  = timedelta(minutes=30)
+GRAPH_SPAN   = timedelta(days=7)
+GRAPH_CULL   = timedelta(days=6)
+FSCALETAG    = {50:5, 100:10}
+FSCALEV3     = {100:3, 1000:5, 4000:8, 8000:10}
+FSCALEV3TAG  = {100:3, 1000:5, 4000:8}
+
+def scaleFreq(version, origFreq):
+    if origFreq == 0:
+        return 0
+    if version >= "300":
+        for limit, scale in FSCALEV3.items():
+            if origFreq <= limit:
+                return scale
+    else:
+        return origFreq // 10
+

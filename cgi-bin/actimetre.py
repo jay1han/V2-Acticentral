@@ -5,14 +5,6 @@ from registry import Registry
 from project import Projects
 from actiserver import Actiservers
 
-REDRAW_TIME  = timedelta(minutes=5)
-REDRAW_DEAD  = timedelta(minutes=30)
-GRAPH_SPAN   = timedelta(days=7)
-GRAPH_CULL   = timedelta(days=6)
-FSCALETAG    = {50:5, 100:10}
-FSCALEV3     = {100:3, 1000:5, 4000:8, 8000:10}
-FSCALEV3TAG  = {100:3, 1000:5, 4000:8}
-
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='???', version='000',
                  serverId=0, isDead=0, isStopped=False,
@@ -99,174 +91,6 @@ class Actimetre:
         self.dirty = actual
         return self
 
-    def cutHistory(self, cutLength=None):
-        if cutLength is None:
-            cutLength = NOW - self.bootTime
-
-        printLog(f'Actim{self.actimId:04d} cut history to {self.bootTime.strftime(TIMEFORMAT_DISP)}')
-        historyFile = f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist"
-        freshLines = list()
-        try:
-            with open(historyFile, "r") as history:
-                for line in history:
-                    timeStr, part, freqStr = line.partition(':')
-                    time = utcStrptime(timeStr.strip())
-                    freq = int(freqStr)
-                    if NOW - time <= cutLength:
-                        time = NOW - cutLength
-                        self.graphSince = time
-                        freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
-                        freshLines.extend(history.readlines())
-        except FileNotFoundError:
-            pass
-        else:
-            if len(freshLines) == 0:
-                time = NOW - cutLength
-                self.graphSince = time
-                freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.frequency}")
-
-            os.truncate(historyFile, 0)
-            with open(historyFile, "r+") as history:
-                for line in freshLines:
-                    print(line.strip(), file=history)
-        self.dirty = True
-
-    def forgetData(self):
-        self.isDead = 3
-        self.repoNums = 0
-        self.repoSize = 0
-        Actiservers.removeActim(self.actimId)
-        self.serverId = 0
-        printLog(f"{self.actimName()} data forgotten")
-        self.dirty = True
-
-    def scaleFreq(self, origFreq):
-        if origFreq == 0:
-            return 0
-        if self.version >= "300":
-            for limit, scale in FSCALEV3.items():
-                if origFreq <= limit:
-                    return scale
-        else:
-            return origFreq // 10
-
-    def drawGraph(self):
-        os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
-        import matplotlib.pyplot as pyplot
-
-        if NOW - self.graphSince >= GRAPH_SPAN:
-            self.cutHistory(GRAPH_CULL)
-
-        try:
-            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
-                self.graphSince = utcStrptime(history.readline().partition(':')[0])
-        except (FileNotFoundError, ValueError):
-            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
-                print(NOW.strftime(TIMEFORMAT_FN), ':', self.frequency, sep="", file=history)
-            self.graphSince = NOW
-            try:
-                os.chmod(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", 0o666)
-            except OSError:
-                pass
-
-        timeline = []
-        frequencies = []
-        with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
-            for line in history:
-                timeStr, part, freqStr = line.partition(':')
-                time = utcStrptime(timeStr.strip())
-                freq = self.scaleFreq(int(freqStr))
-                if len(timeline) == 0 or freq != frequencies[-1]:
-                    timeline.append(time)
-                    frequencies.append(freq)
-
-        timeline.append(NOW)
-        frequencies.append(self.scaleFreq(self.frequency))
-        freq = [self.scaleFreq(self.frequency) for _ in range(len(timeline))]
-
-        fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
-        ax.set_axis_off()
-        ax.set_ylim(bottom=-1, top=12)
-        ax.axvline(timeline[0], 0, 0.95, lw=1.0, c="blue", marker="^", markevery=[1], ms=5.0, mfc="blue")
-        if self.version >= "300":
-            fscale = FSCALEV3TAG
-        else:
-            fscale = FSCALETAG
-        for real, drawn in fscale.items():
-            if self.frequency == real:
-                c = 'green'
-                w = 'bold'
-            else:
-                c = 'black'
-                w = 'regular'
-            if real >= 1000:
-                real = f" {real // 1000 :2d}k"
-            else:
-                real = f" {real:3d}"
-            ax.text(NOW, drawn, real, family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
-
-        ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
-        if self.isDead > 0 or self.frequency == 0:
-            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
-        else:
-            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
-        pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
-        pyplot.close()
-        try:
-            os.chmod(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", 0o666)
-        except OSError:
-            pass
-
-        updateMap = {}
-        dataMap = {}
-        with open(IMAGES_INDEX, "r") as index:
-            for line in index:
-                if line.strip() != "":
-                    actimStr, updateStr, dataStr = line.split(':')
-                    actimId = int(actimStr.strip())
-                    updateMap[actimId] = updateStr.strip()
-                    dataMap[actimId] = dataStr.strip()
-        updateMap[self.actimId] = NOW.strftime(TIMEFORMAT_FN)
-        dataMap[self.actimId] = f'{self.boardType},{self.serverId},{self.sensorStr},{self.frequency},{self.rating}'
-        os.truncate(IMAGES_INDEX, 0)
-        with open(IMAGES_INDEX, "r+") as index:
-            for actimId in updateMap.keys():
-                print(f'{actimId}:{updateMap[actimId]}:{dataMap[actimId]}', file=index)
-        printLog(f'{self.actimName()}.drawGraph --> ' + ','.join(map(str, updateMap.keys())))
-
-        self.lastDrawn = NOW
-
-    def drawGraphMaybe(self):
-        redraw = False
-        if self.isDead > 0:
-            if NOW - self.lastDrawn > REDRAW_DEAD:
-                redraw = True
-        else:
-            if NOW - self.lastDrawn > REDRAW_TIME:
-                redraw = True
-        if redraw:
-            self.drawGraph()
-        return redraw
-
-    def addFreqEvent(self, now, frequency):
-        try:
-            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r+") as history:
-                for line in history:
-                    timeStr, part, freqStr = line.partition(':')
-                    time = utcStrptime(timeStr.strip())
-                    freq = int(freqStr)
-                if now < time: now = time
-                if frequency != freq:
-                    print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
-        except FileNotFoundError:
-            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
-                print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
-            self.graphSince = now
-            try:
-                os.chmod(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", 0o666)
-            except OSError:
-                pass
-
     def update(self, newActim, actual=True):
         redraw = False
         if actual:
@@ -310,36 +134,7 @@ class Actimetre:
             self.drawGraph()
         return redraw
 
-    def alert(self, subject=None, info=""):
-        printLog(f'Alert {self.actimName()}')
-        if subject is None:
-            subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
-        content = f'{self.actimName()}\n'
-        content += Projects.getName(self.projectId, 'Project "%s"\n')
-        content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
-                   f'Sensors {self.sensorStr}\n' + \
-                   f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
-                   f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
-        content += Actiservers.emailInfo(self.serverId)
-
-        sendEmail(Projects.getEmail(self.projectId), subject, content + info)
-
-    def dies(self):
-        if self.isDead == 0:
-            printLog(f'{self.actimName()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
-            self.frequency = 0
-            self.isDead = 1
-            self.addFreqEvent(NOW, 0)
-            self.drawGraph()
-        printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
-        Actiservers.removeActim(self.actimId)
-        self.serverId = 0
-        self.repoSize = 0
-        self.repoNums = 0
-        Projects.dirtyProject(self.projectId)
-        self.dirty = True
-
-    def actimName(self):
+    def name(self):
         return f"Actim{self.actimId:04d}"
 
     def htmlInfo(self):
@@ -351,7 +146,176 @@ class Actimetre:
             return f'{self.sensorStr}@{self.frequencyText()}'
 
     def htmlCartouche(self):
-        return f'{self.actimName()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
+        return f'{self.name()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
+
+    def addFreqEvent(self, now, frequency):
+        try:
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r+") as history:
+                for line in history:
+                    timeStr, part, freqStr = line.partition(':')
+                    time = utcStrptime(timeStr.strip())
+                    freq = int(freqStr)
+                if now < time: now = time
+                if frequency != freq:
+                    print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
+        except FileNotFoundError:
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
+                print(now.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
+            self.graphSince = now
+            try:
+                os.chmod(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", 0o666)
+            except OSError:
+                pass
+
+    def cutHistory(self, cutLength=None):
+        if cutLength is None:
+            cutLength = NOW - self.bootTime
+
+        printLog(f'Actim{self.actimId:04d} cut history to {self.bootTime.strftime(TIMEFORMAT_DISP)}')
+        historyFile = f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist"
+        freshLines = list()
+        try:
+            with open(historyFile, "r") as history:
+                for line in history:
+                    timeStr, part, freqStr = line.partition(':')
+                    time = utcStrptime(timeStr.strip())
+                    freq = int(freqStr)
+                    if NOW - time <= cutLength:
+                        time = NOW - cutLength
+                        self.graphSince = time
+                        freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
+                        freshLines.extend(history.readlines())
+        except FileNotFoundError:
+            pass
+        else:
+            if len(freshLines) == 0:
+                time = NOW - cutLength
+                self.graphSince = time
+                freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.frequency}")
+
+            os.truncate(historyFile, 0)
+            with open(historyFile, "r+") as history:
+                for line in freshLines:
+                    print(line.strip(), file=history)
+        self.dirty = True
+
+    def drawGraph(self):
+        os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
+        import matplotlib.pyplot as pyplot
+
+        if NOW - self.graphSince >= GRAPH_SPAN:
+            self.cutHistory(GRAPH_CULL)
+
+        try:
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
+                self.graphSince = utcStrptime(history.readline().partition(':')[0])
+        except (FileNotFoundError, ValueError):
+            with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "w") as history:
+                print(NOW.strftime(TIMEFORMAT_FN), ':', self.frequency, sep="", file=history)
+            self.graphSince = NOW
+            try:
+                os.chmod(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", 0o666)
+            except OSError:
+                pass
+
+        timeline = []
+        frequencies = []
+        with open(f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist", "r") as history:
+            for line in history:
+                timeStr, part, freqStr = line.partition(':')
+                time = utcStrptime(timeStr.strip())
+                freq = scaleFreq(self.version, int(freqStr))
+                if len(timeline) == 0 or freq != frequencies[-1]:
+                    timeline.append(time)
+                    frequencies.append(freq)
+
+        timeline.append(NOW)
+        frequencies.append(scaleFreq(self.version, self.frequency))
+        freq = [scaleFreq(self.version, self.frequency) for _ in range(len(timeline))]
+
+        fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
+        ax.set_axis_off()
+        ax.set_ylim(bottom=-1, top=12)
+        ax.axvline(timeline[0], 0, 0.95, lw=1.0, c="blue", marker="^", markevery=[1], ms=5.0, mfc="blue")
+        if self.version >= "300":
+            fscale = FSCALEV3TAG
+        else:
+            fscale = FSCALETAG
+        for real, drawn in fscale.items():
+            if self.frequency == real:
+                c = 'green'
+                w = 'bold'
+            else:
+                c = 'black'
+                w = 'regular'
+            if real >= 1000:
+                real = f" {real // 1000 :2d}k"
+            else:
+                real = f" {real:3d}"
+            ax.text(NOW, drawn, real, family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
+
+        ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
+        if self.isDead > 0 or self.frequency == 0:
+            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
+        else:
+            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
+        pyplot.savefig(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
+        pyplot.close()
+        try:
+            os.chmod(f"{IMAGES_DIR}/Actim{self.actimId:04d}.svg", 0o666)
+        except OSError:
+            pass
+        self.lastDrawn = NOW
+
+    def drawGraphMaybe(self):
+        redraw = False
+        if self.isDead > 0:
+            if NOW - self.lastDrawn > REDRAW_DEAD:
+                redraw = True
+        else:
+            if NOW - self.lastDrawn > REDRAW_TIME:
+                redraw = True
+        if redraw:
+            self.drawGraph()
+        return redraw
+
+    def alert(self, subject=None, info=""):
+        printLog(f'Alert {self.name()}')
+        if subject is None:
+            subject = f'{self.name()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
+        content = f'{self.name()}\n'
+        content += Projects.getName(self.projectId, 'Project "%s"\n')
+        content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
+                   f'Sensors {self.sensorStr}\n' + \
+                   f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
+                   f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
+        content += Actiservers.emailInfo(self.serverId)
+
+        sendEmail(Projects.getEmail(self.projectId), subject, content + info)
+
+    def forgetData(self):
+        self.isDead = 3
+        self.repoNums = 0
+        self.repoSize = 0
+        Actiservers.removeActim(self.actimId)
+        self.serverId = 0
+        printLog(f"{self.name()} data forgotten")
+        self.dirty = True
+
+    def dies(self):
+        if self.isDead == 0:
+            printLog(f'{self.name()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
+            self.frequency = 0
+            self.isDead = 1
+            self.addFreqEvent(NOW, 0)
+            self.drawGraph()
+        printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
+        Actiservers.removeActim(self.actimId)
+        self.serverId = 0
+        self.repoSize = 0
+        self.repoNums = 0
+        Projects.dirtyProject(self.projectId)
+        self.dirty = True
 
     def frequencyText(self, sensorStr = None):
         if self.isDead > 0 or self.frequency == 0:
@@ -625,7 +589,7 @@ class ActimetresClass:
 
     def getName(self, actimId: int):
         if actimId in self.actims:
-            return self.actims[actimId].actimName()
+            return self.actims[actimId].name()
         else: return ""
 
     def formRetire(self, actimId: int):
@@ -641,7 +605,7 @@ class ActimetresClass:
 
         writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRetire.html", {
                          "{actimId}": str(actimId),
-                         "{actimName}": a.actimName(),
+                         "{actimName}": a.name(),
                          "{mac}": a.mac,
                          "{boardType}": a.boardType,
                          "{repoNums}": repoNumsStr,
