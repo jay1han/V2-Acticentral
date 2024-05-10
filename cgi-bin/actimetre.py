@@ -62,6 +62,14 @@ class Actimetre:
                 'reportStr' : self.reportStr,
                 }
 
+    def __str__(self):
+        string = f'Actim{self.actimId:04d}'
+        if self.isDead > 0: string += '(dead)'
+        string += f' {self.sensorStr}@{self.frequency}'
+        string += f' Project{self.projectId:02d}'
+        string += f' Repo {self.repoNums}/{printSize(self.repoSize)}'
+        return string
+
     def fromD(self, d, actual=False):
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
@@ -472,6 +480,9 @@ class ActimetresClass:
 
     def init(self):
         self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+
+    def str(self, actimId):
+        return str(self.actims[actimId])
 
     def fromD(self, data, actual=True):
         a = Actimetre().fromD(data, actual)

@@ -28,6 +28,14 @@ class Actiserver:
         self.diskUtil   = 0.0
         self.dirty      = False
 
+    def __str__(self):
+        Actimetres = actimetre.Actimetres
+        string = f'Actis{self.serverId:03d}'
+        if self.isDown > 0: string += '(down'
+        for actimId in self.actimetreList:
+            string += f' {Actimetres.str(actimId)}'
+        return string
+
     def toD(self):
         Actimetres = actimetre.Actimetres
         return {'serverId'  : self.serverId,
@@ -111,7 +119,7 @@ class Actiserver:
         Actimetres = actimetre.Actimetres
         printLog(f'Alert {self.name()}')
         subject = f'{self.name()} unreachable since {self.lastUpdate.strftime(TIMEFORMAT_ALERT)}'
-        sendEmail("", subject, self.alertContent())
+#        sendEmail("", subject, self.alertContent())
         Actimetres.alertAll(self.actimetreList, subject, self.alertContent())
 
     def alertDisk(self):
@@ -292,6 +300,7 @@ class ActiserversClass:
                 if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
                     thisServer.diskLow = 0
         self.servers[serverId] = thisServer
+        printLog(thisServer)
         return thisServer
 
     def save(self):
