@@ -11,26 +11,20 @@ class Project:
             self.actimetreList = set()
         else:
             self.actimetreList = actimetreList
-        self.repoNums      = 0
-        self.repoSize      = 0
 
-    def toD(self):
+    def PtoD(self):
         return {'projectId'     : self.projectId,
                 'title'         : self.title,
                 'owner'         : self.owner,
                 'email'         : self.email,
-                'repoNums'      : self.repoNums,
-                'repoSize'      : self.repoSize,
                 'actimetreList' : list(self.actimetreList),
                 }
 
-    def fromD(self, d):
-        self.projectId      = int(d['projectId'])
-        self.title          = d['title']
-        self.owner          = d['owner']
-        self.email      = d['email']
-        self.repoNums   = int(d['repoNums'])
-        self.repoSize       = int(d['repoSize'])
+    def PfromD(self, d):
+        self.projectId     = int(d['projectId'])
+        self.title         = d['title']
+        self.owner         = d['owner']
+        self.email         = d['email']
         self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
         return self
 
@@ -44,11 +38,11 @@ class Project:
     def name(self):
         return f"{self.title} (#{self.projectId:02d})"
 
-    def htmlUpdate(self):
+    def htmlWrite(self):
         Actimetres = actimetre.Actimetres
         projectActimHTML = ""
         for actimId in self.actimetreList:
-            projectActimHTML += Actimetres.html(actimId)
+            projectActimHTML += Actimetres.htmlActimetre(actimId)
         if self.projectId == 0:
             buttons = ""
         else:
@@ -80,7 +74,7 @@ class Project:
         except OSError:
             pass
 
-    def html(self):
+    def htmlProject(self):
         Actimetres = actimetre.Actimetres
         doc, tag, text, line = Doc().ttl()
         with tag('tr'):
@@ -107,10 +101,10 @@ class ProjectsClass:
         self.dirty = False
 
     def init(self):
-        self.projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+        self.projects = {int(projectId):Project().PfromD(d) for projectId, d in loadData(PROJECTS).items()}
         if self.projects.get(0) is None:
             self.projects[0] = Project(0, "Not assigned", "No owner")
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
+            dumpData(PROJECTS, {int(p.projectId):p.PtoD() for p in self.projects.values()})
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
         self.dirty = False
 
@@ -119,11 +113,11 @@ class ProjectsClass:
             if len(p.actimetreList) > 0:
                 print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
 
-    def html(self, *, picker=None):
+    def htmlProjects(self, *, picker=None):
         htmlString = ""
         for projectId in sorted(self.projects.keys()):
             if picker is None or picker(self.projects[projectId]):
-                htmlString += self.projects[projectId].html()
+                htmlString += self.projects[projectId].htmlProject()
         return htmlString
 
     def getOwner(self, projectId):
@@ -144,11 +138,6 @@ class ProjectsClass:
             return self.projects[projectId].email
         else: return ""
 
-    def clearRepos(self):
-        for p in self.projects.values():
-            p.repoNums = 0
-            p.repoSize = 0
-
     def set(self, projectId, title="Not assigned", owner="", email=""):
         if projectId not in self.projects.keys():
             self.projects[projectId] = Project(projectId, title, owner, email)
@@ -159,13 +148,13 @@ class ProjectsClass:
 
     def save(self, check=True):
         if check:
-            dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
+            dumpData(PROJECTS, {int(p.projectId):p.PtoD() for p in self.projects.values()})
             self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
     def values(self):
         return self.projects.values()
 
-    def removeActim(self, actimId, projectId=None):
+    def removeActimP(self, actimId, projectId=None):
         save = False
         if projectId is not None:
             if projectId in self.projects.keys():
@@ -201,25 +190,21 @@ class ProjectsClass:
     def exists(self, projectId):
         return projectId in self.projects.keys()
 
-    def htmlUpdate(self, projectId):
+    def htmlWrite(self, projectId):
         if projectId in self.projects.keys():
-            self.projects[projectId].htmlUpdate()
+            self.projects[projectId].htmlWrite()
             return True
         return False
 
-    def addActim(self, projectId, actimId):
-        Actimetres = actimetre.Actimetres
+    def addActimP(self, projectId, actimId):
         if projectId in self.projects.keys():
             p = self.projects[projectId]
         else:
             p = Project(projectId)
         isNew = p.addActim(actimId)
-        repoNums, repoSize = Actimetres.getRepoInfo(actimId)
-        p.repoNums += repoNums
-        p.repoSize += repoSize
         return isNew
 
-    def htmlList(self, projectId=None):
+    def htmlActimChoice(self, projectId=None):
         htmlString = ""
         for p in self.projects.values():
             htmlString += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
@@ -228,7 +213,7 @@ class ProjectsClass:
             htmlString += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
         return htmlString
 
-    def htmlActimChoice(self, projectId):
+    def htmlActimetreList(self, projectId):
         if len(self.projects[projectId].actimetreList) == 0:
             return "(no Actimetres assigned to this project)\n"
         else:
@@ -236,6 +221,7 @@ class ProjectsClass:
             actimList = ""
             for actimId in self.projects[projectId].actimetreList:
                 actimList += Actimetres.htmlCartouche(actimId, 'li')
+            return actimList
 
     def needUpdate(self, serverTime):
         return self.fileTime > serverTime

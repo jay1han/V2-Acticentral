@@ -19,12 +19,12 @@ Actiservers = actiserver.initActiservers()
 Actimetres = actimetre.initActimetres()
 
 def htmlUpdate():
-    Actiservers.htmlUpdate()
+    Actiservers.htmlWriteServers()
 
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
-        .replace("{Actiservers}", Actiservers.html(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P))\
-        .replace("{Projects}", Projects.html())\
+        .replace("{Actiservers}", Actiservers.htmlS(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P))\
+        .replace("{Projects}", Projects.htmlP())\
         .replace("{Updated}", LAST_UPDATED)\
         .replace("{Version}", VERSION_STR)\
         .replace("{cgi-bin}", CGI_BIN)
@@ -82,7 +82,7 @@ def removeProject(projectId):
         print(form.read()\
               .replace("{projectId}", str(projectId))\
               .replace("{projectTitle}", Projects.getName(projectId))\
-              .replace("{actimetreList}", Projects.htmlActimChoice(projectId)))
+              .replace("{actimetreList}", Projects.htmlActimetreList(projectId)))
 
 def retireActim(actimId):
     print("Content-type: text/html\n\n")
@@ -195,8 +195,8 @@ def processForm(formId):
         oldProject = Actimetres.getProjectId(actimId)
         printLog(f"Changing {actimId} from {oldProject} to {projectId}")
 
-        Projects.removeActim(actimId, oldProject)
-        Projects.addActim(projectId, actimId)
+        Projects.removeActimP(actimId, oldProject)
+        Projects.addActimP(projectId, actimId)
         Actimetres.setProjectId(actimId, projectId)
         htmlUpdate()
         print("Location:\\index.html\n\n")
@@ -221,11 +221,11 @@ def processForm(formId):
             if (projectId == 0 and owner == 'CONFIRM') or \
                 Projects.getOwner(projectId) == owner:
                 printLog(f"Retire Actimetre{actimId:04d} from {Projects.getName(projectId)}")
-                Actiservers.removeActim(actimId)
-                Projects.removeActim(actimId)
+                Actiservers.removeActimS(actimId)
+                Projects.removeActimP(actimId)
                 Registry.deleteId(actimId)
                 Actimetres.delete(actimId)
-                Actiservers.removeActim(actimId)
+                Actiservers.removeActimS(actimId)
                 htmlUpdate()
                 
         print("Location:\\index.html\n\n")
@@ -306,7 +306,7 @@ def processAction():
         bootTime  = utcStrptime(args['bootTime'][0])
 
         actimId = Actimetres.new(mac, boardType, version, serverId, bootTime)
-        Actiservers.addActim(actimId)
+        Actiservers.addActimS(actimId)
         htmlUpdate()
         plain(str(actimId))
 
@@ -330,7 +330,7 @@ def processAction():
         actimId = int(args['actimId'][0])
 
         Actimetres.forget(actimId)
-        Actiservers.removeActim(actimId, serverId)
+        Actiservers.removeActimS(actimId, serverId)
 
         htmlUpdate()
         plain("Ok")

@@ -36,7 +36,7 @@ class Actimetre:
         self.graphSince = TIMEZERO
         self.reportStr  = ""
 
-    def toD(self):
+    def AtoD(self):
         return {'actimId'   : self.actimId,
                 'mac'       : self.mac,
                 'boardType' : self.boardType,
@@ -59,7 +59,7 @@ class Actimetre:
                 'reportStr' : self.reportStr,
                 }
 
-    def fromD(self, d, actual=False):
+    def AfromD(self, d, actual=False):
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
@@ -85,7 +85,7 @@ class Actimetre:
             if Projects.exists(self.projectId) is None:
                 self.projectId = 0
             else:
-                Projects.addActim(self.actimId, self.projectId)
+                Projects.addActimP(self.actimId, self.projectId)
             self.lastDrawn = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr = d['reportStr']
@@ -126,7 +126,7 @@ class Actimetre:
         self.isDead = 3
         self.repoNums = 0
         self.repoSize = 0
-        Actiservers.removeActim(self.actimId, self.serverId)
+        Actiservers.removeActimS(self.actimId, self.serverId)
         self.serverId = 0
         printLog(f"{self.actimName()} data forgotten")
 
@@ -261,7 +261,7 @@ class Actimetre:
         redraw = False
         if actual:
             if self.serverId != newActim.serverId:
-                Actiservers.removeActim(self.actimId, self.serverId)
+                Actiservers.removeActimS(self.actimId, self.serverId)
                 if self.frequency > 0:
                     if Actiservers.exists(self.serverId):
                         self.addFreqEvent(Actiservers.getLastUpdate(self.serverId), 0)
@@ -299,9 +299,10 @@ class Actimetre:
             self.drawGraph()
         return redraw
 
-    def alert(self):
+    def alertA(self, subject=None, info=""):
         printLog(f'Alert {self.actimName()}')
-        subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
+        if subject is None:
+            subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
         content = f'{self.actimName()}\n'
         content += Projects.getName(self.projectId, 'Project "%s"\n')
         content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
@@ -309,9 +310,9 @@ class Actimetre:
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
                    f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
 
-        sendEmail(Projects.getEmail(self.projectId), subject, content)
+        sendEmail(Projects.getEmail(self.projectId), subject, content + info)
 
-    def alertDisk(self):
+    def alertDiskA(self):
         printLog(f"{self.actimName()}'s server disk low")
         subject = f"{self.actimName()}'s server disk low"
         content = f'{self.actimName()}\n'
@@ -332,12 +333,12 @@ class Actimetre:
             self.isDead = 1
             self.addFreqEvent(NOW, 0)
             self.drawGraph()
-        if Actiservers.removeActim(self.actimId, self.serverId):
+        if Actiservers.removeActimS(self.actimId, self.serverId):
             printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
             self.serverId = 0
             self.repoSize = 0
             self.repoNums = 0
-            if Projects.htmlUpdate(self.projectId):
+            if Projects.htmlProject(self.projectId):
                 printLog(f"Actim{self.actimId:04d} dies, update Project{self.projectId:02d}")
 
     def actimName(self):
@@ -386,7 +387,7 @@ class Actimetre:
     def hasData(self):
         return self.repoNums > 0 or self.repoSize > 0
 
-    def html(self):
+    def htmlActimetre(self):
         doc, tag, text, line = Doc().ttl()
         with tag('tr'):
             doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
@@ -480,16 +481,16 @@ class ActimetresClass:
         self.dirty = False
 
     def init(self):
-        self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+        self.actims = {int(actimId):Actimetre().AfromD(d) for actimId, d in loadData(ACTIMETRES).items()}
         self.dirty = False
 
     def fromD(self, data, actual=True):
-        a = Actimetre().fromD(data, actual)
+        a = Actimetre().AfromD(data, actual)
         if a.actimId in self.actims.keys():
             self.actims[a.actimId].update(a, actual)
         else:
             self.actims[a.actimId] = a
-        Projects.htmlUpdate(self.actims[a.actimId].projectId)
+        Projects.htmlWrite(self.actims[a.actimId].projectId)
         return a.actimId
 
     def removeProject(self, actimId):
@@ -501,12 +502,12 @@ class ActimetresClass:
 
     def dump(self, actimId):
         if actimId in self.actims.keys():
-            return json.dumps(self.actims[actimId].toD())
+            return json.dumps(self.actims[actimId].AtoD())
         else: return ""
 
-    def html(self, actimId):
+    def htmlActimetre(self, actimId):
         if actimId in self.actims.keys():
-            return self.actims[actimId].html()
+            return self.actims[actimId].htmlActimetre()
         else: return ""
 
     def htmlCartouche(self, actimId, *, withTag=None):
@@ -536,9 +537,9 @@ class ActimetresClass:
             return doc.getvalue()
         else: return ""
 
-    def alertDisk(self, actimId):
+    def alertDiskA(self, actimId):
         if actimId in self.actims.keys():
-            self.actims[actimId].alertDisk()
+            self.actims[actimId].alertDiskA()
 
     def new(self, mac, boardType, version, serverId, bootTime=NOW):
         actimId = Registry.getId(mac)
@@ -575,7 +576,7 @@ class ActimetresClass:
             return True
         else: return False
 
-    def getInfo(self, actimId):
+    def htmlInfo(self, actimId):
         if actimId in self.actims.keys():
             return self.actims[actimId].htmlInfo()
         else: return ""
@@ -611,14 +612,19 @@ class ActimetresClass:
         save = False
         for a in self.actims.values():
             if a.isDead == 1 and (NOW - a.lastSeen) > ACTIM_ALERT1:
-                a.alert()
+                a.alertA()
                 a.isDead = 2
                 save = True
             elif a.isDead == 2 and (NOW - a.lastSeen) > ACTIM_ALERT2:
-                a.alert()
+                a.alertA()
                 a.isDead = 3
                 save = True
         self.save(save)
+
+    def alertAll(self, actimetreList, subject, content):
+        for actimId in actimetreList:
+            if actimId in self.actims.keys():
+                self.actims[actimId].alertA(subject, content)
 
     def repoStat(self):
         save = False
@@ -628,7 +634,7 @@ class ActimetresClass:
                 continue
             if a.drawGraphMaybe():
                 save = True
-            saveP = Projects.addActim(a.projectId, a.actimId)
+            saveP = Projects.addActimP(a.projectId, a.actimId)
         self.save(save)
         return saveP
 
@@ -665,7 +671,7 @@ class ActimetresClass:
 
     def save(self, check=True):
         if check:
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
+            dumpData(ACTIMETRES, {int(a.actimId):a.AtoD() for a in self.actims.values()})
 
 Actimetres = ActimetresClass()
 def initActimetres():

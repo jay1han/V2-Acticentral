@@ -25,7 +25,7 @@ class Actiserver:
         self.diskTput   = 0.0
         self.diskUtil   = 0.0
 
-    def toD(self):
+    def StoD(self):
         Actimetres = actimetre.Actimetres
         return {'serverId'  : self.serverId,
                 'machine'   : self.machine,
@@ -46,7 +46,7 @@ class Actiserver:
                 'diskUtil'  : self.diskUtil,
                 }
 
-    def fromD(self, d, actual=False):
+    def SfromD(self, d, actual=False):
         Actimetres = actimetre.Actimetres
         self.serverId   = int(d['serverId'])
         self.machine    = d['machine']
@@ -66,7 +66,7 @@ class Actiserver:
 
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
-                actimId = Actimetres.fromD(actimData, actual)
+                actimId = Actimetres.AfromD(actimData, actual)
                 self.actimetreList.add(actimId)
 
         for a in Actimetres.values():
@@ -97,17 +97,21 @@ class Actiserver:
         content += '\n'
         return content
 
-    def alert(self):
+    def alertS(self):
+        Actimetres = actimetre.Actimetres
         printLog(f'Alert {self.serverName()}')
         subject = f'{self.serverName()} unreachable since {self.lastUpdate.strftime(TIMEFORMAT_ALERT)}'
         sendEmail("", subject, self.alertContent())
+        Actimetres.alertAll(self.actimetreList, subject, self.alertContent())
 
-    def alertDisk(self):
+    def alertDiskS(self):
+        Actimetres = actimetre.Actimetres
         printLog(f'{self.serverName()} disk low')
         subject = f'{self.serverName()} storage low'
         sendEmail("", subject, self.alertContent())
+        Actimetres.alertAll(self.actimetreList, subject, self.alertContent())
 
-    def html(self):
+    def htmlServer(self):
         from actimetre import Actimetres
         doc, tag, text, line = Doc().ttl()
 
@@ -191,28 +195,27 @@ class ActiserversClass:
         self.dirty = False
 
     def init(self):
-        self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
+        self.servers = {int(serverId):Actiserver().SfromD(d) for serverId, d in loadData(ACTISERVERS).items()}
         self.dirty = False
 
     def save(self, check=True):
         if check:
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
+            dumpData(ACTISERVERS, {int(s.serverId):s.PtoD() for s in self.servers.values()})
 
-    def html(self, *, picker=None):
+    def htmlServers(self, *, picker=None):
         htmlString = ""
         for serverId in sorted(self.servers.keys()):
             if picker is None or picker(self.servers[serverId]):
-                htmlString += self.servers[serverId].html()
+                htmlString += self.servers[serverId].htmlServer()
         return htmlString
 
-    def htmlUpdate(self):
+    def htmlWriteServers(self):
         with open(SERVERS_HTML, "w") as html:
             with open(SERVERS_TEMPLATE, "r") as template:
                 print(template.read() \
-                      .replace('{Actiservers}', self.html()) \
+                      .replace('{Actiservers}', self.htmlServers()) \
                       .replace('{Updated}', LAST_UPDATED),
                       file=html)
-
 
     def exists(self, serverId):
         return serverId in self.servers.keys()
@@ -244,13 +247,13 @@ class ActiserversClass:
             return True
         return False
 
-    def addActim(self, serverId, actimId):
+    def addActimS(self, serverId, actimId):
         if serverId in self.servers.keys():
             self.servers[serverId].actimetreList.add(actimId)
             self.servers[serverId].lastUpdate = NOW
             self.save()
 
-    def removeActim(self, actimId, serverId=None):
+    def removeActimS(self, actimId, serverId=None):
         save = False
         if serverId is not None:
             s = self.servers.get(serverId)
@@ -281,31 +284,31 @@ class ActiserversClass:
         save = False
         for s in self.servers.values():
             if s.isDown == 0 and (NOW - s.lastUpdate) > ACTIS_ALERT1:
-                s.alert()
+                s.alertS()
                 s.isDown = 1
                 save = True
             elif s.isDown == 1 and (NOW - s.lastUpdate) > ACTIS_ALERT2:
-                s.alert()
+                s.alertS()
                 s.isDown = 2
                 save = True
             elif s.isDown == 2 and (NOW - s.lastUpdate) > ACTIS_ALERT3:
-                s.alert()
+                s.alertS()
                 s.isDown = 3
                 save = True
         self.save(save)
 
     def processAction(self, serverId, data):
-        thisServer = Actiserver(serverId).fromD(json.load(data), True)
+        thisServer = Actiserver(serverId).SfromD(json.load(data), True)
         if serverId in self.servers.keys():
             thisServer.diskLow = self.servers[serverId].diskLow
             if thisServer.diskLow == 0:
                 if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 10:
                     thisServer.diskLow = 1
-                    thisServer.alertDisk()
+                    thisServer.alertDiskS()
             elif thisServer.diskLow == 1:
                 if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 20:
                     thisServer.diskLow = 2
-                    thisServer.alertDisk()
+                    thisServer.alertDiskS()
             else:
                 if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
                     thisServer.diskLow = 0
