@@ -21,17 +21,14 @@ Actimetres = actimetre.initActimetres()
 def htmlUpdate():
     Actiservers.htmlWriteServers()
 
-    htmlTemplate = open(INDEX_TEMPLATE, "r").read()
-    htmlOutput = htmlTemplate\
-        .replace("{Actiservers}", Actiservers.htmlServers(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P))\
-        .replace("{Projects}", Projects.htmlProjects())\
-        .replace("{Updated}", LAST_UPDATED)\
-        .replace("{Version}", VERSION_STR)\
-        .replace("{cgi-bin}", CGI_BIN)
-    
     os.truncate(INDEX_HTML, 0)
-    with open(INDEX_HTML, "r+") as html:
-        print(htmlOutput, file=html)
+    writeTemplateSub(open(INDEX_HTML, "r+"), INDEX_TEMPLATE, {
+        "{Actiservers}": Actiservers.htmlServers(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P),
+        "{Projects}": Projects.htmlProjects(),
+        "{Updated}": LAST_UPDATED,
+        "{Version}": VERSION_STR,
+        "{cgi-bin}": CGI_BIN,
+    })
 
 def checkAlerts():
     Actimetres.checkAlerts()
@@ -44,48 +41,14 @@ def repoStats():
         stat.write(NOW.strftime(TIMEFORMAT_DISP))
     htmlUpdate()
     
-def projectChangeInfo(projectId):
-    print("Content-type: text/html\n\n")
-
-    with open(f"{HTML_DIR}/formProject.html") as form:
-        print(form.read()\
-              .replace("{project-change-info}", "project-change-info")\
-              .replace("{projectTitle}", Projects.getName(projectId))\
-              .replace("{projectOwner}", Projects.getOwner(projectId))\
-              .replace("{projectId}", str(projectId)))
-
-def projectEditInfo(projectId):
-    print("Content-type: text/html\n\n")
-
-    with open(f"{HTML_DIR}/formProject.html") as form:
-        print(form.read()\
-              .replace("{project-change-info}", "project-edit-info")\
-              .replace("{projectTitle}", Projects.getName(projectId))\
-              .replace("{projectOwner}", Projects.getOwner(projectId))\
-              .replace("{projectId}", str(projectId)))
-
 def actimChangeProject(actimId):
     print("Content-type: text/html\n\n")
-
-    with open(f"{HTML_DIR}/formActim.html") as form:
-        print(form.read()\
-              .replace("{actimId}", str(actimId))\
-              .replace("{actimName}", Actimetres.getName(actimId))\
-              .replace("{actimInfo}", Actimetres.htmlInfo(actimId))\
-              .replace("{htmlProjectList}", Projects.htmlChoice(Actimetres.getProjectId(actimId))))
-
-def removeProject(projectId):
-    print("Content-type: text/html\n\n")
-
-    with open(f"{HTML_DIR}/formRemove.html") as form:
-        print(form.read()\
-              .replace("{projectId}", str(projectId))\
-              .replace("{projectTitle}", Projects.getName(projectId))\
-              .replace("{actimetreList}", Projects.htmlActimetreList(projectId)))
-
-def retireActim(actimId):
-    print("Content-type: text/html\n\n")
-    Actimetres.formRetire(actimId)
+    writeTemplateSub(sys.stdout, f"{HTML_DIR}/formActim.html", {
+        "{actimId}": str(actimId),
+        "{actimName}": Actimetres.getName(actimId),
+        "{actimInfo}": Actimetres.htmlInfo(actimId),
+        "{htmlProjectList}": Projects.htmlChoice(Actimetres.getProjectId(actimId)),
+    })
 
 def loadRemotes():
     try:
@@ -162,71 +125,13 @@ def processForm(formId):
         print("Location:\\password.html\n\n")
         return
     
-    if formId == 'project-change-info':
-        projectId = int(args['projectId'][0])
-        title = args['title'][0]
-        owner = args['owner'][0]
-        email = args['email'][0]
-        printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
+    if formId.startswith('project-'):
+        Projects.processForm(formId, args)
 
-        if title != "" and owner != "":
-            Projects.setInfo(projectId, title, owner, email)
-            Projects.save()
-            htmlUpdate()
-        print(f'Location:\\index.html\n\n')
+    elif formId.startswith('actim-'):
+        Actimetres.processForm(formId, args)
 
-    elif formId == 'project-edit-info':
-        projectId = int(args['projectId'][0])
-        title = args['title'][0]
-        owner = args['owner'][0]
-        email = args['email'][0]
-        printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
-
-        if title != "" and owner != "":
-            Projects.setInfo(projectId, title, owner, email)
-            Projects.save()
-            htmlUpdate()
-        print(f"Location:\\project{projectId:02d}.html\n\n")
-
-    elif formId == 'actim-change-project':
-        actimId = int(args['actimId'][0])
-        projectId = int(args['projectId'][0])
-        oldProject = Actimetres.getProjectId(actimId)
-        printLog(f"Changing {actimId} from {oldProject} to {projectId}")
-
-        Projects.moveActim(actimId, projectId)
-        Actimetres.setProjectId(actimId, projectId)
-        htmlUpdate()
-        print("Location:\\index.html\n\n")
-
-    elif formId == 'create-project':
-        title = args['title'][0]
-        owner = args['owner'][0]
-        printLog(f"Create new project with data: {title}, {owner}")
-
-        if title != "" and owner != "":
-            Projects.new(title, owner)
-            htmlUpdate()
-        print("Location:\\index.html\n\n")
-
-    elif formId == 'retire-actim':
-        actimId = int(args['actimId'][0])
-        owner = args['owner'][0]
-
-        if Actimetres[actimId]:
-            projectId = Actimetres.getProjectId(actimId)
-            if (projectId == 0 and owner == 'CONFIRM') or \
-                Projects.getOwner(projectId) == owner:
-                printLog(f"Retire Actimetre{actimId:04d} from {Projects.getName(projectId)}")
-                Actiservers.removeActim(actimId)
-                Projects.removeActim(actimId)
-                Registry.deleteId(actimId)
-                Actimetres.delete(actimId)
-                htmlUpdate()
-                
-        print("Location:\\index.html\n\n")
-
-    elif formId == 'remove-project':
+    elif formId == 'project-remove':
         Projects.deleteProject(int(args['projectId'][0]))
         print(f"Location:\\index.html\n\n")
 
@@ -374,30 +279,26 @@ def processAction():
         remoteAction(actimId, 0x30)
         print("Location:\\index.html\n\n")
 
-    elif action == 'retire-actim':
-        actimId = int(args['actimId'][0])
-        retireActim(actimId)
+    elif action == 'actim-retire':
+        Actimetres.formRetire(int(args['actimId'][0]))
 
-    elif action == 'retire-server':
+    elif action == 'server-retire':
         serverId = int(args['serverId'][0])
         Actiservers.delete(serverId)
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif action == 'project-change-info':
-        projectId = int(args['projectId'][0])
-        projectChangeInfo(projectId)
+        Projects.formChangeInfo(int(args['projectId'][0]))
 
     elif action == 'project-edit-info':
-        projectId = int(args['projectId'][0])
-        projectEditInfo(projectId)
+        Projects.formEditInfo(int(args['projectId'][0]))
 
-    elif action == 'create-project':
+    elif action == 'project-create':
         print("Location:\\formCreate.html\n\n")
 
-    elif action == 'remove-project':
-        projectId = int(args['projectId'][0])
-        removeProject(projectId)
+    elif action == 'project-remove':
+        Projects.formRemove(int(args['projectId'][0]))
 
     elif action == 'submit':
         formId = args['formId'][0]

@@ -625,7 +625,31 @@ class ActimetresClass:
                   .replace("{owner}", ownerStr) \
                   .replace("{projectTitle}", Projects.getName(a.projectId)))
 
-    def save(self, check=True):
+    def processForm(self, formId, args):
+        actimId = int(args['actimId'][0])
+
+        if formId == 'actim-move-project':
+            projectId = int(args['projectId'][0])
+            oldProject = self.getProjectId(actimId)
+            printLog(f"Changing {actimId} from {oldProject} to {projectId}")
+
+            Projects.moveActim(actimId, projectId)
+            self.setProjectId(actimId, projectId)
+
+        elif formId == 'retire-actim':
+            owner = args['owner'][0]
+            projectId = self.getProjectId(actimId)
+            if (projectId == 0 and owner == 'CONFIRM') or \
+                Projects.getOwner(projectId) == owner:
+                printLog(f"Retire Actimetre{actimId:04d} from {Projects.getName(projectId)}")
+                Actiservers.removeActim(actimId)
+                Projects.removeActim(actimId)
+                Registry.deleteId(actimId)
+                self.delete(actimId)
+
+        print("Location:\\index.html\n\n")
+
+def save(self, check=True):
         if check:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
 

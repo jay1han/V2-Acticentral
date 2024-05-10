@@ -1,3 +1,4 @@
+import sys
 from const import *
 import actimetre
 
@@ -55,7 +56,7 @@ class Project:
         else:
             buttons = '''\
                   <button type="submit" name="action" value="project-edit-info">Edit info</button>
-                  <button type="submit" name="action" value="remove-project">Remove project</button>
+                  <button type="submit" name="action" value="project-remove">Remove project</button>
                   '''
 
         if self.projectId == 0:
@@ -178,11 +179,11 @@ class ProjectsClass:
         self.removeActim(actimId)
         self.addActim(projectId, actimId)
 
-    def new(self, title, owner):
+    def new(self, title, owner, email):
         projectId = 1
         while projectId in set(self.projects.keys()):
             projectId += 1
-        self.projects[projectId] = Project(projectId, title, owner)
+        self.projects[projectId] = Project(projectId, title, owner, email)
         self.projects[projectId].dirty = True
         self.dirty = True
 
@@ -223,6 +224,48 @@ class ProjectsClass:
             for actimId in self.projects[projectId].actimetreList:
                 actimList += Actimetres.htmlCartouche(actimId, 'li')
             return actimList
+
+    def formRemove(self, projectId):
+        print("Content-type: text/html\n\n")
+        writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRemove.html", {
+            "{projectId}": str(projectId),
+            "{projectTitle}": self.getName(projectId),
+            "{actimetreList}": self.htmlActimetreList(projectId),
+        })
+
+    def formChangeInfo(self, projectId):
+        print("Content-type: text/html\n\n")
+        writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
+            "{project-change-info}": "project-change-info",
+            "{projectTitle}": self.getName(projectId),
+            "{projectOwner}": self.getOwner(projectId),
+            "{projectId}": str(projectId),
+        })
+
+    def formEditInfo(self, projectId):
+        print("Content-type: text/html\n\n")
+        writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
+            "{project-change-info}": "project-edit-info",
+            "{projectTitle}": self.getName(projectId),
+            "{projectOwner}": self.getOwner(projectId),
+            "{projectId}": str(projectId),
+        })
+
+    def processForm(self, formId, args):
+        projectId = int(args['projectId'][0])
+        title = args['title'][0]
+        owner = args['owner'][0]
+        email = args['email'][0]
+
+        if formId == 'project-change-info' or formId == 'project-edit-info':
+            printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
+            if title != "" and owner != "" and email != "":
+                self.setInfo(projectId, title, owner, email)
+        elif formId == 'project-create':
+            printLog(f"Create new project with data: {title}, {owner}, {email}")
+            if title != "" and owner != "" and email != "":
+                self.new(title, owner, email)
+        print("Location:\\index.html\n\n")
 
     def needUpdate(self, serverTime):
         return self.fileTime > serverTime

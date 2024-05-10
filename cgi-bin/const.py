@@ -162,3 +162,8 @@ def htmlRssi(rssi):
                 line('td', ' ', width=f'{widthEmpty}%')
     return doc.getvalue()
 
+def writeTemplateSub(output, template: str, substitutions: dict[str,str]):
+    content = open(template, "r").read()
+    for before, after in substitutions.items():
+        content = content.replace(before, after)
+    print(content, file=output)
