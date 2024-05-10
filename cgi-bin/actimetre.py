@@ -660,10 +660,13 @@ class ActimetresClass:
         print("Location:\\index.html\n\n")
 
     def save(self):
+        dirty = False
         for actim in self.actims.values():
             if actim.dirty:
-                dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
-                return
+                Projects.dirtyProject(actim.projectId)
+                dirty = True
+        if dirty:
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
 
 Actimetres = ActimetresClass()
 def initActimetres() -> ActimetresClass:

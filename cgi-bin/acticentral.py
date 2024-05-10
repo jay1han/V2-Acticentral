@@ -306,9 +306,9 @@ def processAction():
 
 def saveAll():
     Registry.save()
-    Projects.save()
-    Actiservers.save()
     Actimetres.save()
+    Actiservers.save()
+    Projects.save()
 
 import argparse
 cmdparser = argparse.ArgumentParser()
