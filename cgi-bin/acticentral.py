@@ -10,9 +10,9 @@ fcntl.lockf(lock, fcntl.LOCK_EX)
 printLog("===================================================")
 
 from registry import Registry
-from project import Projects
 from actimetre import Actimetres
 from actiserver import Actiservers
+from project import Projects
 
 def htmlUpdate():
     Actiservers.htmlUpdate()
