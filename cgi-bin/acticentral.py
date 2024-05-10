@@ -39,8 +39,7 @@ def repoStats():
 
     with open(STAT_FILE, "w") as stat:
         stat.write(NOW.strftime(TIMEFORMAT_DISP))
-    htmlUpdate()
-    
+
 def actimChangeProject(actimId):
     print("Content-type: text/html\n\n")
     writeTemplateSub(sys.stdout, f"{HTML_DIR}/formActim.html", {

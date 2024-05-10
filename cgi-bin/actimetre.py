@@ -498,12 +498,14 @@ class ActimetresClass:
         return self.actims[actimId].html()
 
     def htmlCartouche(self, actimId: int, *, withTag=None):
-        if withTag is not None:
-            doc, tag, text, line = Doc().ttl()
-            with tag(withTag):
-                doc.asis(self.actims[actimId].htmlCartouche())
-            return doc.getvalue()
-        else: return self.actims[actimId].htmlCartouche()
+        if actimId in self.actims.keys():
+            if withTag is not None:
+                doc, tag, text, line = Doc().ttl()
+                with tag(withTag):
+                    doc.asis(self.actims[actimId].htmlCartouche())
+                return doc.getvalue()
+            else: return self.actims[actimId].htmlCartouche()
+        else: return ""
 
     def htmlRepo(self, actimId: int, version: str, ip: str):
         a = self.actims[actimId]
