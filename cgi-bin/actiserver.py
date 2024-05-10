@@ -310,4 +310,8 @@ class ActiserversClass:
         self.save()
         return thisServer
 
-Actiservers = ActiserversClass()
+Actiservers = None
+def initActiservers():
+    global Actiservers
+    Actiservers = ActiserversClass()
+    return Actiservers

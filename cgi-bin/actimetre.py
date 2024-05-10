@@ -604,4 +604,8 @@ class ActimetresClass:
         if save:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
 
-Actimetres = ActimetresClass()
+Actimetres = None
+def initActimetres():
+    global Actimetres
+    Actimetres = ActimetresClass()
+    return Actimetres

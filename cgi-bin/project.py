@@ -204,4 +204,8 @@ class ProjectsClass:
     def needUpdate(self, serverTime):
         return self.fileTime > serverTime
 
-Projects = ProjectsClass()
+Projects = None
+def initProjects():
+    global Projects
+    Projects = ProjectsClass()
+    return Projects
