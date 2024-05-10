@@ -200,7 +200,7 @@ class ActiserversClass:
 
     def save(self, check=True):
         if check:
-            dumpData(ACTISERVERS, {int(s.serverId):s.PtoD() for s in self.servers.values()})
+            dumpData(ACTISERVERS, {int(s.serverId):s.StoD() for s in self.servers.values()})
 
     def htmlServers(self, *, picker=None):
         htmlString = ""

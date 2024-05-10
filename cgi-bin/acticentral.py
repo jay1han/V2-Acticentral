@@ -23,8 +23,8 @@ def htmlUpdate():
 
     htmlTemplate = open(INDEX_TEMPLATE, "r").read()
     htmlOutput = htmlTemplate\
-        .replace("{Actiservers}", Actiservers.htmlS(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P))\
-        .replace("{Projects}", Projects.htmlP())\
+        .replace("{Actiservers}", Actiservers.htmlServers(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P))\
+        .replace("{Projects}", Projects.htmlProjects())\
         .replace("{Updated}", LAST_UPDATED)\
         .replace("{Version}", VERSION_STR)\
         .replace("{cgi-bin}", CGI_BIN)

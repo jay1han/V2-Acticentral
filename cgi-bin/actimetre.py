@@ -484,7 +484,7 @@ class ActimetresClass:
         self.actims = {int(actimId):Actimetre().AfromD(d) for actimId, d in loadData(ACTIMETRES).items()}
         self.dirty = False
 
-    def fromD(self, data, actual=True):
+    def AfromD(self, data, actual=True):
         a = Actimetre().AfromD(data, actual)
         if a.actimId in self.actims.keys():
             self.actims[a.actimId].update(a, actual)
