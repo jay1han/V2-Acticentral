@@ -34,18 +34,8 @@ def checkAlerts():
 
 def repoStats():
     Actimetres.repoStat()
-
     with open(STAT_FILE, "w") as stat:
         stat.write(NOW.strftime(TIMEFORMAT_DISP))
-
-def actimChangeProject(actimId):
-    print("Content-type: text/html\n\n")
-    writeTemplateSub(sys.stdout, f"{HTML_DIR}/formActim.html", {
-        "{actimId}": str(actimId),
-        "{actimName}": Actimetres.getName(actimId),
-        "{actimInfo}": Actimetres.htmlInfo(actimId),
-        "{htmlProjectList}": Projects.htmlChoice(Actimetres.getProjectId(actimId)),
-    })
 
 def loadRemotes():
     try:
@@ -128,10 +118,6 @@ def processForm(formId):
     elif formId.startswith('actim-'):
         Actimetres.processForm(formId, args)
 
-    elif formId == 'project-remove':
-        Projects.delete(int(args['projectId'][0]))
-        print(f"Location:\\index.html\n\n")
-
     else:
         print("Location:\\index.html\n\n")
 
@@ -148,7 +134,7 @@ def processAction():
         if not checkSecret(): return
         serverId = int(args['serverId'][0])
         printLog(f"Actis{serverId} alive")
-        s = Actiservers.processAction(serverId, sys.stdin)
+        s = Actiservers.processUpdate(serverId, sys.stdin)
 
         if action == 'actiserver':
             plain(Registry.dump())
@@ -208,9 +194,7 @@ def processAction():
 
     elif action == 'actimetre-off':
         if not checkSecret(): return
-#        serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
-
         Actimetres.dies(actimId)
         plain("Ok")
 
@@ -222,78 +206,29 @@ def processAction():
 
     elif action == 'actimetre-removed':
         if not checkSecret(): return
-#        serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
-
         Actimetres.forget(actimId)
         Actiservers.removeActim(actimId)
-
         htmlUpdate()
         plain("Ok")
 
-    elif action == 'actim-change-project':
-        actimId = int(args['actimId'][0])
-        actimChangeProject(actimId)
+    elif action.startswith('server-'):
+        Actiservers.processAction(action, args)
 
-    elif action == 'actim-cut-graph':
-        actimId = int(args['actimId'][0])
-        Actimetres.cutGraph(actimId)
-        if args.get('projectId') is not None:
-            print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
-        else:
-            print("Location:\\index.html\n\n")
+    elif action.startswith('actim-'):
+        Actimetres.processAction(action, args)
 
-    elif action == 'remote-button':
-        actimId = int(args['actimId'][0])
-        remoteAction(actimId, 0x10)
+    elif action.startswith('remote-'):
+        command = 0
+        if action   == 'remote-button' : command = 0x10
+        elif action == 'remote-sync'   : command = 0x20
+        elif action == 'remote-stop'   : command = 0x30
+        elif action == 'remote-restart': command = 0xF0
+        remoteAction(int(args['actimId'][0]), command)
         print("Location:\\index.html\n\n")
 
-    elif action == 'actim-sync':
-        actimId = int(args['actimId'][0])
-        remoteAction(actimId, 0x20)
-        print("Location:\\index.html\n\n")
-
-    elif action == 'actim-forget':
-        actimId = int(args['actimId'][0])
-        Actimetres.forget(actimId)
-        print("Location:\\index.html\n\n")
-
-    elif action == 'actim-decouple':
-        actimId = int(args['actimId'][0])
-#        serverId = int(args['serverId'][0])
-        Actimetres.forget(actimId)
-        print("Location:\\index.html\n\n")
-
-    elif action == 'remote-restart':
-        actimId = int(args['actimId'][0])
-        remoteAction(actimId, 0xF0)
-        print("Location:\\index.html\n\n")
-
-    elif action == 'actim-stop':
-        actimId = int(args['actimId'][0])
-        remoteAction(actimId, 0x30)
-        print("Location:\\index.html\n\n")
-
-    elif action == 'actim-retire':
-        Actimetres.formRetire(int(args['actimId'][0]))
-
-    elif action == 'server-retire':
-        serverId = int(args['serverId'][0])
-        Actiservers.delete(serverId)
-        htmlUpdate()
-        print("Location:\\index.html\n\n")
-
-    elif action == 'project-change-info':
-        Projects.formChangeInfo(int(args['projectId'][0]))
-
-    elif action == 'project-edit-info':
-        Projects.formEditInfo(int(args['projectId'][0]))
-
-    elif action == 'project-create':
-        print("Location:\\formCreate.html\n\n")
-
-    elif action == 'project-remove':
-        Projects.formRemove(int(args['projectId'][0]))
+    elif action.startswith('project-'):
+        Projects.processAction(action, args)
 
     elif action == 'submit':
         formId = args['formId'][0]

@@ -420,11 +420,11 @@ class Actimetre:
                         doc.asis('Move')
                 elif alive == 'up' and self.hasData() and Actiservers.getVersion(self.serverId) >= '380':
                     doc.asis('<br>')
-                    with tag('button', type='submit', name='action', value='actim-stop'):
+                    with tag('button', type='submit', name='action', value='remote-stop'):
                         doc.asis('Stop')
                 elif alive != 'up' and self.hasData() and Actiservers.isDown(self.serverId) == 0:
                     doc.asis('<br>')
-                    with tag('button', type='submit', name='action', value='actim-sync'):
+                    with tag('button', type='submit', name='action', value='remote-sync'):
                         text('Sync')
                 elif alive == 'retire' and self.hasData():
                     doc.asis('<br>')
@@ -449,7 +449,7 @@ class Actimetre:
 class ActimetresClass:
     def __init__(self):
         self.actims: dict[int, Actimetre] = {}
-        self.dummy = Actimetre()
+        self.dirty = False
 
     def __getitem__(self, item: int):
         return item in self.actims
@@ -523,6 +523,7 @@ class ActimetresClass:
     def delete(self, actimId):
         if actimId in self.actims.keys():
             del self.actims[actimId]
+            self.dirty = True
         try:
             os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
         except FileNotFoundError: pass
@@ -540,19 +541,12 @@ class ActimetresClass:
         self.actims[actimId].reportStr = reportStr
         self.actims[actimId].dirty = True
 
-    def htmlInfo(self, actimId):
-        return self.actims[actimId].htmlInfo()
-
     def getProjectId(self, actimId):
         return self.actims[actimId].projectId
 
     def setProjectId(self, actimId, projectId):
         self.actims[actimId].projectId = projectId
         self.actims[actimId].dirty = True
-
-    def cutGraph(self, actimId):
-        self.actims[actimId].cutHistory()
-        self.actims[actimId].drawGraph()
 
     def dies(self, actimId):
         if actimId in self.actims.keys():
@@ -581,38 +575,10 @@ class ActimetresClass:
             a.drawGraphMaybe()
             Projects.addActim(a.projectId, a.actimId)
 
-    def getRepoInfo(self, actimId: int):
-        if actimId in self.actims:
-            a = self.actims[actimId]
-            return a.repoNums, a.repoSize
-        else: return 0, 0
-
     def getName(self, actimId: int):
         if actimId in self.actims:
             return self.actims[actimId].name()
         else: return ""
-
-    def formRetire(self, actimId: int):
-        a = self.actims[actimId]
-        if a.projectId > 0:
-            ownerStr = 'the name of the owner'
-        else:
-            ownerStr = '"CONFIRM"'
-        if a.repoNums > 0:
-            repoNumsStr = f'{a.repoNums} files, '
-        else:
-            repoNumsStr = ''
-
-        writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRetire.html", {
-                         "{actimId}": str(actimId),
-                         "{actimName}": a.name(),
-                         "{mac}": a.mac,
-                         "{boardType}": a.boardType,
-                         "{repoNums}": repoNumsStr,
-                         "{repoSize}": printSize(a.repoSize),
-                         "{owner}": ownerStr,
-                         "{projectTitle}": Projects.getName(a.projectId),
-        })
 
     def processForm(self, formId, args):
         actimId = int(args['actimId'][0])
@@ -638,11 +604,55 @@ class ActimetresClass:
 
         print("Location:\\index.html\n\n")
 
+    def processAction(self, action, args):
+        actim = self.actims[int(args['actimId'][0])]
+        if action == 'actim-change-project':
+            print("Content-type: text/html\n\n")
+            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formActim.html", {
+                "{actimId}": str(actim.actimId),
+                "{actimName}": actim.name(),
+                "{actimInfo}": actim.htmlInfo(),
+                "{htmlProjectList}": Projects.htmlChoice(actim.projectId)
+            })
+
+        elif action == 'actim-cut-graph':
+            actim.cutHistory()
+            actim.drawGraph()
+            if args.get('projectId') is not None:
+                print(f"Location:\\project{actim.projectId:02d}.html\n\n")
+            else:
+                print("Location:\\index.html\n\n")
+
+        elif action == 'actim-forget' or action == 'actim-decouple':
+            actim.forgetData()
+            print("Location:\\index.html\n\n")
+
+        elif action == 'actim-retire':
+            if actim.projectId > 0:
+                ownerStr = 'the name of the owner'
+            else:
+                ownerStr = '"CONFIRM"'
+            if actim.repoNums > 0:
+                repoNumsStr = f'{actim.repoNums} files, '
+            else:
+                repoNumsStr = ''
+
+            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRetire.html", {
+                "{actimId}": str(actim.actimId),
+                "{actimName}": actim.name(),
+                "{mac}": actim.mac,
+                "{boardType}": actim.boardType,
+                "{repoNums}": repoNumsStr,
+                "{repoSize}": printSize(actim.repoSize),
+                "{owner}": ownerStr,
+                "{projectTitle}": Projects.getName(actim.projectId),
+            })
+
     def save(self):
-        dirty = False
         for actim in self.actims.values():
-            if actim.save(): dirty = True
-        if dirty:
+            if actim.save():
+                self.dirty = True
+        if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
 
 Actimetres = ActimetresClass()

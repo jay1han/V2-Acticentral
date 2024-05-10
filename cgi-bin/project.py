@@ -201,15 +201,6 @@ class ProjectsClass:
         self.projects[projectId] = Project(projectId, title, owner, email)
         self.dirty = True
 
-    def delete(self, projectId):
-        Actimetres = actimetre.Actimetres
-        if projectId in self.projects:
-            for a in self.projects[projectId].actimetreList:
-                Actimetres.removeProject(a)
-                self.projects[projectId].removeActim(a)
-            del self.projects[projectId]
-            self.dirty = True
-
     def addActim(self, projectId, actimId):
         if projectId in self.projects.keys():
             p = self.projects[projectId]
@@ -226,42 +217,6 @@ class ProjectsClass:
             htmlString += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
         return htmlString
 
-    def htmlActimetreList(self, projectId):
-        if len(self.projects[projectId].actimetreList) == 0:
-            return "(no Actimetres assigned to this project)\n"
-        else:
-            Actimetres = actimetre.Actimetres
-            actimList = ""
-            for actimId in self.projects[projectId].actimetreList:
-                actimList += Actimetres.htmlCartouche(actimId, 'li')
-            return actimList
-
-    def formRemove(self, projectId):
-        print("Content-type: text/html\n\n")
-        writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRemove.html", {
-            "{projectId}": str(projectId),
-            "{projectTitle}": self.getName(projectId),
-            "{actimetreList}": self.htmlActimetreList(projectId),
-        })
-
-    def formChangeInfo(self, projectId):
-        print("Content-type: text/html\n\n")
-        writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
-            "{project-change-info}": "project-change-info",
-            "{projectTitle}": self.getName(projectId),
-            "{projectOwner}": self.getOwner(projectId),
-            "{projectId}": str(projectId),
-        })
-
-    def formEditInfo(self, projectId):
-        print("Content-type: text/html\n\n")
-        writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
-            "{project-change-info}": "project-edit-info",
-            "{projectTitle}": self.getName(projectId),
-            "{projectOwner}": self.getOwner(projectId),
-            "{projectId}": str(projectId),
-        })
-
     def processForm(self, formId, args):
         projectId = int(args['projectId'][0])
         title = args['title'][0]
@@ -276,7 +231,54 @@ class ProjectsClass:
             printLog(f"Create new project with data: {title}, {owner}, {email}")
             if title != "" and owner != "" and email != "":
                 self.new(title, owner, email)
+        elif formId == 'project-remove':
+            Actimetres = actimetre.Actimetres
+            if projectId in self.projects:
+                for actimId in self.projects[projectId].actimetreList:
+                    Actimetres.removeProject(actimId)
+                    self.projects[projectId].removeActim(actimId)
+                del self.projects[projectId]
+                self.dirty = True
+
         print("Location:\\index.html\n\n")
+
+    def processAction(self, action, args):
+        project = self.projects[int(args['projectId'][0])]
+        if action == 'project-change-info':
+            print("Content-type: text/html\n\n")
+            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
+                "{project-change-info}": "project-change-info",
+                "{projectTitle}": project.name(),
+                "{projectOwner}": project.owner,
+                "{projectId}": str(project.projectId),
+            })
+
+        elif action == 'project-edit-info':
+            print("Content-type: text/html\n\n")
+            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
+                "{project-change-info}": "project-edit-info",
+                "{projectTitle}": project.name(),
+                "{projectOwner}": project.owner,
+                "{projectId}": str(project.projectId),
+            })
+
+        elif action == 'project-create':
+            print("Location:\\formCreate.html\n\n")
+
+        elif action == 'project-remove':
+            actimetreStr = ""
+            if len(project.actimetreList) == 0:
+                actimetreStr = "(no Actimetres assigned to this project)\n"
+            else:
+                Actimetres = actimetre.Actimetres
+                for actimId in project.actimetreList:
+                    actimetreStr += Actimetres.htmlCartouche(actimId, 'li')
+            print("Content-type: text/html\n\n")
+            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRemove.html", {
+                "{projectId}": str(project.projectId),
+                "{projectTitle}": project.name(),
+                "{actimetreList}": actimetreStr,
+            })
 
     def dirtyProject(self, projectId):
         self.projects[projectId].dirty = True

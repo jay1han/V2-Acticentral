@@ -216,6 +216,7 @@ class Actiserver:
 class ActiserversClass:
     def __init__(self):
         self.servers: dict[int, Actiserver] = {}
+        self.dirty = False
 
     def init(self):
         self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
@@ -250,12 +251,6 @@ class ActiserversClass:
             return self.servers[serverId].isDown
         else: return True
 
-    def delete(self, serverId):
-        if serverId in self.servers.keys():
-            del self.servers[serverId]
-            return True
-        else:return False
-
     def addActim(self, serverId, actimId):
         self.servers[serverId].addActim(actimId)
 
@@ -288,7 +283,7 @@ class ActiserversClass:
                 s.isDown = 3
                 s.dirty = True
 
-    def processAction(self, serverId, data):
+    def processUpdate(self, serverId, data):
         thisServer = Actiserver(serverId).fromD(json.load(data), True)
         if serverId in self.servers.keys():
             thisServer.diskLow = self.servers[serverId].diskLow
@@ -307,12 +302,19 @@ class ActiserversClass:
         printLog(thisServer)
         return thisServer
 
+    def processAction(self, action, args):
+        if action == 'server-retire':
+            serverId = int(args['serverId'][0])
+            if serverId in self.servers.keys():
+                del self.servers[serverId]
+                self.dirty = True
+        print("Location:\\index.html\n\n")
+
     def save(self):
-        dirty = False
         for server in self.servers.values():
             if server.save():
-                dirty = True
-        if dirty:
+                self.dirty = True
+        if self.dirty:
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
             self.htmlWriteServers()
 
