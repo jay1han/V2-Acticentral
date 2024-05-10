@@ -241,9 +241,11 @@ class ActiserversClass:
             return self.servers[serverId].lastUpdate
         else: return TIMEZERO
 
-    def get(self, serverId):
+    def get(self, serverId, update=False):
         if not serverId in self.servers.keys():
             self.servers[serverId] = Actiserver(serverId)
+            if update:
+                self.servers[serverId].lastUpdate = NOW
         return self.servers[serverId]
 
     def getVersion(self, serverId):
@@ -297,7 +299,7 @@ class ActiserversClass:
 
     def checkAlerts(self):
         save = False
-        for s in x.Actiservers.values():
+        for s in self.servers.values():
             if s.isDown == 0 and (NOW - s.lastUpdate) > ACTIS_ALERT1:
                 s.alert()
                 s.isDown = 1

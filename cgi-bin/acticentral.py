@@ -376,13 +376,7 @@ def processAction():
         version   = args['version'][0]
         bootTime  = utcStrptime(args['bootTime'][0])
 
-        thisServer = x.Actiservers.get(serverId)
-        if thisServer is None:
-            thisServer = Actiserver(serverId, lastUpdate=NOW)
-            x.Actiservers[serverId] = thisServer
-        else:
-            thisServer.lastUpdate = NOW
-
+        s = Actiservers.get(serverId, update=True)
         if x.Registry.get(mac) is None:
             actimList = [r for r in x.Registry.values()]
             actimList.sort()
@@ -403,10 +397,10 @@ def processAction():
         a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=NOW, lastSeen=NOW, lastReport=NOW, isDead=0)
         printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
 
-        thisServer.actimetreList.add(actimId)
+        s.actimetreList.add(actimId)
         x.Actimetres[actimId] = a
         dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-        dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
+        Actiservers.save()
         htmlUpdate()
         plain(responseStr)
 
