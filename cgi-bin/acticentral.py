@@ -339,10 +339,8 @@ def processAction():
         version   = args['version'][0]
         bootTime  = utcStrptime(args['bootTime'][0])
 
-        s = Actiservers.get(serverId, update=True)
         actimId = Actimetres.new(mac, boardType, version, serverId, bootTime)
-        s.actimetreList.add(actimId)
-        Actiservers.save()
+        Actiservers.addActim(actimId)
         htmlUpdate()
         plain(str(actimId))
 

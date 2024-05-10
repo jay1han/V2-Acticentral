@@ -222,13 +222,6 @@ class ActiserversClass:
             return self.servers[serverId].lastUpdate
         else: return TIMEZERO
 
-    def get(self, serverId, update=False):
-        if not serverId in self.servers.keys():
-            self.servers[serverId] = Actiserver(serverId)
-            if update:
-                self.servers[serverId].lastUpdate = NOW
-        return self.servers[serverId]
-
     def getVersion(self, serverId):
         if serverId in self.servers.keys():
             return self.servers[serverId].version
@@ -250,6 +243,12 @@ class ActiserversClass:
             self.save()
             return True
         return False
+
+    def addActim(self, serverId, actimId):
+        if serverId in self.servers.keys():
+            self.servers[serverId].actimetreList.add(actimId)
+            self.servers[serverId].lastUpdate = NOW
+            self.save()
 
     def removeActim(self, actimId, serverId=None):
         save = False
