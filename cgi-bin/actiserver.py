@@ -66,7 +66,7 @@ class Actiserver:
 
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
-                actimId = Actimetres.fromD(actimData, fromFile=False)
+                actimId = Actimetres.fromD(actimData, actual)
                 self.actimetreList.add(actimId)
 
         for a in Actimetres.values():
@@ -296,7 +296,7 @@ class ActiserversClass:
         self.save(save)
 
     def processAction(self, serverId, data):
-        thisServer = Actiserver(serverId).fromD(json.load(data), actual=True)
+        thisServer = Actiserver(serverId).fromD(json.load(data), True)
         if serverId in self.servers.keys():
             thisServer.diskLow = self.servers[serverId].diskLow
             if thisServer.diskLow == 0:

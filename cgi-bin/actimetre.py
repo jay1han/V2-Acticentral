@@ -59,7 +59,7 @@ class Actimetre:
                 'reportStr' : self.reportStr,
                 }
 
-    def fromD(self, d, fromFile=True):
+    def fromD(self, d, actual=False):
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
@@ -77,7 +77,7 @@ class Actimetre:
         self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
 
-        if fromFile:
+        if not actual:
             self.projectId  = int(d['projectId'])
             for p in Projects.values():
                 if self.actimId in p.actimetreList and p.projectId != self.projectId:
@@ -257,7 +257,7 @@ class Actimetre:
             except OSError:
                 pass
 
-    def update(self, newActim, actual=False):
+    def update(self, newActim, actual=True):
         redraw = False
         if actual:
             if self.serverId != newActim.serverId:
@@ -486,7 +486,7 @@ class ActimetresClass:
         self.dirty = False
 
     def fromD(self, data, actual=True):
-        a = Actimetre().fromD(data, fromFile = not actual)
+        a = Actimetre().fromD(data, actual)
         if a.actimId in self.actims.keys():
             self.actims[a.actimId].update(a, actual)
         else:
