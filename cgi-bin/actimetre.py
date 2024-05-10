@@ -299,7 +299,7 @@ class Actimetre:
             self.drawGraph()
         return redraw
 
-    def alertA(self, subject=None, info=""):
+    def alertActim(self, subject=None, info=""):
         printLog(f'Alert {self.actimName()}')
         if subject is None:
             subject = f'{self.actimName()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
@@ -309,22 +309,9 @@ class Actimetre:
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
                    f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
+        content += Actiservers.emailInfo(self.serverId)
 
         sendEmail(Projects.getEmail(self.projectId), subject, content + info)
-
-    def alertDiskA(self):
-        printLog(f"{self.actimName()}'s server disk low")
-        subject = f"{self.actimName()}'s server disk low"
-        content = f'{self.actimName()}\n'
-        content += Projects.getName(self.projectId, 'Project "%s"\n')
-        content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
-                   f'Sensors {self.sensorStr}\n' + \
-                   f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
-                   f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
-        content += Actiservers.emailInfo(self.serverId)
-        content += '\n'
-
-        sendEmail(Projects.getEmail(self.projectId), subject, content)
 
     def dies(self):
         if self.isDead == 0:
@@ -537,10 +524,6 @@ class ActimetresClass:
             return doc.getvalue()
         else: return ""
 
-    def alertDiskA(self, actimId):
-        if actimId in self.actims.keys():
-            self.actims[actimId].alertDiskA()
-
     def new(self, mac, boardType, version, serverId, bootTime=NOW):
         actimId = Registry.getId(mac)
         printLog(f"Actim{actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
@@ -612,11 +595,11 @@ class ActimetresClass:
         save = False
         for a in self.actims.values():
             if a.isDead == 1 and (NOW - a.lastSeen) > ACTIM_ALERT1:
-                a.alertA()
+                a.alertActim()
                 a.isDead = 2
                 save = True
             elif a.isDead == 2 and (NOW - a.lastSeen) > ACTIM_ALERT2:
-                a.alertA()
+                a.alertActim()
                 a.isDead = 3
                 save = True
         self.save(save)
@@ -624,7 +607,7 @@ class ActimetresClass:
     def alertAll(self, actimetreList, subject, content):
         for actimId in actimetreList:
             if actimId in self.actims.keys():
-                self.actims[actimId].alertA(subject, content)
+                self.actims[actimId].alertActim(subject, content)
 
     def repoStat(self):
         save = False

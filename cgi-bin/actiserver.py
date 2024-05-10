@@ -97,14 +97,14 @@ class Actiserver:
         content += '\n'
         return content
 
-    def alertS(self):
+    def alertServer(self):
         Actimetres = actimetre.Actimetres
         printLog(f'Alert {self.serverName()}')
         subject = f'{self.serverName()} unreachable since {self.lastUpdate.strftime(TIMEFORMAT_ALERT)}'
         sendEmail("", subject, self.alertContent())
         Actimetres.alertAll(self.actimetreList, subject, self.alertContent())
 
-    def alertDiskS(self):
+    def alertDisk(self):
         Actimetres = actimetre.Actimetres
         printLog(f'{self.serverName()} disk low')
         subject = f'{self.serverName()} storage low'
@@ -284,15 +284,15 @@ class ActiserversClass:
         save = False
         for s in self.servers.values():
             if s.isDown == 0 and (NOW - s.lastUpdate) > ACTIS_ALERT1:
-                s.alertS()
+                s.alertServer()
                 s.isDown = 1
                 save = True
             elif s.isDown == 1 and (NOW - s.lastUpdate) > ACTIS_ALERT2:
-                s.alertS()
+                s.alertServer()
                 s.isDown = 2
                 save = True
             elif s.isDown == 2 and (NOW - s.lastUpdate) > ACTIS_ALERT3:
-                s.alertS()
+                s.alertServer()
                 s.isDown = 3
                 save = True
         self.save(save)
@@ -304,11 +304,11 @@ class ActiserversClass:
             if thisServer.diskLow == 0:
                 if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 10:
                     thisServer.diskLow = 1
-                    thisServer.alertDiskS()
+                    thisServer.alertDisk()
             elif thisServer.diskLow == 1:
                 if thisServer.diskSize > 0 and thisServer.diskFree < thisServer.diskSize // 20:
                     thisServer.diskLow = 2
-                    thisServer.alertDiskS()
+                    thisServer.alertDisk()
             else:
                 if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
                     thisServer.diskLow = 0
