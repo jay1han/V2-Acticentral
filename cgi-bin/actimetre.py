@@ -67,7 +67,7 @@ class Actimetre:
         if self.isDead > 0: string += '(dead)'
         string += f' {self.sensorStr}@{self.frequency}'
         string += f' Project{self.projectId:02d}'
-        string += f' Repo {self.repoNums}/{printSize(self.repoSize)}'
+        string += f' {self.repoNums}/{printSize(self.repoSize)}'
         return string
 
     def fromD(self, d, actual=False):

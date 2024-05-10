@@ -31,9 +31,10 @@ class Actiserver:
     def __str__(self):
         Actimetres = actimetre.Actimetres
         string = f'Actis{self.serverId:03d}'
-        if self.isDown > 0: string += '(down'
+        if self.isDown > 0: string += '(down) '
+        string += self.lastUpdate.strftime(TIMEFORMAT_DISP)
         for actimId in self.actimetreList:
-            string += f' {Actimetres.str(actimId)}'
+            string += f'\n- {Actimetres.str(actimId)}'
         return string
 
     def toD(self):
@@ -81,11 +82,11 @@ class Actiserver:
                 self.actimetreList.add(actimId)
         Actimetres.checkOrphan(self.serverId, self.actimetreList)
 
-        if not actual:
+        if actual:
+            self.lastUpdate = NOW
+        else:
             self.lastUpdate = utcStrptime(d['lastUpdate'])
             self.diskLow = int(d['diskLow'])
-        else:
-            self.lastUpdate = NOW
         self.dirty = actual
         return self
 
