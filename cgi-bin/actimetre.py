@@ -643,11 +643,6 @@ class ActimetresClass:
             return self.actims[actimId].name()
         else: return ""
 
-    def getProjectId(self, actimId):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].projectId
-        else: return 0
-
     def formRetire(self, actimId):
         a = self.actims[actimId]
         if a.projectId > 0:
