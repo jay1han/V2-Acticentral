@@ -492,10 +492,9 @@ class ActimetresClass:
         Projects.htmlUpdate(self.actims[a.actimId].projectId)
         return a.actimId
 
-    def get(self, actimId):
-        if not actimId in self.actims.keys():
-            self.actims[actimId] = Actimetre(actimId)
-        return self.actims[actimId]
+    def removeProject(self, actimId):
+        if actimId in self.actims.keys():
+            self.actims[actimId].projectId = 0
 
     def values(self):
         return self.actims.values()
@@ -557,10 +556,41 @@ class ActimetresClass:
             return True
         else: return False
 
-    def remove(self, actimId):
+    def forget(self, actimId):
         if actimId in self.actims.keys():
             self.actims[actimId].forgetData()
-        self.save()
+            self.save()
+            return True
+        else: return False
+
+    def getReportStr(self, actimId):
+        if actimId in self.actims.keys():
+            return self.actims[actimId].reportStr
+        else: return ""
+
+    def setReportStr(self, actimId, reportStr):
+        if actimId in self.actims.keys():
+            self.actims[actimId].reportStr = reportStr
+            self.save()
+            return True
+        else: return False
+
+    def getInfo(self, actimId):
+        if actimId in self.actims.keys():
+            return self.actims[actimId].htmlInfo()
+        else: return ""
+
+    def getProjectId(self, actimId):
+        if actimId in self.actims.keys():
+            return self.actims[actimId].projectId
+        else: return 0
+
+    def setProjectId(self, actimId, projectId):
+        if actimId in self.actims.keys():
+            self.actims[actimId].projectId = projectId
+            self.save()
+            return True
+        else: return False
 
     def cutGraph(self, actimId):
         if actimId in self.actims.keys():
@@ -606,8 +636,37 @@ class ActimetresClass:
         if actimId in self.actims.keys():
             a = self.actims[actimId]
             return a.repoNums, a.repoSize
+        else: return 0, 0
+
+    def getName(self, actimId):
+        if actimId in self.actims.keys():
+            return self.actims[actimId].name()
+        else: return ""
+
+    def getProjectId(self, actimId):
+        if actimId in self.actims.keys():
+            return self.actims[actimId].projectId
+        else: return 0
+
+    def formRetire(self, actimId):
+        a = self.actims[actimId]
+        if a.projectId > 0:
+            ownerStr = 'the name of the owner'
         else:
-            return 0, 0
+            ownerStr = '"CONFIRM"'
+        with open(f"{HTML_DIR}/formRetire.html") as form:
+            repoNumsStr = ''
+            if a.repoNums > 0:
+                repoNumsStr = f'{a.repoNums} files, '
+            print(form.read() \
+                  .replace("{actimId}", str(actimId)) \
+                  .replace("{actimName}", a.actimName()) \
+                  .replace("{mac}", a.mac) \
+                  .replace("{boardType}", a.boardType) \
+                  .replace("{repoNums}", repoNumsStr) \
+                  .replace("{repoSize}", printSize(a.repoSize)) \
+                  .replace("{owner}", ownerStr) \
+                  .replace("{projectTitle}", Projects.getName(a.projectId)))
 
     def save(self, check=True):
         if check:

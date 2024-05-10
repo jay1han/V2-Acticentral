@@ -191,7 +191,7 @@ class ProjectsClass:
         Actimetres = actimetre.Actimetres
         if projectId in self.projects.keys():
             for a in self.projects[projectId].actimetreList:
-                Actimetres.get(a).projectId = 0
+                Actimetres.removeProject(a)
             Actimetres.save()
             del self.projects[projectId]
             self.save()

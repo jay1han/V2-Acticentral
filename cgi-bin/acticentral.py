@@ -71,9 +71,9 @@ def actimChangeProject(actimId):
     with open(f"{HTML_DIR}/formActim.html") as form:
         print(form.read()\
               .replace("{actimId}", str(actimId))\
-              .replace("{actimName}", Actimetres.get(actimId).actimName())\
-              .replace("{actimInfo}", Actimetres.get(actimId).htmlInfo())\
-              .replace("{htmlProjectList}", Projects.htmlList(Actimetres.get(actimId).projectId)))
+              .replace("{actimName}", Actimetres.getName(actimId))\
+              .replace("{actimInfo}", Actimetres.getInfo(actimId))\
+              .replace("{htmlProjectList}", Projects.htmlList(Actimetres.getProjectId(actimId))))
 
 def removeProject(projectId):
     print("Content-type: text/html\n\n")
@@ -86,25 +86,7 @@ def removeProject(projectId):
 
 def retireActim(actimId):
     print("Content-type: text/html\n\n")
-
-    a = Actimetres.get(actimId)
-    if a.projectId > 0:
-        ownerStr = 'the name of the owner'
-    else:
-        ownerStr = '"CONFIRM"'
-    with open(f"{HTML_DIR}/formRetire.html") as form:
-        repoNumsStr = ''
-        if a.repoNums > 0:
-            repoNumsStr = f'{a.repoNums} files, '
-        print(form.read()\
-              .replace("{actimId}", str(actimId))\
-              .replace("{actimName}", a.actimName())\
-              .replace("{mac}", a.mac)\
-              .replace("{boardType}", a.boardType)\
-              .replace("{repoNums}", repoNumsStr)\
-              .replace("{repoSize}", printSize(a.repoSize))\
-              .replace("{owner}", ownerStr)\
-              .replace("{projectTitle}", Projects.getName(a.projectId)))
+    Actimetres.formRetire(actimId)
 
 def loadRemotes():
     try:
@@ -210,13 +192,12 @@ def processForm(formId):
     elif formId == 'actim-change-project':
         actimId = int(args['actimId'][0])
         projectId = int(args['projectId'][0])
-        oldProject = Actimetres.get(actimId).projectId
+        oldProject = Actimetres.getProjectId(actimId)
         printLog(f"Changing {actimId} from {oldProject} to {projectId}")
 
         Projects.removeActim(actimId, oldProject)
-        Actimetres.get(actimId).projectId = projectId
         Projects.addActim(projectId, actimId)
-        Actimetres.save()
+        Actimetres.setProjectId(actimId, projectId)
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -235,17 +216,17 @@ def processForm(formId):
         actimId = int(args['actimId'][0])
         owner = args['owner'][0]
 
-        a = Actimetres.get(actimId)
-        if a is not None and \
-           (a.projectId == 0 and owner == 'CONFIRM') or \
-           Projects.getOwner(a.projectId) == owner:
-            printLog(f"Retire Actimetre{actimId:04d} from {Projects.getName(a.projectId)}")
-            Actiservers.removeActim(actimId)
-            Projects.removeActim(actimId)
-            Registry.deleteId(actimId)
-            Actimetres.delete(actimId)
-            Actiservers.removeActim(actimId)
-            htmlUpdate()
+        if Actimetres.exists(actimId):
+            projectId = Actimetres.getProjectId(actimId)
+            if (projectId == 0 and owner == 'CONFIRM') or \
+                Projects.getOwner(projectId) == owner:
+                printLog(f"Retire Actimetre{actimId:04d} from {Projects.getName(projectId)}")
+                Actiservers.removeActim(actimId)
+                Projects.removeActim(actimId)
+                Registry.deleteId(actimId)
+                Actimetres.delete(actimId)
+                Actiservers.removeActim(actimId)
+                htmlUpdate()
                 
         print("Location:\\index.html\n\n")
 
@@ -305,15 +286,14 @@ def processAction():
         actimId = int(args['actimId'][0])
         message = sys.stdin.read()
         printLog(f'Actim{actimId:04d} {message}')
-        Actimetres.get(actimId).reportStr = message
-        Actimetres.save()
+        Actimetres.setReportStr(actimId, message)
+        htmlUpdate()
         plain('OK')
         
     elif action == 'clear-report':
         actimId = int(args['actimId'][0])
-        printLog(f'Actim{actimId:04d} CLEAR {Actimetres.get(actimId).reportStr}')
-        Actimetres.get(actimId).reportStr = ""
-        Actimetres.save()
+        printLog(f'Actim{actimId:04d} CLEAR {Actimetres.getReportStr(actimId)}')
+        Actimetres.setReportStr(actimId, "")
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -349,7 +329,7 @@ def processAction():
         serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
-        Actimetres.remove(actimId)
+        Actimetres.forget(actimId)
         Actiservers.removeActim(actimId, serverId)
 
         htmlUpdate()
@@ -379,16 +359,15 @@ def processAction():
 
     elif action == 'actim-forget':
         actimId = int(args['actimId'][0])
-        Actimetres.get(actimId).forgetData()
-        htmlUpdate()
+        if Actimetres.forget(actimId): htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif action == 'actim-decouple':
         actimId = int(args['actimId'][0])
         serverId = int(args['serverId'][0])
-        if Actimetres.get(actimId).forgetData():
+        if Actimetres.forget(actimId):
             printLog(f"Removed Actim{actimId:04d} from Actis{serverId:04d}")
-        htmlUpdate()
+            htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif action == 'remote-restart':
