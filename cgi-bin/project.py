@@ -55,6 +55,7 @@ class Project:
         return f"{self.title} (#{self.projectId:02d})"
 
     def htmlWrite(self):
+        printLog(f'Project{self.projectId:03d}: Write HTML')
         Actimetres = actimetre.Actimetres
         projectActimHTML = ""
         for actimId in self.actimetreList:
@@ -74,17 +75,16 @@ class Project:
             projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
             projectEmail = f"<h3>Email: {self.email}</h3>"
 
-        with open(f"{HTML_DIR}/project{self.projectId:02d}.html", "w") as html:
-            with open(PROJECT_TEMPLATE, "r") as template:
-                print(template.read() \
-                      .replace("{buttons}", buttons) \
-                      .replace("{projectTitle}", self.name()) \
-                      .replace("{projectOwner}", projectOwner) \
-                      .replace("{projectEmail}", projectEmail) \
-                      .replace("{projectActimHTML}", projectActimHTML) \
-                      .replace("{projectId}", str(self.projectId)) \
-                      .replace("{Updated}", LAST_UPDATED),
-                      file=html)
+        writeTemplateSub(open(f"{HTML_DIR}/project{self.projectId:02d}.html", "w"),
+                         PROJECT_TEMPLATE, {
+                         "{buttons}": buttons,
+                         "{projectTitle}": self.name(),
+                         "{projectOwner}": projectOwner,
+                         "{projectEmail}": projectEmail,
+                         "{projectActimHTML}": projectActimHTML,
+                         "{projectId}": str(self.projectId),
+                         "{Updated}": LAST_UPDATED,
+                         })
         try:
             os.chmod(f"{HTML_DIR}/project{self.projectId:02d}.html", 0o777)
         except OSError:

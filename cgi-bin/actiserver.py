@@ -225,12 +225,10 @@ class ActiserversClass:
         return htmlString
 
     def htmlWriteServers(self):
-        with open(SERVERS_HTML, "w") as html:
-            with open(SERVERS_TEMPLATE, "r") as template:
-                print(template.read() \
-                      .replace('{Actiservers}', self.htmlServers()) \
-                      .replace('{Updated}', LAST_UPDATED),
-                      file=html)
+        writeTemplateSub(open(SERVERS_HTML, "w"), SERVERS_TEMPLATE, {
+                         '{Actiservers}': self.htmlServers(),
+                         '{Updated}': LAST_UPDATED,
+        })
 
     def getLastUpdate(self, serverId):
         return self.servers[serverId].lastUpdate

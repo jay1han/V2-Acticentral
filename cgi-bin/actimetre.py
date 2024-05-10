@@ -1,3 +1,5 @@
+import sys
+
 from const import *
 from registry import Registry
 from project import Projects
@@ -101,6 +103,7 @@ class Actimetre:
         if cutLength is None:
             cutLength = NOW - self.bootTime
 
+        printLog(f'Actim{self.actimId:04d} cut history to {self.bootTime.strftime(TIMEFORMAT_DISP)}')
         historyFile = f"{HISTORY_DIR}/Actim{self.actimId:04d}.hist"
         freshLines = list()
         try:
@@ -616,19 +619,21 @@ class ActimetresClass:
             ownerStr = 'the name of the owner'
         else:
             ownerStr = '"CONFIRM"'
-        with open(f"{HTML_DIR}/formRetire.html") as form:
+        if a.repoNums > 0:
+            repoNumsStr = f'{a.repoNums} files, '
+        else:
             repoNumsStr = ''
-            if a.repoNums > 0:
-                repoNumsStr = f'{a.repoNums} files, '
-            print(form.read() \
-                  .replace("{actimId}", str(actimId)) \
-                  .replace("{actimName}", a.actimName()) \
-                  .replace("{mac}", a.mac) \
-                  .replace("{boardType}", a.boardType) \
-                  .replace("{repoNums}", repoNumsStr) \
-                  .replace("{repoSize}", printSize(a.repoSize)) \
-                  .replace("{owner}", ownerStr) \
-                  .replace("{projectTitle}", Projects.getName(a.projectId)))
+
+        writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRetire.html", {
+                         "{actimId}": str(actimId),
+                         "{actimName}": a.actimName(),
+                         "{mac}": a.mac,
+                         "{boardType}": a.boardType,
+                         "{repoNums}": repoNumsStr,
+                         "{repoSize}": printSize(a.repoSize),
+                         "{owner}": ownerStr,
+                         "{projectTitle}": Projects.getName(a.projectId),
+        })
 
     def processForm(self, formId, args):
         actimId = int(args['actimId'][0])
