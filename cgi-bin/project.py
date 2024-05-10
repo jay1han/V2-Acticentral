@@ -1,4 +1,5 @@
 from const import *
+import actimetre
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=None):
@@ -44,7 +45,7 @@ class Project:
         return f"{self.title} (#{self.projectId:02d})"
 
     def htmlUpdate(self):
-        from actimetre import Actimetres
+        Actimetres = actimetre.Actimetres
         projectActimHTML = ""
         for actimId in self.actimetreList:
             projectActimHTML += Actimetres.html(actimId)
@@ -80,7 +81,7 @@ class Project:
             pass
 
     def html(self):
-        from actimetre import Actimetres
+        Actimetres = actimetre.Actimetres
         doc, tag, text, line = Doc().ttl()
         with tag('tr'):
             with tag('td', klass='left'):

@@ -1,4 +1,5 @@
 from const import *
+import actimetre
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False,
@@ -25,7 +26,7 @@ class Actiserver:
         self.diskUtil   = 0.0
 
     def toD(self):
-        from actimetre import Actimetres
+        Actimetres = actimetre.Actimetres
         return {'serverId'  : self.serverId,
                 'machine'   : self.machine,
                 'version'   : self.version,
@@ -46,7 +47,7 @@ class Actiserver:
                 }
 
     def fromD(self, d, actual=False):
-        from actimetre import Actimetres
+        Actimetres = actimetre.Actimetres
         self.serverId   = int(d['serverId'])
         self.machine    = d['machine']
         self.version    = d['version']
