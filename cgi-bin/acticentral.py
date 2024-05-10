@@ -18,7 +18,7 @@ Projects = project.initProjects()
 Actiservers = actiserver.initActiservers()
 Actimetres = actimetre.initActimetres()
 
-def htmlUpdate():
+def htmlIndex():
     os.truncate(INDEX_HTML, 0)
     writeTemplateSub(open(INDEX_HTML, "r+"), INDEX_TEMPLATE, {
         "{Actiservers}": Actiservers.htmlServers(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P),
@@ -169,14 +169,12 @@ def processAction():
         message = sys.stdin.read()
         printLog(f'Actim{actimId:04d} {message}')
         Actimetres.setReportStr(actimId, message)
-        htmlUpdate()
         plain('OK')
         
     elif action == 'clear-report':
         actimId = int(args['actimId'][0])
         printLog(f'Actim{actimId:04d} CLEAR {Actimetres.getReportStr(actimId)}')
         Actimetres.setReportStr(actimId, "")
-        htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif action == 'actimetre-new':
@@ -189,7 +187,6 @@ def processAction():
 
         actimId = Actimetres.new(mac, boardType, version, serverId, bootTime)
         Actiservers.addActim(serverId, actimId)
-        htmlUpdate()
         plain(str(actimId))
 
     elif action == 'actimetre-off':
@@ -209,7 +206,6 @@ def processAction():
         actimId = int(args['actimId'][0])
         Actimetres.forget(actimId)
         Actiservers.removeActim(actimId)
-        htmlUpdate()
         plain("Ok")
 
     elif action.startswith('server-'):
@@ -253,7 +249,6 @@ if cmdargs.action == 'prepare-stats':
     printLog("Timer prepare-stats")
     checkAlerts()
     repoStats()
-    htmlUpdate()
     saveAll()
     lock.close()
     sys.exit(0)

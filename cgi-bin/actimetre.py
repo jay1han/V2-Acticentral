@@ -440,7 +440,6 @@ class Actimetre:
     def save(self):
         if self.dirty:
             Projects.dirtyProject(self.projectId)
-#            dumpData(f'{ACTIMETRE_DIR}/{self.actimId}.data', self.toD())
             with open(f'{HTML_ROOT}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
             return True
