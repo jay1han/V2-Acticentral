@@ -208,7 +208,7 @@ class Actiserver:
 
     def save(self):
         if self.dirty:
-            with open(f'{WWW_ROOT}/server{self.serverId:03d}.html', "w") as html:
+            with open(f'{HTML_ROOT}/server{self.serverId:03d}.html', "w") as html:
                 print(self.html(), file=html)
             return True
         else: return False

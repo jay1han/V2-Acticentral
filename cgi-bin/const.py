@@ -6,7 +6,7 @@ from yattag import Doc
 
 VERSION_STR     = "v406"
 FILE_ROOT       = "/etc/actimetre"
-WWW_ROOT        = "/var/www"
+HTML_ROOT       = "/var/www/html"
 
 ADMIN_EMAIL     = "actimetre@gmail.com"
 ADMINISTRATORS  = f"{FILE_ROOT}/administrators"
@@ -29,15 +29,15 @@ STAT_FILE       = f"{FILE_ROOT}/acticentral.stat"
 HISTORY_DIR     = f"{FILE_ROOT}/history"
 ACTIMETRE_DIR   = f"{FILE_ROOT}/actimetre"
 REMOTE_FILE     = f"{FILE_ROOT}/remotes.data"
-IMAGES_DIR      = f"{WWW_ROOT}/html/images"
-IMAGES_INDEX    = f"{WWW_ROOT}/html/images/index.txt"
-HTML_DIR        = f"{WWW_ROOT}/html"
-INDEX_HTML      = f"{WWW_ROOT}/html/index.html"
-SERVERS_HTML    = f"{WWW_ROOT}/html/servers.html"
+IMAGES_DIR      = f"{HTML_ROOT}/images"
+IMAGES_INDEX    = f"{HTML_ROOT}/images/index.txt"
+HTML_DIR        = f"{HTML_ROOT}"
+INDEX_HTML      = f"{HTML_ROOT}/index.html"
+SERVERS_HTML    = f"{HTML_ROOT}/servers.html"
 CGI_BIN         = "acticentral.py"
-INDEX_TEMPLATE  = f"{WWW_ROOT}/html/template.html"
-PROJECT_TEMPLATE= f"{WWW_ROOT}/html/templateProject.html"
-SERVERS_TEMPLATE= f"{WWW_ROOT}/html/templateServers.html"
+INDEX_TEMPLATE  = f"{HTML_ROOT}/template.html"
+PROJECT_TEMPLATE= f"{HTML_ROOT}/templateProject.html"
+SERVERS_TEMPLATE= f"{HTML_ROOT}/templateServers.html"
 
 try:
     SECRET_KEY = open(SECRET_FILE, "r").read().strip()
