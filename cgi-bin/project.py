@@ -86,7 +86,7 @@ class Project:
                          "{Updated}": LAST_UPDATED,
                          })
         try:
-            os.chmod(f"{HTML_DIR}/project{self.projectId:02d}.html", 0o777)
+            os.chmod(f"{HTML_DIR}/project{self.projectId:02d}.html", 0o666)
         except OSError:
             pass
 

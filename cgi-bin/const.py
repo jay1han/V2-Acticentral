@@ -167,3 +167,4 @@ def writeTemplateSub(output, template: str, substitutions: dict[str,str]):
     for before, after in substitutions.items():
         content = content.replace(before, after)
     print(content, file=output)
+    return content

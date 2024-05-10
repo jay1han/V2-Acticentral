@@ -509,7 +509,10 @@ class ActimetresClass:
         return json.dumps(self.actims[actimId].toD())
 
     def html(self, actimId: int):
-        return self.actims[actimId].html()
+        if actimId in self.actims.keys():
+            return self.actims[actimId].html()
+        else:
+            return ""
 
     def htmlCartouche(self, actimId: int, *, withTag=None):
         if actimId in self.actims.keys():
