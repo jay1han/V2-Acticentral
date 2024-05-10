@@ -485,7 +485,10 @@ class ActimetresClass:
         self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
 
     def str(self, actimId):
-        return str(self.actims[actimId])
+        if actimId in self.actims.keys():
+            return str(self.actims[actimId])
+        else:
+            return ""
 
     def fromD(self, data, actual=True):
         a = Actimetre().fromD(data, actual)
