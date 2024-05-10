@@ -478,6 +478,10 @@ class Actimetre:
 
 class ActimetresClass:
     def __init__(self):
+        self.actims = {}
+        self.dirty = False
+
+    def init(self):
         self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
         self.dirty = False
 
@@ -604,8 +608,7 @@ class ActimetresClass:
         if save:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
 
-Actimetres = None
+Actimetres = ActimetresClass()
 def initActimetres():
-    global Actimetres
-    Actimetres = ActimetresClass()
+    Actimetres.init()
     return Actimetres

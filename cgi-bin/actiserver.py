@@ -187,6 +187,10 @@ class Actiserver:
 
 class ActiserversClass:
     def __init__(self):
+        self.servers = {}
+        self.dirty = False
+
+    def init(self):
         self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
         self.dirty = False
 
@@ -310,8 +314,7 @@ class ActiserversClass:
         self.save()
         return thisServer
 
-Actiservers = None
+Actiservers = ActiserversClass()
 def initActiservers():
-    global Actiservers
-    Actiservers = ActiserversClass()
+    Actiservers.init()
     return Actiservers

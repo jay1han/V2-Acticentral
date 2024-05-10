@@ -102,6 +102,11 @@ class Project:
 
 class ProjectsClass:
     def __init__(self):
+        self.projects = {}
+        self.fileTime = TIMEZERO
+        self.dirty = False
+
+    def init(self):
         self.projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
         if self.projects.get(0) is None:
             self.projects[0] = Project(0, "Not assigned", "No owner")
@@ -204,8 +209,7 @@ class ProjectsClass:
     def needUpdate(self, serverTime):
         return self.fileTime > serverTime
 
-Projects = None
+Projects = ProjectsClass()
 def initProjects():
-    global Projects
-    Projects = ProjectsClass()
+    Projects.init()
     return Projects

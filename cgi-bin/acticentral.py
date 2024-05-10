@@ -14,9 +14,9 @@ import actimetre
 import actiserver
 import project
 
-Actimetres = actimetre.initActimetres()
-Actiservers = actiserver.initActiservers()
 Projects = project.initProjects()
+Actiservers = actiserver.initActiservers()
+Actimetres = actimetre.initActimetres()
 
 def htmlUpdate():
     Actiservers.htmlUpdate()
