@@ -228,7 +228,9 @@ class ActiserversClass:
         return self.servers[serverId].cpuIdle
 
     def isDown(self, serverId):
-        return self.servers[serverId].isDown
+        if serverId in self.servers:
+            return self.servers[serverId].isDown
+        else: return True
 
     def delete(self, serverId):
         if serverId in self.servers.keys():
