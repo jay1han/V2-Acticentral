@@ -473,6 +473,15 @@ class Actimetre:
             doc.asis('</form>\n')
         return doc.getvalue()
 
+    def save(self):
+        if self.dirty:
+            Projects.dirtyProject(self.projectId)
+#            dumpData(f'{ACTIMETRE_DIR}/{self.actimId}.data', self.toD())
+            with open(f'{WWW_ROOT}/actim{self.actimId:04d}.html', "w") as html:
+                print(self.html(), file=html)
+            return True
+        else: return False
+
 class ActimetresClass:
     def __init__(self):
         self.actims: dict[int, Actimetre] = {}
@@ -668,9 +677,7 @@ class ActimetresClass:
     def save(self):
         dirty = False
         for actim in self.actims.values():
-            if actim.dirty:
-                Projects.dirtyProject(actim.projectId)
-                dirty = True
+            if actim.save(): dirty = True
         if dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
 

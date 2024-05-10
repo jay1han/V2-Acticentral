@@ -5,6 +5,7 @@ systemctl stop acticentral-daily.timer
 systemctl stop acticentral-weekly.timer
 
 mkdir /etc/actimetre
+mkdir /etc/actimetre/actimetre
 mkdir /etc/actimetre/history
 mkdir /etc/actimetre/daily
 mkdir /etc/actimetre/weekly

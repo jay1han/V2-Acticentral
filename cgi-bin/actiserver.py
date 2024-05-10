@@ -204,8 +204,14 @@ class Actiserver:
                 else:
                     line('td', '')
                     line('td', '')
-
         return doc.getvalue()
+
+    def save(self):
+        if self.dirty:
+            with open(f'{WWW_ROOT}/server{self.serverId:03d}.html', "w") as html:
+                print(self.html(), file=html)
+            return True
+        else: return False
 
 class ActiserversClass:
     def __init__(self):
@@ -302,11 +308,13 @@ class ActiserversClass:
         return thisServer
 
     def save(self):
+        dirty = False
         for server in self.servers.values():
-            if server.dirty:
-                dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
-                self.htmlWriteServers()
-                return
+            if server.save():
+                dirty = True
+        if dirty:
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
+            self.htmlWriteServers()
 
 Actiservers = ActiserversClass()
 def initActiservers() -> ActiserversClass:

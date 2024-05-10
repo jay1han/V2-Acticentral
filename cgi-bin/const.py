@@ -4,7 +4,7 @@ import os, json, subprocess
 from datetime import datetime, timedelta, timezone
 from yattag import Doc
 
-VERSION_STR     = "v404"
+VERSION_STR     = "v405"
 FILE_ROOT       = "/etc/actimetre"
 WWW_ROOT        = "/var/www"
 
@@ -27,6 +27,7 @@ LOCK_FILE       = f"{FILE_ROOT}/acticentral.lock"
 SECRET_FILE     = f"{FILE_ROOT}/.secret"
 STAT_FILE       = f"{FILE_ROOT}/acticentral.stat"
 HISTORY_DIR     = f"{FILE_ROOT}/history"
+ACTIMETRE_DIR   = f"{FILE_ROOT}/actimetre"
 REMOTE_FILE     = f"{FILE_ROOT}/remotes.data"
 IMAGES_DIR      = f"{WWW_ROOT}/html/images"
 IMAGES_INDEX    = f"{WWW_ROOT}/html/images/index.txt"
