@@ -33,7 +33,7 @@ class Actiserver:
         string = f'Actis{self.serverId:03d} '
         string += self.lastUpdate.strftime(TIMEFORMAT_DISP)
         for actimId in self.actimetreList:
-            string += f'\n- {Actimetres.str(actimId)}'
+            string += f' - {Actimetres.str(actimId)}'
         return string
 
     def toD(self):

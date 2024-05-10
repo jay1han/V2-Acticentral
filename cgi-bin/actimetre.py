@@ -41,6 +41,14 @@ class Actimetre:
         self.reportStr  = ""
         self.dirty      = True
 
+    def __str__(self):
+        string = f'Actim{self.actimId:04d}'
+        if self.isDead > 0: string += '(dead)'
+        string += f' {self.sensorStr}@{self.frequency}'
+        string += f' Project{self.projectId:02d}'
+        string += f' {self.repoNums}/{printSize(self.repoSize)}'
+        return string
+
     def toD(self):
         return {'actimId'   : self.actimId,
                 'mac'       : self.mac,
@@ -63,14 +71,6 @@ class Actimetre:
                 'graphSince': self.graphSince.strftime(TIMEFORMAT_FN),
                 'reportStr' : self.reportStr,
                 }
-
-    def __str__(self):
-        string = f'Actim{self.actimId:04d}'
-        if self.isDead > 0: string += '(dead)'
-        string += f' {self.sensorStr}@{self.frequency}'
-        string += f' Project{self.projectId:02d}'
-        string += f' {self.repoNums}/{printSize(self.repoSize)}'
-        return string
 
     def fromD(self, d, actual=False):
         self.actimId    = int(d['actimId'])

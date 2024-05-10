@@ -19,6 +19,13 @@ class Project:
             self.actimetreList = actimetreList
         self.dirty        = True
 
+    def __str__(self):
+        Actimetres = actimetre.Actimetres
+        string = f'Project{self.projectId:02d}({self.title})'
+        for actimId in self.actimetreList:
+            string += Actimetres.str(actimId)
+        return string
+
     def toD(self):
         return {'projectId'     : self.projectId,
                 'title'         : self.title,
@@ -55,7 +62,7 @@ class Project:
         return f"{self.title} (#{self.projectId:02d})"
 
     def htmlWrite(self):
-        printLog(f'Project{self.projectId:03d}: Write HTML')
+        printLog(f'HTML: {self}')
         Actimetres = actimetre.Actimetres
         projectActimHTML = ""
         for actimId in self.actimetreList:
