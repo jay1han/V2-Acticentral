@@ -1,5 +1,5 @@
 from const import *
-import globals as x
+from registry import Registry
 from project import Projects
 from actiserver import Actiservers
 
@@ -476,5 +476,132 @@ class Actimetre:
             doc.asis('</form>\n')
         return doc.getvalue()
 
-def loadActimetres():
-    x.Actimetres = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+class ActimetresClass:
+    def __init__(self):
+        self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+        self.dirty = False
+
+    def fromD(self, data, actual=True):
+        a = Actimetre().fromD(data, fromFile = not actual)
+        if a.actimId in self.actims.keys():
+            self.actims[a.actimId].update(a, actual)
+        else:
+            self.actims[a.actimId] = a
+        Projects.htmlUpdate(self.actims[a.actimId].projectId)
+        return a.actimId
+
+    def get(self, actimId):
+        if not actimId in self.actims.keys():
+            self.actims[actimId] = Actimetre(actimId)
+        return self.actims[actimId]
+
+    def values(self):
+        return self.actims.values()
+
+    def dump(self, actimId):
+        if actimId in self.actims.keys():
+            return json.dumps(self.actims[actimId].toD())
+        else: return ""
+
+    def html(self, actimId):
+        if actimId in self.actims.keys():
+            return self.actims[actimId].html()
+        else: return ""
+
+    def htmlCartouche(self, actimId, *, withTag=None):
+        if actimId in self.actims.keys():
+            if withTag is not None:
+                doc, tag, text, line = Doc().ttl()
+                with tag(withTag):
+                    doc.asis(self.actims[actimId].htmlCartouche())
+                return doc.getvalue()
+            else: return self.actims[actimId].htmlCartouche()
+        else: return ""
+
+    def htmlRepo(self, actimId, version, ip):
+        if actimId in self.actims.keys():
+            a = self.actims[actimId]
+            doc, tag, text, line = Doc().ttl()
+
+            if a.repoNums == 0:
+                text('(No data)')
+            else:
+                if version >= "345":
+                    link = f'http://{ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
+                else:
+                    link = f'http://{ip}/index{a.actimId:04d}.html'
+                with tag('a', href=link):
+                    doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
+            return doc.getvalue()
+        else: return ""
+
+    def alertDisk(self, actimId):
+        if actimId in self.actims.keys():
+            self.actims[actimId].alertDisk()
+
+    def new(self, mac, boardType, version, serverId, bootTime=NOW):
+        actimId = Registry.getId(mac)
+        printLog(f"Actim{actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
+        self.actims[actimId] = Actimetre(actimId, mac, boardType, version, serverId, 0, bootTime, lastSeen=NOW, lastReport=NOW)
+        self.save()
+
+    def delete(self, actimId):
+        if actimId in self.actims.keys():
+            del self.actims[actimId]
+            self.save()
+            try:
+                os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
+            except FileNotFoundError: pass
+            return True
+        else: return False
+
+    def remove(self, actimId):
+        if actimId in self.actims.keys():
+            self.actims[actimId].forgetData()
+        self.save()
+
+    def cutGraph(self, actimId):
+        if actimId in self.actims.keys():
+            self.actims[actimId].cutHistory()
+            self.actims[actimId].drawGraph()
+            self.save()
+            return True
+        else: return False
+
+    def dies(self, actimId):
+        if actimId in self.actims.keys():
+            self.actims[actimId].dies()
+            self.save()
+            return True
+        else: return False
+
+    def checkAlerts(self):
+        save = False
+        for a in self.actims.values():
+            if a.isDead == 1 and (NOW - a.lastSeen) > ACTIM_ALERT1:
+                a.alert()
+                a.isDead = 2
+                save = True
+            elif a.isDead == 2 and (NOW - a.lastSeen) > ACTIM_ALERT2:
+                a.alert()
+                a.isDead = 3
+                save = True
+        self.save(save)
+
+    def repoStat(self):
+        save = False
+        saveP = False
+        for a in self.actims.values():
+            if NOW - a.lastReport > ACTIM_HIDE_P:
+                continue
+            if a.drawGraphMaybe():
+                save = True
+            saveP = Projects.addActim(a)
+        self.save(save)
+        return saveP
+
+    def save(self, save=True):
+        if save:
+            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
+
+Actimetres = ActimetresClass()

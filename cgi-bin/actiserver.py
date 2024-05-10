@@ -1,7 +1,5 @@
 from const import *
-import globals as x
-from actimetre import Actimetre
-from project import Projects
+from actimetre import Actimetres
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000", channel=0, ip = "0.0.0.0", isLocal = False,
@@ -40,7 +38,7 @@ class Actiserver:
                 'lastUpdate': self.lastUpdate.strftime(TIMEFORMAT_FN),
                 'dbTime'    : self.dbTime.strftime(TIMEFORMAT_FN),
                 'isDown'    : self.isDown,
-                'actimetreList': '[' + ','.join([json.dumps(x.Actimetres[actimId].toD()) for actimId in self.actimetreList]) + ']',
+                'actimetreList': '[' + ','.join([Actimetres.dump(actimId) for actimId in self.actimetreList]) + ']',
                 'cpuIdle'   : self.cpuIdle,
                 'memAvail'  : self.memAvail,
                 'diskTput'  : self.diskTput,
@@ -66,15 +64,10 @@ class Actiserver:
 
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
-                a = Actimetre().fromD(actimData, fromFile=False)
-                if a.actimId in x.Actimetres.keys():
-                    x.Actimetres[a.actimId].update(a, actual)
-                else:
-                    x.Actimetres[a.actimId] = a
-                self.actimetreList.add(a.actimId)
-                Projects.htmlUpdate(x.Actimetres[a.actimId].projectId)
+                actimId = Actimetres.fromD(actimData, fromFile=False)
+                self.actimetreList.add(actimId)
 
-        for a in x.Actimetres.values():
+        for a in Actimetres.values():
             if a.serverId == self.serverId and not a.actimId in self.actimetreList:
                 printLog(f"Actim{a.actimId:04d} orphaned by Actis{self.serverId}")
                 a.dies()
@@ -90,37 +83,27 @@ class Actiserver:
     def serverName(self):
         return f"Actis{self.serverId:03d}"
 
-    def alert(self):
-        printLog(f'Alert {self.serverName()}')
-        subject = f'{self.serverName()} unreachable since {self.lastUpdate.strftime(TIMEFORMAT_ALERT)}'
+    def alertContent(self):
         content = f'{self.serverName()}\n' + \
                   f'Hardware {self.machine}\nVersion {self.version}\n' + \
                   f'IP {self.ip}\nChannel {self.channel}\n' + \
                   f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' + \
                   f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' + \
-                  f'Last known Actimetres:\n    '
+                  f'Last known Actimetres:\n'
         for actimId in self.actimetreList:
             content += f'Actim{actimId:04d} '
         content += '\n'
+        return content
 
-        sendEmail("", subject, content)
+    def alert(self):
+        printLog(f'Alert {self.serverName()}')
+        subject = f'{self.serverName()} unreachable since {self.lastUpdate.strftime(TIMEFORMAT_ALERT)}'
+        sendEmail("", subject, self.alertContent())
 
     def alertDisk(self):
         printLog(f'{self.serverName()} disk low')
         subject = f'{self.serverName()} storage low'
-        content = f'{self.serverName()}\n' + \
-                  f'Hardware {self.machine}\nVersion {self.version}\n' + \
-                  f'IP {self.ip}\nChannel {self.channel}\n' + \
-                  f'Disk size {printSize(self.diskSize)}, free {printSize(self.diskFree)} ' + \
-                  f'Last seen {self.lastUpdate.strftime(TIMEFORMAT_DISP)}\n' + \
-                  f'Last known Actimetres:\n    '
-        for actimId in self.actimetreList:
-            content += f'Actim{actimId:04d} '
-            if x.Actimetres.get(actimId) is not None:
-                x.Actimetres[actimId].alertDisk()
-        content += '\n'
-
-        sendEmail("", subject, content)
+        sendEmail("", subject, self.alertContent())
 
     def html(self):
         doc, tag, text, line = Doc().ttl()
@@ -180,21 +163,12 @@ class Actiserver:
                 with tag('td', klass='left'):
                     for actimId in self.actimetreList:
                         with tag('div'):
-                            doc.asis(x.Actimetres[actimId].htmlCartouche())
+                            doc.asis(Actimetres.htmlCartouche(actimId))
                 if self.isLocal:
                     with tag('td', klass='right'):
                         for actimId in self.actimetreList:
-                            a = x.Actimetres[actimId]
                             with tag('div'):
-                                if a.repoNums == 0:
-                                    text('(No data)')
-                                else:
-                                    if self.version >= "345":
-                                        link = f'http://{self.ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
-                                    else:
-                                        link = f'http://{self.ip}/index{a.actimId:04d}.html'
-                                    with tag('a', href=link):
-                                        doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
+                                doc.asis(Actimetres.htmlRepo(actimId, self.version, self.ip))
                     if self.diskSize > 0:
                         diskState = ''
                         if self.diskFree < self.diskSize // 10:
@@ -331,6 +305,7 @@ class ActiserversClass:
                     thisServer.diskLow = 0
         self.servers[serverId] = thisServer
         self.save()
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
+        Actimetres.save()
+        return thisServer
 
 Actiservers = ActiserversClass()

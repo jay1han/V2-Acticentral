@@ -1,5 +1,5 @@
 from const import *
-import globals as x
+from actimetre import Actimetres
 
 class Project:
     def __init__(self, projectId=0, title="", owner="", email="", actimetreList=None):
@@ -47,8 +47,7 @@ class Project:
     def htmlUpdate(self):
         projectActimHTML = ""
         for actimId in self.actimetreList:
-            if x.Actimetres.get(actimId) is not None:
-                projectActimHTML += x.Actimetres[actimId].html()
+            projectActimHTML += Actimetres.html(actimId)
         if self.projectId == 0:
             buttons = ""
         else:
@@ -95,9 +94,7 @@ class Project:
                 line('td', self.owner)
                 with tag('td', klass='left'):
                     for actimId in self.actimetreList:
-                        if x.Actimetres.get(actimId) is not None:
-                            with tag('div'):
-                                doc.asis(x.Actimetres[actimId].htmlCartouche())
+                        doc.asis(Actimetres.htmlCartouche(actimId, withTag='div'))
 
         return doc.getvalue()
 
@@ -143,6 +140,7 @@ class ProjectsClass:
     def save(self, save=True):
         if save:
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
+            self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
 
     def values(self):
         return self.projects.values()
@@ -188,9 +186,8 @@ class ProjectsClass:
     def addActim(self, actim):
         p = self.get(actim.projectId)
         isNew = p.addActim(actim.actimId)
-        if isNew:
-            p.repoNums += actim.repoNums
-            p.repoSize += actim.repoSize
+        p.repoNums += actim.repoNums
+        p.repoSize += actim.repoSize
         return isNew
 
     def htmlList(self, projectId=None):
@@ -201,5 +198,8 @@ class ProjectsClass:
                 htmlString += ' checked="true"'
             htmlString += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
         return htmlString
+
+    def needUpdate(self, serverTime):
+        return self.fileTime > serverTime
 
 Projects = ProjectsClass()

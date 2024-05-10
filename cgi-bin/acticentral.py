@@ -9,13 +9,10 @@ lock = open(LOCK_FILE, "w+")
 fcntl.lockf(lock, fcntl.LOCK_EX)
 printLog("===================================================")
 
-import globals as x
+from registry import Registry
 from project import Projects
-from actimetre import Actimetre, loadActimetres
+from actimetre import Actimetres
 from actiserver import Actiservers
-
-x.loadRegistry()
-loadActimetres()
 
 def htmlUpdate():
     Actiservers.htmlUpdate()
@@ -33,41 +30,15 @@ def htmlUpdate():
         print(htmlOutput, file=html)
 
 def checkAlerts():
-    save = False
-    for a in x.Actimetres.values():
-        if a.isDead == 1 and (NOW - a.lastSeen) > ACTIM_ALERT1:
-            a.alert()
-            a.isDead = 2
-            save = True
-        elif a.isDead == 2 and (NOW - a.lastSeen) > ACTIM_ALERT2:
-            a.alert()
-            a.isDead = 3
-            save = True
-    if save:
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-
+    Actimetres.checkAlerts()
     Actiservers.checkAlerts()
 
 def repoStats():
     Projects.clearRepos()
-
-    save = False
-    saveP = False
-    for a in x.Actimetres.values():
-        if NOW - a.lastReport > ACTIM_HIDE_P:
-            continue
-        if a.drawGraphMaybe():
-            save = True
-        saveP = Projects.addActim(a)
-
-    if save:
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-    if saveP:
+    if Actimetres.repoStat():
         Projects.save()
-
     with open(STAT_FILE, "w") as stat:
         stat.write(NOW.strftime(TIMEFORMAT_DISP))
-
     htmlUpdate()
     
 def projectChangeInfo(projectId):
@@ -96,9 +67,9 @@ def actimChangeProject(actimId):
     with open(f"{HTML_DIR}/formActim.html") as form:
         print(form.read()\
               .replace("{actimId}", str(actimId))\
-              .replace("{actimName}", x.Actimetres[actimId].actimName())\
-              .replace("{actimInfo}", x.Actimetres[actimId].htmlInfo())\
-              .replace("{htmlProjectList}", Projects.htmlList(x.Actimetres[actimId].projectId)))
+              .replace("{actimName}", Actimetres.get(actimId).actimName())\
+              .replace("{actimInfo}", Actimetres.get(actimId).htmlInfo())\
+              .replace("{htmlProjectList}", Projects.htmlList(Actimetres.get(actimId).projectId)))
 
 def removeProject(projectId):
     print("Content-type: text/html\n\n")
@@ -108,9 +79,8 @@ def removeProject(projectId):
     else:
         actimList = ""
         for actimId in Projects.get(projectId).actimetreList:
-            if x.Actimetres.get(actimId) is not None:
-                actimList += f'<li>{x.Actimetres[actimId].htmlCartouche()}</li>\n'
-            
+            actimList += Actimetres.htmlCartouche(actimId, 'li')
+
     with open(f"{HTML_DIR}/formRemove.html") as form:
         print(form.read()\
               .replace("{projectId}", str(projectId))\
@@ -120,7 +90,7 @@ def removeProject(projectId):
 def retireActim(actimId):
     print("Content-type: text/html\n\n")
 
-    a = x.Actimetres[actimId]
+    a = Actimetres.get(actimId)
     if a.projectId > 0:
         ownerStr = 'the name of the owner'
     else:
@@ -243,14 +213,14 @@ def processForm(formId):
     elif formId == 'actim-change-project':
         actimId = int(args['actimId'][0])
         projectId = int(args['projectId'][0])
-        oldProject = x.Actimetres[actimId].projectId
+        oldProject = Actimetres.get(actimId).projectId
         printLog(f"Changing {actimId} from {oldProject} to {projectId}")
 
         Projects.removeActim(oldProject, actimId)
         Projects.get(projectId).actimetreList.add(actimId)
-        x.Actimetres[actimId].projectId = projectId
+        Actimetres.get(actimId).projectId = projectId
         Projects.save()
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
+        Actimetres.save()
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
@@ -269,21 +239,16 @@ def processForm(formId):
         actimId = int(args['actimId'][0])
         owner = args['owner'][0]
 
-        a = x.Actimetres.get(actimId)
+        a = Actimetres.get(actimId)
         if a is not None and \
            (a.projectId == 0 and owner == 'CONFIRM') or \
            Projects.get(a.projectId).owner == owner:
             printLog(f"Retire Actimetre{actimId:04d} from {Projects.get(a.projectId).name()}")
             Actiservers.removeActim(actimId)
             Projects.removeActim(actimId)
-
-            del x.Registry[x.Actimetres[actimId].mac]
-            x.saveRegistry()
-            del x.Actimetres[actimId]
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-            try:
-                os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
-            except FileNotFoundError: pass
+            Registry.deleteId(actimId)
+            Actimetres.delete(actimId)
+            Actiservers.removeActim(actimId)
             htmlUpdate()
                 
         print("Location:\\index.html\n\n")
@@ -292,11 +257,9 @@ def processForm(formId):
         projectId = int(args['projectId'][0])
         if projectId != 0:
             for a in Projects.get(projectId).actimetreList:
-                if x.Actimetres.get(a) is not None:
-                    x.Actimetres[a].projectId = 0
+                Actimetres.get(a).projectId = 0
             Projects.delete(projectId)
-            Projects.save()
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
+            Actimetres.save()
             repoStats()
         print(f"Location:\\index.html\n\n")
 
@@ -321,11 +284,10 @@ def processAction():
         htmlUpdate()
 
         if action == 'actiserver':
-            plain(json.dumps(x.Registry))
+            plain(Registry.dump())
         else:
-            if x.RegistryTime > s.dbTime.replace(tzinfo=timezone.utc) \
-               or Projects.fileTime > s.dbTime.replace(tzinfo=timezone.utc):
-                printLog(f'{s.dbTime} < {Projects.fileTime}, needs update')
+            if Registry.needUpdate(s.dbTime) or Projects.needUpdate(s.dbTime):
+                printLog(f'{s.dbTime} needs update')
                 plain('!')
             else:
                 remotes = loadRemotes()
@@ -340,32 +302,29 @@ def processAction():
     elif action == 'registry':
         if not checkSecret(): return
 #        serverId = int(args['serverId'][0])
-        plain(json.dumps(x.Registry))
+        plain(Registry.dump())
 
     elif action == 'projects':
         if not checkSecret(): return
 #        serverId = int(args['serverId'][0])
-        plain()
-        Projects.list()
+        plain(Projects.list())
 
     elif action == 'report':
         if not checkSecret(): return
 #        serverId  = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
-        if x.Actimetres.get(actimId) is not None:
-            message = sys.stdin.read()
-            printLog(f'Actim{actimId:04d} {message}')
-            x.Actimetres[actimId].reportStr = message
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
+        message = sys.stdin.read()
+        printLog(f'Actim{actimId:04d} {message}')
+        Actimetres.get(actimId).reportStr = message
+        Actimetres.save()
         plain('OK')
         
     elif action == 'clear-report':
         actimId = int(args['actimId'][0])
-        if x.Actimetres.get(actimId) is not None:
-            printLog(f'Actim{actimId:04d} CLEAR {x.Actimetres[actimId].reportStr}')
-            x.Actimetres[actimId].reportStr = ""
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-            htmlUpdate()
+        printLog(f'Actim{actimId:04d} CLEAR {Actimetres.get(actimId).reportStr}')
+        Actimetres.get(actimId).reportStr = ""
+        Actimetres.save()
+        htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif action == 'actimetre-new':
@@ -377,45 +336,18 @@ def processAction():
         bootTime  = utcStrptime(args['bootTime'][0])
 
         s = Actiservers.get(serverId, update=True)
-        if x.Registry.get(mac) is None:
-            actimList = [r for r in x.Registry.values()]
-            actimList.sort()
-            actimId = len(actimList) + 1
-            for newId in range(1, len(actimList) + 1):
-                if not newId in actimList:
-                    actimId = newId
-                    break
-            x.Registry[mac] = actimId
-            printLog(f"Allocated new Actim{actimId:04d} for {mac}")
-            x.saveRegistry()
-            responseStr = f"+{actimId}"
-        else:
-            actimId = x.Registry[mac]
-            printLog(f"Found known Actim{actimId:04d} for {mac}")
-            responseStr = str(actimId)
-
-        a = Actimetre(actimId, mac, boardType, version, serverId, bootTime=NOW, lastSeen=NOW, lastReport=NOW, isDead=0)
-        printLog(f"Actim{a.actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
-
+        actimId = Actimetres.new(mac, boardType, version, serverId, bootTime)
         s.actimetreList.add(actimId)
-        x.Actimetres[actimId] = a
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
         Actiservers.save()
         htmlUpdate()
-        plain(responseStr)
+        plain(str(actimId))
 
     elif action == 'actimetre-off':
         if not checkSecret(): return
 #        serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
-        a = x.Actimetres.get(actimId)
-        if a is not None:
-            a.dies()
-#            x.Actiservers[serverId].actimetreList.remove(actimId)
-#            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in x.Actiservers.values()})
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-            htmlUpdate()
+        if Actimetres.dies(actimId): htmlUpdate()
         plain("Ok")
 
     elif action == 'actimetre-query':
@@ -429,13 +361,7 @@ def processAction():
         serverId = int(args['serverId'][0])
         actimId = int(args['actimId'][0])
 
-        a = x.Actimetres.get(actimId)
-        if a is not None:
-            a.serverId = 0
-            a.repoNums = 0
-            a.repoSize = 0
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-
+        Actimetres.remove(actimId)
         Actiservers.removeActim(actimId, serverId)
 
         htmlUpdate()
@@ -447,11 +373,7 @@ def processAction():
 
     elif action == 'actim-cut-graph':
         actimId = int(args['actimId'][0])
-        if x.Actimetres.get(actimId) is not None:
-            x.Actimetres[actimId].cutHistory()
-            x.Actimetres[actimId].drawGraph()
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-            htmlUpdate()
+        if Actimetres.cutGraph(actimId): htmlUpdate()
         if args.get('projectId') is not None:
             print("Location:\\project{int(args['projectId'][0]):03d}.html\n\n")
         else:
@@ -469,19 +391,15 @@ def processAction():
 
     elif action == 'actim-forget':
         actimId = int(args['actimId'][0])
-        if x.Actimetres.get(actimId) is not None:
-            x.Actimetres[actimId].forgetData()
-            dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
-            htmlUpdate()
+        Actimetres.get(actimId).forgetData()
+        htmlUpdate()
         print("Location:\\index.html\n\n")
 
     elif action == 'actim-decouple':
         actimId = int(args['actimId'][0])
         serverId = int(args['serverId'][0])
-        if x.Actimetres.get(actimId) is not None:
-            x.Actimetres[actimId].forgetData()
+        if Actimetres.get(actimId).forgetData():
             printLog(f"Removed Actim{actimId:04d} from Actis{serverId:04d}")
-        dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in x.Actimetres.values()})
         htmlUpdate()
         print("Location:\\index.html\n\n")
 
