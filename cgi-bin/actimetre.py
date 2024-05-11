@@ -290,7 +290,7 @@ class Actimetre:
                     text(printSize(self.repoSize))
                 if self.serverId == 0 or not self.hasData():
                     doc.asis('<br>')
-                    with tag('button', type='submit', name='action', value='actim-change-project'):
+                    with tag('button', type='submit', name='action', value='actim-move'):
                         doc.asis('Move')
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='actim-free'):

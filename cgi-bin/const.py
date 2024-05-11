@@ -180,7 +180,6 @@ CONSTANT = {
 
 def writeTemplateSub(output, template: str, substitutions: dict[str,str]):
     content = open(template, "r").read()
-    printLog(f"writeTemplateSub from '{template}' with substitutions {substitutions}", 100)
     for before, after in substitutions.items():
         content = content.replace(before, after)
     for before, after in CONSTANT.items():

@@ -121,6 +121,7 @@ def checkSecret():
     return True
 
 def processAction():
+    printLog(f"Process action {action}")
     if action == 'actiserver' or action == 'actiserver3':
         if not checkSecret(): return
         serverId = int(args['serverId'][0])
