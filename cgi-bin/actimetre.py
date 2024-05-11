@@ -353,6 +353,7 @@ class ActimetresClass:
     def removeProject(self, actimId: int):
         if actimId in self.actims:
             self.actims[actimId].projectId = 0
+            self.actims[actimId].dirty = True
 
     def checkOrphan(self, serverId, actimetreList):
         for a in self.actims.values():

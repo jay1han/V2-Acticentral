@@ -222,7 +222,7 @@ class ProjectsClass:
         owner = args['owner'][0]
         email = args['email'][0]
 
-        if formId == 'project-change-info' or formId == 'project-edit-info':
+        if formId == 'project-edit-info':
             printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
             if title != "" and owner != "" and email != "":
                 self.setInfo(projectId, title, owner, email)
@@ -242,22 +242,11 @@ class ProjectsClass:
         print("Location:\\index.html\n\n")
 
     def processAction(self, action, args):
-        if action == 'project-change-info':
+        if action == 'project-edit-info':
             project = self.projects[int(args['projectId'][0])]
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
-                "{project-change-info}": "project-change-info",
-                "{projectTitle}": project.name(),
-                "{projectOwner}": project.owner,
-                "{projectId}": str(project.projectId),
-            })
-
-        elif action == 'project-edit-info':
-            project = self.projects[int(args['projectId'][0])]
-            print("Content-type: text/html\n\n")
-            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
-                "{project-change-info}": "project-edit-info",
-                "{projectTitle}": project.name(),
+                "{projectTitle}": project.title,
                 "{projectOwner}": project.owner,
                 "{projectId}": str(project.projectId),
             })
@@ -273,7 +262,7 @@ class ProjectsClass:
             else:
                 Actimetres = actimetre.Actimetres
                 for actimId in project.actimetreList:
-                    actimetreStr += Actimetres.htmlCartouche(actimId, 'li')
+                    actimetreStr += Actimetres.htmlCartouche(actimId, withTag='li')
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRemove.html", {
                 "{projectId}": str(project.projectId),
