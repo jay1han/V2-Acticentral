@@ -193,12 +193,13 @@ class ProjectsClass:
         if self.removeActim(actimId): self.dirty = True
         if self.addActim(projectId, actimId): self.dirty = True
 
-    def new(self, title, owner, email):
+    def new(self, title, owner, email) -> int:
         projectId = 1
         while projectId in set(self.projects.keys()):
             projectId += 1
         self.projects[projectId] = Project(projectId, title, owner, email)
         self.dirty = True
+        return projectId
 
     def addActim(self, projectId, actimId):
         if projectId in self.projects.keys():
@@ -247,29 +248,37 @@ class ProjectsClass:
             })
 
     def processForm(self, formId, args):
-        projectId = int(args['projectId'][0])
         title = args['title'][0]
         owner = args['owner'][0]
         email = args['email'][0]
 
         if formId == 'project-edit':
+            projectId = int(args['projectId'][0])
             printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
             if title != "" and owner != "" and email != "":
                 self.setInfo(projectId, title, owner, email)
+            print(f"Location:\\project{projectId:02d}.html\n\n")
+
         elif formId == 'project-create':
             printLog(f"Create new project with data: {title}, {owner}, {email}")
             if title != "" and owner != "" and email != "":
-                self.new(title, owner, email)
+                projectId = self.new(title, owner, email)
+                print(f"Location:\\project{projectId:02d}.html\n\n")
+            else:
+                print("Location:\\index.html\n\n")
+
         elif formId == 'project-delete':
-            Actimetres = actimetre.Actimetres
+            projectId = int(args['projectId'][0])
             if projectId in self.projects:
+                Actimetres = actimetre.Actimetres
                 for actimId in self.projects[projectId].actimetreList:
                     Actimetres.removeProject(actimId)
                     self.projects[projectId].removeActim(actimId)
                 del self.projects[projectId]
                 self.dirty = True
+            print("Location:\\index.html\n\n")
 
-        print("Location:\\index.html\n\n")
+        print("204 No Content\n\n")
 
     def dirtyProject(self, projectId):
         self.projects[projectId].dirty = True

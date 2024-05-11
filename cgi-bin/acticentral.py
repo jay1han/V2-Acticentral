@@ -109,6 +109,8 @@ def processForm(formId):
         Projects.processForm(formId, args)
     elif formId.startswith('actim-'):
         Actimetres.processForm(formId, args)
+    elif formId.startswith('server-'):
+        Actiservers.processForm(formId, args)
     else:
         print(f"Location:\\{INDEX_NAME}\n\n")
 
@@ -116,7 +118,7 @@ def checkSecret():
     if secret != SECRET_KEY:
         printLog(f"Wrong secret {secret} vs. {SECRET_KEY}")
         print(f"Wrong secret {secret}", file=sys.stdout)
-        plain("Wrong secret")
+        print("401 Unauthorized")
         return False
     return True
 
@@ -166,7 +168,7 @@ def processAction():
         actimId = int(args['actimId'][0])
         printLog(f'Actim{actimId:04d} CLEAR {Actimetres.getReportStr(actimId)}')
         Actimetres.setReportStr(actimId, "")
-        print(f"Location:\\{INDEX_NAME}\n\n")
+        print("205 Reset Content\n\n")
 
     elif action == 'actimetre-new':
         if not checkSecret(): return
@@ -207,12 +209,12 @@ def processAction():
 
     elif action.startswith('remote-'):
         command = 0
-        if action   == 'remote-button' : command = 0x10
+        if action   == 'remote-switch' : command = 0x10
         elif action == 'remote-sync'   : command = 0x20
         elif action == 'remote-stop'   : command = 0x30
         elif action == 'remote-restart': command = 0xF0
         remoteAction(int(args['actimId'][0]), command)
-        print(f"Location:\\{INDEX_NAME}\n\n")
+        print("205 Reset Content\n\n")
 
     elif action.startswith('project-'):
         Projects.processAction(action, args)
@@ -222,9 +224,7 @@ def processAction():
         printLog(f"Submitted form {formId}")
         processForm(formId)
 
-    elif action == 'cancel':
-        print(f"Location:\\{INDEX_NAME}\n\n")
-
+    print("204 No Content\n\n")
 
 def saveAll():
     Registry.save()

@@ -244,7 +244,7 @@ class Actimetre:
                 if alive == 'up':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-restart'):
-                        text('Reboot')
+                        text('Restart')
             with tag('td'):
                 text(self.boardType)
                 doc.asis('<br>')
@@ -258,8 +258,8 @@ class Actimetre:
                 doc.asis(self.frequencyText(self.sensorStr))
                 if alive == 'up':
                     doc.asis('<br>')
-                    with tag('button', type='submit', name='action', value='remote-button'):
-                        text('Button')
+                    with tag('button', type='submit', name='action', value='remote-switch'):
+                        text('Switch')
             if alive == 'up':
                 with tag('td'):
                     doc.asis(htmlRssi(self.rssi))
@@ -490,7 +490,7 @@ class ActimetresClass:
             })
 
         elif action == 'actim-retire':
-            print("204 No Content\n\n")
+            print("205 Reset Content\n\n")
             return
 
     def processForm(self, formId, args):
@@ -517,7 +517,7 @@ class ActimetresClass:
         elif formId == 'actim-retire':
             pass
 
-        print("Location:\\index.html\n\n")
+        print("204 No Content\n\n")
 
     def save(self):
         for actim in self.actims.values():

@@ -307,7 +307,10 @@ class ActiserversClass:
             if serverId in self.servers.keys():
                 del self.servers[serverId]
                 self.dirty = True
-        print("Location:\\index.html\n\n")
+        print("205 Reset Content\n\n")
+
+    def processForm(self, formId, args):
+        print("204 No Content\n\n")
 
     def save(self):
         for server in self.servers.values():
