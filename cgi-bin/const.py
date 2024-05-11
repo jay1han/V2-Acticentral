@@ -118,10 +118,15 @@ def printSize(size, unit='', precision=0):
     return formatStr.format(inUnits) + unit
 
 def printTimeSpan(span: timedelta):
+    months = span // timedelta(days=30)
     days = span // timedelta(days=1)
     hours = (span % timedelta(days=1)) // timedelta(hours=1)
     minutes = (span % timedelta(hours=1)) // timedelta(minutes=1)
-    if span > timedelta(days=1):
+    if span > timedelta(days=60):
+        return f'{months} months'
+    if span > timedelta(days=7):
+        return f'{days} days'
+    elif span > timedelta(days=1):
         return f'{days}d{hours}h'
     else:
         return f'{hours}h{minutes:02d}m'
