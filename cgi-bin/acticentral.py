@@ -108,10 +108,6 @@ def assignActim(data):
 
     return actisList[0].index
 
-def plain(text=''):
-    print("Content-type: text/plain\n\n")
-    print(text)
-
 def processForm(formId):
     if formId.startswith('project-'):
         Projects.processForm(formId, args)
@@ -162,21 +158,6 @@ def processAction():
         if not checkSecret(): return
 #        serverId = int(args['serverId'][0])
         plain(Projects.dump())
-
-    elif action == 'report':
-        if not checkSecret(): return
-#        serverId  = int(args['serverId'][0])
-        actimId = int(args['actimId'][0])
-        message = sys.stdin.read()
-        printLog(f'Actim{actimId:04d} {message}')
-        Actimetres.setReportStr(actimId, message)
-        plain('OK')
-        
-    elif action == 'clear-report':
-        actimId = int(args['actimId'][0])
-        printLog(f'Actim{actimId:04d} CLEAR {Actimetres.getReportStr(actimId)}')
-        Actimetres.setReportStr(actimId, "")
-        print("Status: 205\n\n")
 
     elif action == 'actimetre-new':
         if not checkSecret(): return

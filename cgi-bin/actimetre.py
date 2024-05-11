@@ -270,7 +270,7 @@ class Actimetre:
                 line('td', "")
 
             if alive == 'retire':
-                line('td', 'No data', klass=f'health retire')
+                line('td', f"Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}", klass=f'health retire')
             else:
                 with tag('td', klass=f'health left'):
                     if self.graphSince == TIMEZERO:
@@ -311,7 +311,7 @@ class Actimetre:
             if self.reportStr != "":
                 with tag('td', klass="report"):
                     text(self.reportStr)
-                    doc.asis('<br><button type="submit" name="action" value="clear-report">Clear</button>\n')
+                    doc.asis('<br><button type="submit" name="action" value="actim-clear">Clear</button>\n')
             doc.asis('</form>\n')
         return doc.getvalue()
 
@@ -411,15 +411,6 @@ class ActimetresClass:
         if actimId in self.actims.keys():
             self.actims[actimId].forgetData()
 
-    def getReportStr(self, actimId):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].reportStr
-        else: return ""
-
-    def setReportStr(self, actimId, reportStr):
-        self.actims[actimId].reportStr = reportStr
-        self.actims[actimId].dirty = True
-
     def getProjectId(self, actimId):
         return self.actims[actimId].projectId
 
@@ -474,7 +465,19 @@ class ActimetresClass:
         if action == 'actim-cut-graph':
             actim.cutHistory()
             actim.drawGraph()
-            print(f"Location:\\project{actim.projectId:02d}.html\n\n")
+            print("Status: 205\n\n")
+
+        elif action == 'actim-report':
+            # check secret
+            message = sys.stdin.read()
+            printLog(f'Actim{actim.actimId:04d} "{message}"')
+            actim.reportStr = ""
+            plain('OK')
+
+        elif action == 'actim-clear':
+            printLog(f'Actim{actim.actimId:04d} CLEAR "{actim.reportStr}"')
+            actim.reportStr = ""
+            print("Status: 205\n\n")
 
         elif action == 'actim-forget':
             actim.forgetData()

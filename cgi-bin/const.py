@@ -4,7 +4,7 @@ import os, json, subprocess
 from datetime import datetime, timedelta, timezone
 from yattag import Doc
 
-VERSION_STR     = "v416"
+VERSION_STR     = "v417"
 FILE_ROOT       = "/etc/actimetre"
 HTML_ROOT       = "/var/www/html"
 
@@ -193,4 +193,8 @@ def writeTemplateSub(output, template: str, substitutions: dict[str,str]):
         content = content.replace(before, after)
     print(content, file=output)
     return content
+
+def plain(text=''):
+    print("Content-type: text/plain\n\n")
+    print(text)
 
