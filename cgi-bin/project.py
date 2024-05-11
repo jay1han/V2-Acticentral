@@ -154,7 +154,10 @@ class ProjectsClass:
             self.projects[0] = Project(0, "Not assigned", "No owner")
             self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+        Actimetres = actimetre.Actimetres
         for project in self.projects.values():
+            for actimId in project.actimetreList:
+                Actimetres.setProjectId(actimId, project.projectId)
             htmlFile = f'{HTML_ROOT}/project{project.projectId:02d}.html'
             if not os.path.isfile(htmlFile) or olderThanSeconds(os.stat(htmlFile).st_mtime, 3600) :
                 project.dirty = True

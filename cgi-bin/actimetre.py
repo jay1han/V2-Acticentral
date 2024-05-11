@@ -317,7 +317,7 @@ class Actimetre:
 
     def save(self):
         if self.dirty:
-            printLog(f'Actim{self.actimId:04d} is dirty')
+            printLog(f'Actim{self.actimId:04d}[{self.projectId}] is dirty')
             Projects.dirtyProject(self.projectId)
             filename = f'{ACTIMETRE_DIR}/actim{self.actimId:04d}.data'
             with open(filename, "w") as data:
@@ -344,7 +344,6 @@ class ActimetresClass:
         for actimId in Registry.listActims():
             if actimId not in self.actims.keys():
                 self.actims[actimId] = Actimetre(actimId)
-        printLog(f'Actimetres {str(self.actims.keys())}')
         for actim in self.actims.values():
             htmlFile = f'{HTML_ROOT}/actim{actim.actimId:04d}.html'
             if not os.path.isfile(htmlFile) or olderThanSeconds(os.stat(htmlFile).st_mtime, 3600):
@@ -420,12 +419,10 @@ class ActimetresClass:
         if actimId in self.actims.keys():
             self.actims[actimId].forgetData()
 
-    def getProjectId(self, actimId: int):
-        return self.actims[actimId].projectId
-
     def setProjectId(self, actimId: int, projectId: int):
-        self.actims[actimId].projectId = projectId
-        self.actims[actimId].dirty = True
+        if self.actims[actimId].projectId != projectId:
+            self.actims[actimId].projectId = projectId
+            self.actims[actimId].dirty = True
 
     def getServerId(self, actimId: int):
         if actimId in self.actims.keys():
