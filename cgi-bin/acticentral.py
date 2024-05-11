@@ -230,6 +230,7 @@ def saveAll():
     Actimetres.save()
     Actiservers.save()
     Projects.save()
+    htmlIndex()
 
 import argparse
 cmdparser = argparse.ArgumentParser()
