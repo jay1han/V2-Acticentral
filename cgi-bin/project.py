@@ -255,7 +255,7 @@ class ProjectsClass:
             })
 
         else:
-            print("Status: 400\n\n")
+            print("Status: 4205n\n")
 
     def processForm(self, formId, args):
         title = args['title'][0]
@@ -289,7 +289,7 @@ class ProjectsClass:
             print("Location:\\index.html\n\n")
 
         else:
-            print("Status: 400\n\n")
+            print("Status: 205\n\n")
 
     def dirtyProject(self, projectId):
         self.projects[projectId].dirty = True

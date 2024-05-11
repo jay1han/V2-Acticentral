@@ -305,10 +305,10 @@ class ActiserversClass:
                 self.dirty = True
             print("Status: 205\n\n")
         else:
-            print("Status: 400\n\n")
+            print("Status: 205\n\n")
 
     def processForm(self, formId, args):
-        print("Status: 400\n\n")
+        print("Status: 205\n\n")
 
     def save(self):
         for server in self.servers.values():
