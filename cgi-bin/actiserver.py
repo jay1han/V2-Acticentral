@@ -141,11 +141,12 @@ class Actiserver:
 
             with tag('td', klass=alive):
                 text(self.name())
-                doc.asis('<br>')
-                line('span', self.ip, klass='small')
                 if alive == 'retire':
                     doc.asis('<br>')
                     line('button', 'Retire', type='submit', name='action', value='server-retire')
+                else:
+                    doc.asis('<br>')
+                    line('span', self.ip, klass='small')
             line('td', self.machine)
             with tag('td'):
                 if alive == 'up':
