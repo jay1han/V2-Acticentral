@@ -293,7 +293,7 @@ class Actimetre:
                     with tag('button', type='submit', name='action', value='actim-move'):
                         doc.asis('Move')
                     doc.asis('<br>')
-                    with tag('button', type='submit', name='action', value='actim-free'):
+                    with tag('button', type='submit', name='action', value='actim-remove'):
                         doc.asis('Remove')
                 elif alive == 'up' and self.hasData() and Actiservers.getVersion(self.serverId) >= '380':
                     doc.asis('<br>')
@@ -482,9 +482,10 @@ class ActimetresClass:
 
         elif action == 'actim-remove':
             Projects.removeActim(actim.actimId)
+            projectId = actim.projectId
             actim.projectId = 0
             actim.dirty = True
-            print("Location:\\index.html\n\n")
+            print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif action == 'actim-retire':
             if actim.projectId == 0:
@@ -511,15 +512,7 @@ class ActimetresClass:
             printLog(f"Changing Actim{actimId:04d} from Project{oldProject:02d} to Project{projectId:02d}")
             Projects.moveActim(actimId, projectId)
             self.setProjectId(actimId, projectId)
-
-        elif formId == 'actim-remove':
-            projectId = self.getProjectId(actimId)
-            if projectId == 0:
-                printLog()
-            elif Projects.getOwner(projectId) == args['owner'][0]:
-                printLog(f"Remove Actim{actimId:04d} from {Projects.getName(projectId)}")
-                Projects.removeActim(actimId)
-                self.setProjectId(actimId, 0)
+            print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif formId == 'actim-retire':
             projectId = self.getProjectId(actimId)
