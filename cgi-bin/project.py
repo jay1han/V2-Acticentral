@@ -130,6 +130,14 @@ class ProjectsClass:
         self.fileTime = TIMEZERO
         self.dirty = False
 
+    def __str__(self):
+        string = ""
+        for (projectId, p) in self.projects.items():
+            string += f"Project{projectId:02d}:"
+            for actimId in p.actimetreList:
+                string += f" Actim{actimId:04d}"
+            string += "\n"
+
     def __getitem__(self, item: int):
         return item in self.projects
 
@@ -139,6 +147,7 @@ class ProjectsClass:
             self.projects[0] = Project(0, "Not assigned", "No owner")
             self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+        printLog(self)
 
     def dump(self):
         for (projectId, p) in self.projects.items():

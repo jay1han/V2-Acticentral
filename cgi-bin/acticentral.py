@@ -81,8 +81,8 @@ def assignActim(data):
     for actisInfo in parseList:
         serverId = int(actisInfo['serverId'])
         rssi = int(actisInfo['rssi'])
-#        printLog(f'[{index:2d}] Actis{serverId:03d}: -{rssi}dB')
         actisData = ActisInfo(index, serverId, rssi)
+        printLog(f'[{index:2d}] Actis{serverId:03d} ({actisData.cpuIdle:.1f}%): -{rssi}dB')
         actisList.append(actisData)
         alertText += f"Actis{serverId:03d} ({actisData.cpuIdle:.1f}% idle) at -{rssi}dB\n"
         index += 1
@@ -104,7 +104,7 @@ def assignActim(data):
     sendEmail("", "Rainy and Muddy",
               "An Actimetre is trying to connect, only sees these Servers:\n" +
               alertText +
-              f"\nAssigned Actis{actisList[0].serverId:03dd}")
+              f"\nAssigned Actis{actisList[0].serverId:03d}")
 
     return actisList[0].index
 
