@@ -134,7 +134,7 @@ class Actiserver:
         doc, tag, text, line = Doc().ttl()
 
         with tag('tr'):
-            doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
+            doc.asis(f'<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="serverId" value="{self.serverId}" />')
             if NOW - self.lastUpdate < ACTIS_FAIL_TIME:
                 alive = 'up'

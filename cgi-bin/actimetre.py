@@ -1,3 +1,4 @@
+import os.path
 import sys
 
 from const import *
@@ -283,6 +284,8 @@ class Actimetre:
                         text(self.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
                     doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
                     line('span', f' {self.uptime()}', klass=alive)
+                    if not os.path.isfile(f'{IMAGES_DIR}/Actim{self.actimId:04d}.svg'):
+                        self.drawGraph()
                     with tag('div'):
                         doc.stag('img', src=f'/images/Actim{self.actimId:04d}.svg', klass='health')
 
