@@ -1,0 +1,32 @@
+<html>
+<head>
+    <style>
+        body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif;}
+        .small {font-size:80%;}
+        .dead {color:red;}
+    </style>
+    <title>{projectTitle}</title>
+    <link rel="icon" type="image/svg" href="/actimetre.svg">
+</head>
+<body>
+<h1>Delete Project <u>{projectTitle}</u>?</h1>
+<p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
+<p>This project uses the following Actimetres. By removing the project, these Actimetres will become unassigned.</p>
+
+<ul>
+    {actimetreList}
+</ul>
+
+<form action="/bin/acticentral.py" method="get" target="_parent">
+    <input type="hidden" name="formId" value="project-delete" />
+    <input type="hidden" name="projectId" value="{projectId}" />
+
+    <h3>To Confirm</h3>
+    <p>Enter the name of the project owner below to confirm</p>
+    <p><input id="title" type="text" name="owner" value="" required></p>
+
+    <button type="submit" name="action" value="cancel">Cancel</button>
+    <button type="submit" name="action" value="submit">Confirm</button>
+</form>
+</body>
+</html>

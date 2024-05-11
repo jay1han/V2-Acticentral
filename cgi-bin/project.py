@@ -71,8 +71,8 @@ class Project:
             buttons = ""
         else:
             buttons = '''\
-                  <button type="submit" name="action" value="project-edit-info">Edit info</button>
-                  <button type="submit" name="action" value="project-remove">Remove project</button>
+                  <button type="submit" name="action" value="project-edit">Edit info</button>
+                  <button type="submit" name="action" value="project-delete">Delete project</button>
                   '''
 
         if self.projectId == 0:
@@ -216,33 +216,8 @@ class ProjectsClass:
             htmlString += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
         return htmlString
 
-    def processForm(self, formId, args):
-        projectId = int(args['projectId'][0])
-        title = args['title'][0]
-        owner = args['owner'][0]
-        email = args['email'][0]
-
-        if formId == 'project-edit-info':
-            printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
-            if title != "" and owner != "" and email != "":
-                self.setInfo(projectId, title, owner, email)
-        elif formId == 'project-create':
-            printLog(f"Create new project with data: {title}, {owner}, {email}")
-            if title != "" and owner != "" and email != "":
-                self.new(title, owner, email)
-        elif formId == 'project-remove':
-            Actimetres = actimetre.Actimetres
-            if projectId in self.projects:
-                for actimId in self.projects[projectId].actimetreList:
-                    Actimetres.removeProject(actimId)
-                    self.projects[projectId].removeActim(actimId)
-                del self.projects[projectId]
-                self.dirty = True
-
-        print("Location:\\index.html\n\n")
-
     def processAction(self, action, args):
-        if action == 'project-edit-info':
+        if action == 'project-edit':
             project = self.projects[int(args['projectId'][0])]
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
@@ -255,7 +230,7 @@ class ProjectsClass:
         elif action == 'project-create':
             print("Location:\\formCreate.html\n\n")
 
-        elif action == 'project-remove':
+        elif action == 'project-delete':
             project = self.projects[int(args['projectId'][0])]
             actimetreStr = ""
             if len(project.actimetreList) == 0:
@@ -265,11 +240,36 @@ class ProjectsClass:
                 for actimId in project.actimetreList:
                     actimetreStr += Actimetres.htmlCartouche(actimId, withTag='li')
             print("Content-type: text/html\n\n")
-            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRemove.html", {
+            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formDelete.html", {
                 "{projectId}": str(project.projectId),
                 "{projectTitle}": project.name(),
                 "{actimetreList}": actimetreStr,
             })
+
+    def processForm(self, formId, args):
+        projectId = int(args['projectId'][0])
+        title = args['title'][0]
+        owner = args['owner'][0]
+        email = args['email'][0]
+
+        if formId == 'project-edit':
+            printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
+            if title != "" and owner != "" and email != "":
+                self.setInfo(projectId, title, owner, email)
+        elif formId == 'project-create':
+            printLog(f"Create new project with data: {title}, {owner}, {email}")
+            if title != "" and owner != "" and email != "":
+                self.new(title, owner, email)
+        elif formId == 'project-delete':
+            Actimetres = actimetre.Actimetres
+            if projectId in self.projects:
+                for actimId in self.projects[projectId].actimetreList:
+                    Actimetres.removeProject(actimId)
+                    self.projects[projectId].removeActim(actimId)
+                del self.projects[projectId]
+                self.dirty = True
+
+        print("Location:\\index.html\n\n")
 
     def dirtyProject(self, projectId):
         self.projects[projectId].dirty = True
