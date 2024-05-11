@@ -486,7 +486,7 @@ class ActimetresClass:
 
         elif action == 'actim-remove':
             print("Content-type: text/html\n\n")
-            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formMove.html", {
+            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRemove.html", {
                 "{actimId}": str(actim.actimId),
                 "{actimName}": actim.name(),
                 "{actimInfo}": actim.htmlInfo(),
