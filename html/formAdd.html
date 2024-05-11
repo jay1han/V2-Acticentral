@@ -14,13 +14,14 @@
 <p>Please select the Actimetre(s) you wish to add to this project.</p>
 
 <form action="/bin/acticentral.py" method="get" target="_parent">
+    <input type="hidden" name="formId" value="project-add" />
+    <input type="hidden" name="projectId" value="{projectId}" />
 <ul>
     {actimetreList}
 </ul>
 
-    <input type="hidden" name="formId" value="project-add" />
-    <input type="hidden" name="projectId" value="{projectId}" />
-    <button type="submit" name="action" value="submit">Confirm</button>
+    <p><button type="submit" name="action" value="submit">Confirm</button></p>
+
 </form>
 </body>
 </html>
