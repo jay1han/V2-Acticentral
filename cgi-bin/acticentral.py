@@ -21,19 +21,13 @@ Projects = project.initProjects()
 def htmlIndex():
     os.truncate(INDEX_HTML, 0)
     writeTemplateSub(open(INDEX_HTML, "r+"), INDEX_TEMPLATE, {
-        "{Actiservers}": Actiservers.html(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P),
         "{Projects}"   : Projects.htmlProjects(picker=lambda p: p.projectId != 0),
-        "{cgi-bin}"    : CGI_BIN,
+        "{Actiservers}": Actiservers.html(picker=lambda s: len(s.actimetreList) > 0),
     })
 
 def checkAlerts():
     Actimetres.checkAlerts()
     Actiservers.checkAlerts()
-
-def repoStats():
-    Actimetres.repoStat()
-    with open(STAT_FILE, "w") as stat:
-        stat.write(NOW.strftime(TIMEFORMAT_DISP))
 
 def loadRemotes():
     try:
@@ -230,7 +224,6 @@ cmdargs = cmdparser.parse_args()
 if cmdargs.action == 'prepare-stats':
     printLog("Timer prepare-stats")
     checkAlerts()
-    repoStats()
     saveAll()
     lock.close()
     sys.exit(0)

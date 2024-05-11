@@ -4,7 +4,7 @@ import os, json, subprocess
 from datetime import datetime, timedelta, timezone
 from yattag import Doc
 
-VERSION_STR     = "v417"
+VERSION_STR     = "v418"
 FILE_ROOT       = "/etc/actimetre"
 HTML_ROOT       = "/var/www/html"
 
@@ -25,7 +25,6 @@ LOG_FILE        = f"{FILE_ROOT}/central.log"
 PROJECTS        = f"{FILE_ROOT}/projects.data"
 LOCK_FILE       = f"{FILE_ROOT}/acticentral.lock"
 SECRET_FILE     = f"{FILE_ROOT}/.secret"
-STAT_FILE       = f"{FILE_ROOT}/acticentral.stat"
 HISTORY_DIR     = f"{FILE_ROOT}/history"
 ACTIMETRE_DIR   = f"{FILE_ROOT}/actimetre"
 REMOTE_FILE     = f"{FILE_ROOT}/remotes.data"
@@ -36,7 +35,6 @@ SERVERS_HTML    = f"{HTML_ROOT}/servers.html"
 ACTIMS_HTML     = f"{HTML_ROOT}/actims.html"
 ACTIM_HTML_DIR  = f"{HTML_ROOT}/actimetre"
 ACTIMS0_HTML    = f"{HTML_ROOT}/actims-free.html"
-CGI_BIN         = "acticentral.py"
 INDEX_TEMPLATE  = f"{HTML_ROOT}/template.html"
 PROJECT_TEMPLATE= f"{HTML_ROOT}/templateProject.html"
 SERVERS_TEMPLATE= f"{HTML_ROOT}/templateServers.html"
@@ -55,10 +53,8 @@ ACTIS_ALERT2    = timedelta(minutes=30)
 ACTIS_ALERT3    = timedelta(hours=8)
 
 ACTIS_FAIL_TIME = timedelta(seconds=60)
-ACTIS_RETIRE_P  = timedelta(days=7)
-ACTIS_HIDE_P    = timedelta(days=1)
-ACTIM_RETIRE_P  = timedelta(days=1)
-ACTIM_HIDE_P    = timedelta(days=1)
+ACTIS_RETIRE_P  = timedelta(days=30)
+ACTIM_RETIRE_P  = timedelta(days=30)
 
 TIMEZERO        = datetime(year=2023, month=1, day=1, tzinfo=timezone.utc)
 NOW             = datetime.now(timezone.utc)

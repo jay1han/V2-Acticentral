@@ -231,7 +231,7 @@ class Actimetre:
     def html(self):
         doc, tag, text, line = Doc().ttl()
         with tag('tr'):
-            doc.asis(f'<form action="/bin/{CGI_BIN}" method="get">')
+            doc.asis(f'<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{self.actimId}"/>')
             alive = 'up'
             if NOW - self.lastReport > ACTIM_RETIRE_P:
@@ -245,6 +245,10 @@ class Actimetre:
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-restart'):
                         text('Restart')
+                elif alive == 'retire':
+                    doc.asis('<br>')
+                    with tag('button', type='submit', name='action', value='actim-retire'):
+                        text('Retire')
             with tag('td'):
                 text(self.boardType)
                 doc.asis('<br>')
@@ -455,13 +459,6 @@ class ActimetresClass:
             if actimId in self.actims.keys():
                 self.actims[actimId].alert(subject, content)
 
-    def repoStat(self):
-        for a in self.actims.values():
-            if NOW - a.lastReport > ACTIM_HIDE_P:
-                continue
-            a.drawGraphMaybe()
-            Projects.addActim(a.projectId, a.actimId)
-
     def getName(self, actimId: int):
         if actimId in self.actims:
             return self.actims[actimId].name()
@@ -513,7 +510,8 @@ class ActimetresClass:
             })
 
         elif action == 'actim-retire':
-            print("Status: 205\n\n")
+            # TODO
+            print("Status: 204\n\n")
 
         else:
             print("Status: 205\n\n")

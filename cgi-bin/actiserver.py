@@ -147,8 +147,9 @@ class Actiserver:
                 text(self.name())
                 doc.asis('<br>')
                 line('span', self.ip, klass='small')
-            #                if alive == 'retire':
-            #                    line('button', 'Retire', type='submit', name='action', value='retire-server')
+                if alive == 'retire':
+                    doc.asis('<br>')
+                    line('button', 'Retire', type='submit', name='action', value='server-retire')
             line('td', self.machine)
             with tag('td'):
                 if alive == 'up':
@@ -302,11 +303,8 @@ class ActiserversClass:
 
     def processAction(self, action, args):
         if action == 'server-retire':
-            serverId = int(args['serverId'][0])
-            if serverId in self.servers.keys():
-                del self.servers[serverId]
-                self.dirty = True
-            print("Status: 205\n\n")
+            # TODO
+            print("Status: 204\n\n")
         else:
             print("Status: 205\n\n")
 
