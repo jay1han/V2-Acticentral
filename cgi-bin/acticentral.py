@@ -133,7 +133,6 @@ def processAction():
     if action == 'actiserver' or action == 'actiserver3':
         if not checkSecret(): return
         serverId = int(args['serverId'][0])
-        printLog(f"Actis{serverId} alive")
         s = Actiservers.processUpdate(serverId, sys.stdin)
 
         if action == 'actiserver':
