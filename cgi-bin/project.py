@@ -1,6 +1,6 @@
 import sys
 from const import *
-import actimetre
+import actimetre, actiserver
 
 class Project:
     def __init__(self,
@@ -67,6 +67,12 @@ class Project:
         projectActims = ""
         for actimId in self.actimetreList:
             projectActims += Actimetres.html(actimId)
+
+        Actiservers = actiserver.Actiservers
+        serverList = set()
+        for actimId in self.actimetreList:
+            serverList.add(Actimetres.getServerId(actimId))
+
         if self.projectId == 0:
             buttons = ""
         else:
@@ -84,12 +90,13 @@ class Project:
 
         writeTemplateSub(open(f"{HTML_DIR}/project{self.projectId:02d}.html", "w"),
                          PROJECT_TEMPLATE, {
-                         "{buttons}"      : buttons,
-                         "{projectTitle}" : self.name(),
-                         "{projectOwner}" : projectOwner,
-                         "{projectEmail}" : projectEmail,
-                         "{projectActims}": projectActims,
-                         "{projectId}"    : str(self.projectId),
+                         "{buttons}"       : buttons,
+                         "{projectTitle}"  : self.name(),
+                         "{projectOwner}"  : projectOwner,
+                         "{projectEmail}"  : projectEmail,
+                         "{projectActims}" : projectActims,
+                         "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
+                         "{projectId}"     : str(self.projectId),
                          })
         try:
             os.chmod(f"{HTML_DIR}/project{self.projectId:02d}.html", 0o666)

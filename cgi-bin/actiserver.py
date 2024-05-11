@@ -224,16 +224,16 @@ class ActiserversClass:
     def __getitem__(self, item: int):
         return item in self.servers
 
-    def htmlServers(self, *, picker=None):
+    def html(self, *, picker=None):
         htmlString = ""
         for serverId in sorted(self.servers.keys()):
             if picker is None or picker(self.servers[serverId]):
                 htmlString += self.servers[serverId].html()
         return htmlString
 
-    def htmlWriteServers(self):
+    def htmlWrite(self, *, picker=None):
         writeTemplateSub(open(SERVERS_HTML, "w"), SERVERS_TEMPLATE, {
-                         '{Actiservers}': self.htmlServers(),
+                         '{Actiservers}': self.html(picker=picker),
         })
 
     def getLastUpdate(self, serverId):
@@ -318,7 +318,7 @@ class ActiserversClass:
                 self.dirty = True
         if self.dirty:
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
-            self.htmlWriteServers()
+            self.htmlWrite()
 
 Actiservers = ActiserversClass()
 def initActiservers() -> ActiserversClass:

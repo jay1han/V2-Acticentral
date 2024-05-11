@@ -424,6 +424,9 @@ class ActimetresClass:
         self.actims[actimId].projectId = projectId
         self.actims[actimId].dirty = True
 
+    def getServerId(self, actimId):
+        return self.actims[actimId].serverId
+
     def dies(self, actimId):
         if actimId in self.actims.keys():
             self.actims[actimId].dies()

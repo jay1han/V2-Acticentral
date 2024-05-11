@@ -231,6 +231,7 @@ def saveAll():
     Actimetres.save()
     Actiservers.save()
     Projects.save()
+    # DEBUG
     htmlIndex()
 
 import argparse
