@@ -76,12 +76,15 @@ def loadData(filename):
     try:
         registry = open(filename, "r")
     except OSError:
+        printLog(f"Can't open {filename}")
         return {}
     try:
         data = json.load(registry)
     except json.JSONDecodeError:
+        printLog(f"Decode error in {filename}")
         data = {}
     registry.close()
+    printLog(f"Loaded from {filename}: {len(data)} items")
     return data
 
 def dumpData(filename, data):

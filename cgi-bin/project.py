@@ -137,6 +137,7 @@ class ProjectsClass:
             for actimId in p.actimetreList:
                 string += f" Actim{actimId:04d}"
             string += "\n"
+        return string
 
     def __getitem__(self, item: int):
         return item in self.projects
@@ -147,12 +148,14 @@ class ProjectsClass:
             self.projects[0] = Project(0, "Not assigned", "No owner")
             self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-        printLog(self)
 
     def dump(self):
+        string = ""
         for (projectId, p) in self.projects.items():
             if len(p.actimetreList) > 0:
-                print(f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)]))
+                string += f'{projectId}:', ','.join([str(a) for a in list(p.actimetreList)])
+        printLog("Projects dump\n" + string)
+        return string
 
     def htmlProjects(self, *, picker=None):
         htmlString = ""
