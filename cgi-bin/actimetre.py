@@ -292,9 +292,10 @@ class Actimetre:
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='actim-move'):
                         doc.asis('Move')
-                    doc.asis('<br>')
-                    with tag('button', type='submit', name='action', value='actim-remove'):
-                        doc.asis('Remove')
+                    if self.projectId != 0:
+                        doc.asis('<br>')
+                        with tag('button', type='submit', name='action', value='actim-remove'):
+                            doc.asis('Remove')
                 elif alive == 'up' and self.hasData() and Actiservers.getVersion(self.serverId) >= '380':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-stop'):

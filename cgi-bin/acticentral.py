@@ -21,7 +21,7 @@ Actimetres = actimetre.initActimetres()
 def htmlIndex():
     os.truncate(INDEX_HTML, 0)
     writeTemplateSub(open(INDEX_HTML, "r+"), INDEX_TEMPLATE, {
-        "{Actiservers}": Actiservers.htmlServers(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P),
+        "{Actiservers}": Actiservers.html(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P),
         "{Projects}"   : Projects.htmlProjects(),
         "{cgi-bin}"    : CGI_BIN,
     })
