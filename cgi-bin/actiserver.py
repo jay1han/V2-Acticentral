@@ -193,7 +193,7 @@ class Actiserver:
                     with tag('td', klass='right'):
                         for actimId in self.actimetreList:
                             with tag('div'):
-                                doc.asis(Actimetres.htmlRepo(actimId, self.version, self.ip))
+                                doc.asis(Actimetres.htmlRepo(actimId, self.ip))
                     if self.diskSize > 0:
                         diskState = ''
                         if self.diskFree < self.diskSize // 10:

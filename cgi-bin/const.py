@@ -113,6 +113,15 @@ def printSize(size, unit='', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
+def printTimeSpan(span: timedelta):
+    days = span // timedelta(days=1)
+    hours = (span % timedelta(days=1)) // timedelta(hours=1)
+    minutes = (span % timedelta(hours=1)) // timedelta(minutes=1)
+    if span > timedelta(days=1):
+        return f'{days}d{hours}h'
+    else:
+        return f'{hours}h{minutes:02d}m'
+
 def utcStrptime(string):
     return datetime.strptime(string.strip() + "+0000", TIMEFORMAT_UTC)
 
@@ -168,22 +177,4 @@ def writeTemplateSub(output, template: str, substitutions: dict[str,str]):
         content = content.replace(before, after)
     print(content, file=output)
     return content
-
-REDRAW_TIME  = timedelta(minutes=5)
-REDRAW_DEAD  = timedelta(minutes=30)
-GRAPH_SPAN   = timedelta(days=7)
-GRAPH_CULL   = timedelta(days=6)
-FSCALETAG    = {50:5, 100:10}
-FSCALEV3     = {100:3, 1000:5, 4000:8, 8000:10}
-FSCALEV3TAG  = {100:3, 1000:5, 4000:8}
-
-def scaleFreq(version, origFreq):
-    if origFreq == 0:
-        return 0
-    if version >= "300":
-        for limit, scale in FSCALEV3.items():
-            if origFreq <= limit:
-                return scale
-    else:
-        return origFreq // 10
 

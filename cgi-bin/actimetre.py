@@ -71,14 +71,14 @@ class Actimetre:
         self.version    = d['version']
         self.serverId   = int(d['serverId'])
         self.isDead     = int(d['isDead'])
-        self.isStopped = (str(d['isStopped']).strip().upper() == "TRUE")
+        self.isStopped  = (str(d['isStopped']).strip().upper() == "TRUE")
         self.bootTime   = utcStrptime(d['bootTime'])
         self.lastSeen   = utcStrptime(d['lastSeen'])
         self.lastReport = utcStrptime(d['lastReport'])
         self.sensorStr  = d['sensorStr']
         self.frequency  = int(d['frequency'])
         self.rating     = float(d['rating'])
-        self.rssi   = int(d['rssi'])
+        self.rssi       = int(d['rssi'])
         self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
 
@@ -205,10 +205,10 @@ class Actimetre:
 
     def frequencyText(self, sensorStr = None):
         if self.isDead > 0 or self.frequency == 0:
-            if sensorStr is not None:
-                return f"({sensorStr})<br>dead"
-            else:
+            if sensorStr is None or sensorStr == "":
                 return "(dead)"
+            else:
+                return f"({sensorStr})<br>dead"
         else:
             if self.frequency >= 1000:
                 text = f"{self.frequency // 1000}kHz"
@@ -224,13 +224,7 @@ class Actimetre:
             up = NOW - self.lastReport
         else:
             up = NOW - self.bootTime
-        days = up // timedelta(days=1)
-        hours = (up % timedelta(days=1)) // timedelta(hours=1)
-        minutes = (up % timedelta(hours=1)) // timedelta(minutes=1)
-        if up > timedelta(days=1):
-            return f'{days}d{hours}h'
-        else:
-            return f'{hours}h{minutes:02d}m'
+        return printTimeSpan(up)
 
     def hasData(self):
         return self.repoNums > 0 or self.repoSize > 0
@@ -248,7 +242,7 @@ class Actimetre:
 
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
-                if self.version >= '301' and alive == 'up' and Actiservers.getVersion(self.serverId) >= '301':
+                if alive == 'up':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-restart'):
                         text('Reboot')
@@ -257,15 +251,13 @@ class Actimetre:
                 doc.asis('<br>')
                 text(f"v{self.version}")
             if self.serverId != 0:
-                if Actiservers.isDown(self.serverId) == 0:
-                    line('td', f"Actis{self.serverId:03d}")
-                else:
-                    line('td', f"Actis{self.serverId:03d}", klass="down")
+                if Actiservers.isDown(self.serverId) > 0: actis = "down"
+                line('td', f"Actis{self.serverId:03d}", klass=actis)
             else:
                 line('td', "")
             with tag('td'):
                 doc.asis(self.frequencyText(self.sensorStr))
-                if self.version >= '301' and alive == 'up' and Actiservers.getVersion(self.serverId) >= '301':
+                if alive == 'up':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-button'):
                         text('Button')
@@ -385,18 +377,14 @@ class ActimetresClass:
             else: return self.actims[actimId].htmlCartouche()
         else: return ""
 
-    def htmlRepo(self, actimId: int, version: str, ip: str):
+    def htmlRepo(self, actimId: int, ip: str):
         a = self.actims[actimId]
         doc, tag, text, line = Doc().ttl()
 
         if a.repoNums == 0:
             text('(No data)')
         else:
-            if version >= "345":
-                link = f'http://{ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'
-            else:
-                link = f'http://{ip}/index{a.actimId:04d}.html'
-            with tag('a', href=link):
+            with tag('a', href=f'http://{ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'):
                 doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
         return doc.getvalue()
 

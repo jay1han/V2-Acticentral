@@ -2,9 +2,25 @@ from const import *
 
 from actimetre import Actimetre
 
+REDRAW_TIME  = timedelta(minutes=5)
+REDRAW_DEAD  = timedelta(minutes=30)
+GRAPH_SPAN   = timedelta(days=7)
+GRAPH_CULL   = timedelta(days=6)
+FSCALE       = {100:2, 1000:5, 4000:10}
+FSCALETAG    = {100:2, 1000:5, 4000:10}
+
 class ActimHistory:
     def __init__(self, actim):
         self.a: Actimetre = actim
+
+    def scaleFreq(self, origFreq):
+        if origFreq == 0:
+            return 0
+        for limit, scale in FSCALE.items():
+            if origFreq <= limit:
+                return scale
+        else:
+            return origFreq // 10
 
     def cutHistory(self, cutLength):
         if cutLength is None:
@@ -62,23 +78,20 @@ class ActimHistory:
             for line in history:
                 timeStr, part, freqStr = line.partition(':')
                 time = utcStrptime(timeStr.strip())
-                freq = scaleFreq(self.a.version, int(freqStr))
+                freq = self.scaleFreq(int(freqStr))
                 if len(timeline) == 0 or freq != frequencies[-1]:
                     timeline.append(time)
                     frequencies.append(freq)
 
         timeline.append(NOW)
-        frequencies.append(scaleFreq(self.a.version, self.a.frequency))
-        freq = [scaleFreq(self.a.version, self.a.frequency) for _ in range(len(timeline))]
+        frequencies.append(self.scaleFreq(self.a.frequency))
+        freq = [self.scaleFreq(self.a.frequency) for _ in range(len(timeline))]
 
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
         ax.set_ylim(bottom=-1, top=12)
         ax.axvline(timeline[0], 0, 0.95, lw=1.0, c="blue", marker="^", markevery=[1], ms=5.0, mfc="blue")
-        if self.a.version >= "300":
-            fscale = FSCALEV3TAG
-        else:
-            fscale = FSCALETAG
+        fscale = FSCALETAG
         for real, drawn in fscale.items():
             if self.a.frequency == real:
                 c = 'green'
