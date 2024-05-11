@@ -199,4 +199,4 @@ def plain(text=''):
     print(text)
 
 def olderThanSeconds(time, seconds):
-    return NOW - datetime.fromtimestamp(time) > timedelta(seconds=seconds)
+    return NOW - datetime.fromtimestamp(time, timezone.utc) > timedelta(seconds=seconds)

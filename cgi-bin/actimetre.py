@@ -317,6 +317,7 @@ class Actimetre:
 
     def save(self):
         if self.dirty:
+            printLog(f'Actim{self.actimId:04d} is dirty')
             Projects.dirtyProject(self.projectId)
             filename = f'{ACTIMETRE_DIR}/actim{self.actimId:04d}.data'
             with open(filename, "w") as data:

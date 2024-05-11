@@ -122,9 +122,11 @@ class Project:
     def save(self):
         if self.dirty:
             if self.projectId == 0:
+                printLog('Write free Actimetres list')
                 self.htmlWriteFree()
                 return True
             else:
+                printLog(f'Project{self.projectId:02d} is dirty')
                 self.htmlWrite()
         return False
 
