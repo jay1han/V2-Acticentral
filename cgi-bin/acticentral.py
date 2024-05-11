@@ -107,19 +107,12 @@ def plain(text=''):
     print(text)
 
 def processForm(formId):
-    password = args['password'][0]
-    if password != SECRET_KEY:
-        print("Location:\\password.html\n\n")
-        return
-    
     if formId.startswith('project-'):
         Projects.processForm(formId, args)
-
     elif formId.startswith('actim-'):
         Actimetres.processForm(formId, args)
-
     else:
-        print("Location:\\index.html\n\n")
+        print(f"Location:\\{INDEX_NAME}\n\n")
 
 def checkSecret():
     if secret != SECRET_KEY:
@@ -174,7 +167,7 @@ def processAction():
         actimId = int(args['actimId'][0])
         printLog(f'Actim{actimId:04d} CLEAR {Actimetres.getReportStr(actimId)}')
         Actimetres.setReportStr(actimId, "")
-        print("Location:\\index.html\n\n")
+        print(f"Location:\\{INDEX_NAME}\n\n")
 
     elif action == 'actimetre-new':
         if not checkSecret(): return
@@ -220,7 +213,7 @@ def processAction():
         elif action == 'remote-stop'   : command = 0x30
         elif action == 'remote-restart': command = 0xF0
         remoteAction(int(args['actimId'][0]), command)
-        print("Location:\\index.html\n\n")
+        print(f"Location:\\{INDEX_NAME}\n\n")
 
     elif action.startswith('project-'):
         Projects.processAction(action, args)
@@ -231,7 +224,7 @@ def processAction():
         processForm(formId)
 
     elif action == 'cancel':
-        print("Location:\\index.html\n\n")
+        print(f"Location:\\{INDEX_NAME}\n\n")
 
 
 def saveAll():
