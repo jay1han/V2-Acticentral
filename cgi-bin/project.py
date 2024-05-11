@@ -87,12 +87,12 @@ class Project:
 
     def htmlWriteFree(self):
         Actimetres = actimetre.Actimetres
-        projectActims = ""
+        freeActims = ""
         for actimId in self.actimetreList:
-            projectActims += Actimetres.html(actimId)
+            freeActims += Actimetres.html(actimId)
 
         writeTemplateSub(open(ACTIMS0_HTML, "w"), ACTIMS0_TEMPLATE, {
-                             "{projectActims}" : projectActims,
+                             f"{Actimetres}" : freeActims,
                          })
 
     def html(self):
