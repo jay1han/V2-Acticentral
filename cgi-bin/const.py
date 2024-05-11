@@ -172,9 +172,17 @@ def htmlRssi(rssi):
                 line('td', ' ', width=f'{widthEmpty}%')
     return doc.getvalue()
 
+CONSTANT = {
+    "{Updated}"    : LAST_UPDATED,
+    "{Version}"    : VERSION_STR,
+    "{Index}"      : INDEX_NAME,
+}
+
 def writeTemplateSub(output, template: str, substitutions: dict[str,str]):
     content = open(template, "r").read()
     for before, after in substitutions.items():
+        content = content.replace(before, after)
+    for before, after in CONSTANT.items():
         content = content.replace(before, after)
     print(content, file=output)
     return content

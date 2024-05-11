@@ -292,6 +292,9 @@ class Actimetre:
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='actim-change-project'):
                         doc.asis('Move')
+                    doc.asis('<br>')
+                    with tag('button', type='submit', name='action', value='actim-free'):
+                        doc.asis('Remove')
                 elif alive == 'up' and self.hasData() and Actiservers.getVersion(self.serverId) >= '380':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-stop'):
@@ -491,8 +494,14 @@ class ActimetresClass:
             actim.drawGraph()
             print(f"Location:\\project{actim.projectId:02d}.html\n\n")
 
-        elif action == 'actim-forget' or action == 'actim-decouple':
+        elif action == 'actim-forget':
             actim.forgetData()
+            print("Location:\\index.html\n\n")
+
+        elif action == 'actim-free':
+            Projects.removeActim(actim.actimId)
+            actim.projectId = 0
+            actim.dirty = True
             print("Location:\\index.html\n\n")
 
         elif action == 'actim-retire':

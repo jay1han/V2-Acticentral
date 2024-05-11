@@ -23,10 +23,7 @@ def htmlIndex():
     writeTemplateSub(open(INDEX_HTML, "r+"), INDEX_TEMPLATE, {
         "{Actiservers}": Actiservers.htmlServers(picker=lambda s: NOW - s.lastUpdate < ACTIS_HIDE_P),
         "{Projects}"   : Projects.htmlProjects(),
-        "{Updated}"    : LAST_UPDATED,
-        "{Version}"    : VERSION_STR,
         "{cgi-bin}"    : CGI_BIN,
-        "{Index}"      : INDEX_NAME,
     })
 
 def checkAlerts():

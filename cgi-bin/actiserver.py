@@ -234,9 +234,6 @@ class ActiserversClass:
     def htmlWriteServers(self):
         writeTemplateSub(open(SERVERS_HTML, "w"), SERVERS_TEMPLATE, {
                          '{Actiservers}': self.htmlServers(),
-                         '{Updated}'    : LAST_UPDATED,
-                         '{Index}'      : INDEX_NAME,
-                         "{Version}"    : VERSION_STR,
         })
 
     def getLastUpdate(self, serverId):

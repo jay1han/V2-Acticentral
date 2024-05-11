@@ -90,9 +90,6 @@ class Project:
                          "{projectEmail}" : projectEmail,
                          "{projectActims}": projectActims,
                          "{projectId}"    : str(self.projectId),
-                         "{Updated}"      : LAST_UPDATED,
-                         "{Index}"        : INDEX_NAME,
-                         "{Version}"      : VERSION_STR,
                          })
         try:
             os.chmod(f"{HTML_DIR}/project{self.projectId:02d}.html", 0o666)
