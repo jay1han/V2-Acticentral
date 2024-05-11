@@ -302,7 +302,7 @@ class ActiserversClass:
 
     def save(self):
         for server in self.servers.values():
-            if server.save():
+            if server.save(): #TODO refine dirtiness
                 self.dirty = True
         if self.dirty:
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})

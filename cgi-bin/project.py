@@ -354,7 +354,7 @@ class ProjectsClass:
     def save(self):
         for p in self.projects.values():
             p.save()
-        if self.dirty:
+        if self.dirty: #TODO: refine dirtiness
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
             self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
             self.projects[0].htmlWriteFree()

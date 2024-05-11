@@ -5,7 +5,6 @@ systemctl stop acticentral-daily.timer
 systemctl stop acticentral-weekly.timer
 
 mkdir /etc/actimetre
-mkdir /etc/actimetre/actimetre
 mkdir /etc/actimetre/history
 mkdir /etc/actimetre/daily
 mkdir /etc/actimetre/weekly
@@ -14,6 +13,8 @@ mkdir /etc/matplotlib
 chmod 777 /etc/matplotlib
 mkdir /var/www/cgi-bin
 mkdir /var/www/html/images
+mkdir /var/www/html/actimetre
+mkdir /var/www/html/actiserver
 
 cp .secret *.sh administrators /etc/actimetre
 cp cgi-bin/*.py /var/www/cgi-bin/
@@ -23,10 +24,10 @@ cp *.timer /etc/systemd/system/
 
 cd /var/www
 chown -R www-data:www-data *
-chmod 666 html/* html/images/*
+chmod 666 html/* html/images/* html/actimetre/* html/actiserver/*
 chmod 664 html/index.html
 chmod 775 cgi-bin/acticentral.py
-chmod 777 html html/images
+chmod 777 html html/images html/actimetre html/actiserver
 
 cd /etc/actimetre
 echo > central.log

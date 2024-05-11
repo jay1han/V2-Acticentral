@@ -329,14 +329,9 @@ class Actimetre:
         if self.dirty:
             printLog(f'Actim{self.actimId:04d}[{self.projectId}] is dirty')
             Projects.dirtyProject(self.projectId)
-            filename = f'{ACTIMETRE_DIR}/actim{self.actimId:04d}.data'
-            with open(filename, "w") as data:
-                json.dump(self.toD(), data)
-            try: os.chmod(filename, 0o666)
-            except OSError: pass
-            with open(f'{HTML_ROOT}/actim{self.actimId:04d}.html', "w") as html:
+            with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
-            try: os.chmod(filename, 0o666)
+            try: os.chmod(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', 0o666)
             except OSError: pass
             return True
         else: return False

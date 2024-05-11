@@ -214,8 +214,8 @@ def saveAll():
     Actimetres.save()
     Actiservers.save()
     Projects.save()
-    if Actimetres.dirty or Actiservers.dirty or Projects.dirty:
-        htmlIndex()
+    #TODO refine dirtiness
+    if Projects.dirty or Actiservers.dirty: htmlIndex()
 
 import argparse
 cmdparser = argparse.ArgumentParser()
