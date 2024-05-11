@@ -195,7 +195,7 @@ class Actiserver:
     def save(self):
         if self.dirty:
             printLog(f'Actis{self.serverId:03d} is dirty')
-            with open(f'{HTML_ROOT}/server{self.serverId:03d}.html', "w") as html:
+            with open(f'{SERVER_HTML_DIR}/server{self.serverId:03d}.html', "w") as html:
                 print(self.html(), file=html)
             return True
         else: return False
@@ -209,6 +209,10 @@ class ActiserversClass:
         self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
         if olderThanSeconds(os.stat(SERVERS_HTML).st_mtime, 3600):
             self.dirty = True
+        for server in self.servers.values():
+            htmlFile = f'{SERVER_HTML_DIR}/server{server.serverId:03d}.html'
+            if not os.path.isfile(htmlFile) or olderThanSeconds(os.stat(htmlFile).st_mtime, 3600):
+                server.dirty = True
 
     def __getitem__(self, item: int):
         return item in self.servers
