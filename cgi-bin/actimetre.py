@@ -496,6 +496,9 @@ class ActimetresClass:
         elif action == 'actim-retire':
             print("Status: 205\n\n")
 
+        else:
+            print("Status: 400\n\n")
+
     def processForm(self, formId, args):
         actim = self.actims[int(args['actimId'][0])]
 

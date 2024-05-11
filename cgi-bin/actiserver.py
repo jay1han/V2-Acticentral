@@ -303,10 +303,12 @@ class ActiserversClass:
             if serverId in self.servers.keys():
                 del self.servers[serverId]
                 self.dirty = True
-        print("Status: 205\n\n")
+            print("Status: 205\n\n")
+        else:
+            print("Status: 400\n\n")
 
     def processForm(self, formId, args):
-        print("Status: 204\n\n")
+        print("Status: 400\n\n")
 
     def save(self):
         for server in self.servers.values():

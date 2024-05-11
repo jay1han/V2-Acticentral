@@ -224,7 +224,7 @@ def processAction():
         printLog(f"Submitted form {formId}")
         processForm(formId)
 
-    else: print("Status: 204\n\n")
+    else: print("Status: 400\n\n")
 
 def saveAll():
     Registry.save()

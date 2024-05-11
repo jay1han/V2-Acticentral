@@ -254,6 +254,9 @@ class ProjectsClass:
                 "{actimetreList}": actimetreStr,
             })
 
+        else:
+            print("Status: 400\n\n")
+
     def processForm(self, formId, args):
         title = args['title'][0]
         owner = args['owner'][0]
@@ -285,7 +288,8 @@ class ProjectsClass:
                 self.dirty = True
             print("Location:\\index.html\n\n")
 
-        print("Status: 204\n\n")
+        else:
+            print("Status: 400\n\n")
 
     def dirtyProject(self, projectId):
         self.projects[projectId].dirty = True
