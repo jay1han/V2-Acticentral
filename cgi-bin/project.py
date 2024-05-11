@@ -247,6 +247,7 @@ class ProjectsClass:
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
                 "{projectTitle}": project.title,
+                "{projectName}": project.name(),
                 "{projectOwner}": project.owner,
                 "{projectId}": str(project.projectId),
             })
