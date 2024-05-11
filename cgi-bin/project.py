@@ -285,7 +285,7 @@ class ProjectsClass:
                 self.dirty = True
             print("Location:\\index.html\n\n")
 
-        print("204 No Content\n\n")
+        print("Status: 204\n\n")
 
     def dirtyProject(self, projectId):
         self.projects[projectId].dirty = True
