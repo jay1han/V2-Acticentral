@@ -65,10 +65,10 @@ class Project:
         Actimetres = actimetre.Actimetres
         projectActims = ""
         for actimId in sorted(self.actimetreList):
-            if Actimetres[actimId]:
+            if Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
         for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
-            if not Actimetres[actimId]:
+            if not Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
 
         Actiservers = actiserver.Actiservers

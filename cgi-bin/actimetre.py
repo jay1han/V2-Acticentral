@@ -358,6 +358,9 @@ class ActimetresClass:
             self.actims[a.actimId] = a
         return a.actimId
 
+    def isAlive(self, actimId: int):
+        return actimId in self.actims.keys() and self.actims[actimId].isDead == 0
+
     def removeProject(self, actimId: int):
         if actimId in self.actims:
             self.actims[actimId].projectId = 0
