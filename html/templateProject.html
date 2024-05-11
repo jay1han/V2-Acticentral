@@ -31,9 +31,10 @@
     <h1>Project <u>{projectTitle}</u></h1>
     {projectOwner}
     {projectEmail}
-    <form action="/bin/acticentral.py" method="get">
+    <form action="/bin/acticentral.py" method="get" {hidden}>
       <input type="hidden" name="projectId" value="{projectId}" />
-      {buttons}
+      <button type="submit" name="action" value="project-edit">Edit info</button>
+      <button type="submit" name="action" value="project-delete">Delete project</button>
     </form>
 
     <h1>Actimetres</h1>

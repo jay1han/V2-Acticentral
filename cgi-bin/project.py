@@ -62,7 +62,6 @@ class Project:
         return f"{self.title} (#{self.projectId:02d})"
 
     def htmlWrite(self):
-        printLog(f'HTML: {self}')
         Actimetres = actimetre.Actimetres
         projectActims = ""
         for actimId in self.actimetreList:
@@ -73,24 +72,11 @@ class Project:
         for actimId in self.actimetreList:
             serverList.add(Actimetres.getServerId(actimId))
 
-        if self.projectId == 0:
-            buttons = ""
-        else:
-            buttons = '''\
-                  <button type="submit" name="action" value="project-edit">Edit info</button>
-                  <button type="submit" name="action" value="project-delete">Delete project</button>
-                  '''
+        projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
+        projectEmail = f"<h3>Email: {self.email}</h3>"
 
-        if self.projectId == 0:
-            projectOwner = ""
-            projectEmail = ""
-        else:
-            projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
-            projectEmail = f"<h3>Email: {self.email}</h3>"
-
-        writeTemplateSub(open(f"{HTML_DIR}/project{self.projectId:02d}.html", "w"),
+        writeTemplateSub(open(f"{HTML_ROOT}/project{self.projectId:02d}.html", "w"),
                          PROJECT_TEMPLATE, {
-                         "{buttons}"       : buttons,
                          "{projectTitle}"  : self.name(),
                          "{projectOwner}"  : projectOwner,
                          "{projectEmail}"  : projectEmail,
@@ -98,10 +84,16 @@ class Project:
                          "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
                          "{projectId}"     : str(self.projectId),
                          })
-        try:
-            os.chmod(f"{HTML_DIR}/project{self.projectId:02d}.html", 0o666)
-        except OSError:
-            pass
+
+    def htmlWriteFree(self):
+        Actimetres = actimetre.Actimetres
+        projectActims = ""
+        for actimId in self.actimetreList:
+            projectActims += Actimetres.html(actimId)
+
+        writeTemplateSub(open(ACTIMS0_HTML, "w"), ACTIMS0_TEMPLATE, {
+                             "{projectActims}" : projectActims,
+                         })
 
     def html(self):
         Actimetres = actimetre.Actimetres
@@ -123,7 +115,11 @@ class Project:
         return doc.getvalue()
 
     def save(self):
-        if self.dirty: self.htmlWrite()
+        if self.dirty:
+            if self.projectId == 0:
+                self.htmlWriteFree()
+            else:
+                self.htmlWrite()
 
 class ProjectsClass:
     def __init__(self):
@@ -228,7 +224,7 @@ class ProjectsClass:
         if action == 'project-edit':
             project = self.projects[int(args['projectId'][0])]
             print("Content-type: text/html\n\n")
-            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
+            writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formProject.html", {
                 "{projectTitle}": project.title,
                 "{projectName}": project.name(),
                 "{projectOwner}": project.owner,
@@ -248,7 +244,7 @@ class ProjectsClass:
                 for actimId in project.actimetreList:
                     actimetreStr += Actimetres.htmlCartouche(actimId, withTag='li')
             print("Content-type: text/html\n\n")
-            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formDelete.html", {
+            writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formDelete.html", {
                 "{projectId}": str(project.projectId),
                 "{projectTitle}": project.name(),
                 "{actimetreList}": actimetreStr,

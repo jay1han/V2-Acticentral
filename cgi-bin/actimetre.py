@@ -318,8 +318,15 @@ class Actimetre:
     def save(self):
         if self.dirty:
             Projects.dirtyProject(self.projectId)
-            with open(f'{HTML_ROOT}/actim{self.actimId:04d}.html', "w") as html:
+            filename = f'{ACTIMETRE_DIR}/actim{self.actimId:04d}.data'
+            with open(filename, "w") as data:
+                json.dump(self.toD(), data)
+            try: os.chmod(filename, 0o666)
+            except OSError: pass
+            with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
+            try: os.chmod(filename, 0o666)
+            except OSError: pass
             return True
         else: return False
 
@@ -474,7 +481,7 @@ class ActimetresClass:
 
         elif action == 'actim-move':
             print("Content-type: text/html\n\n")
-            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formMove.html", {
+            writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formMove.html", {
                 "{actimId}": str(actim.actimId),
                 "{actimName}": actim.name(),
                 "{actimInfo}": actim.htmlInfo(),
@@ -486,7 +493,7 @@ class ActimetresClass:
 
         elif action == 'actim-remove':
             print("Content-type: text/html\n\n")
-            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRemove.html", {
+            writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formRemove.html", {
                 "{actimId}": str(actim.actimId),
                 "{actimName}": actim.name(),
                 "{actimInfo}": actim.htmlInfo(),
@@ -532,6 +539,12 @@ class ActimetresClass:
                 self.dirty = True
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
+            htmlStr = ''
+            for actim in self.actims.values():
+                htmlStr += actim.html()
+            writeTemplateSub(open(f'{ACTIM_HTML_DIR}/actims.html', "w"), ACTIMS_TEMPLATE, {
+                "{Actimetres}": htmlStr,
+            })
 
 Actimetres = ActimetresClass()
 def initActimetres() -> ActimetresClass:
