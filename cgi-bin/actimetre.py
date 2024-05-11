@@ -275,7 +275,9 @@ class Actimetre:
                 line('td', "")
 
             if alive == 'retire':
-                line('td', f"Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}", klass=f'health retire')
+                line('td', (f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)} ' +
+                            f'({printTimeSpan(NOW - self.lastSeen)} ago)'),
+                           klass=f'health retire')
             else:
                 with tag('td', klass=f'health left'):
                     if self.graphSince == TIMEZERO:
@@ -285,6 +287,7 @@ class Actimetre:
                     doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
                     line('span', f' {self.uptime()}', klass=alive)
                     if not os.path.isfile(f'{IMAGES_DIR}/Actim{self.actimId:04d}.svg'):
+                        self.cutHistory()
                         self.drawGraph()
                     with tag('div'):
                         doc.stag('img', src=f'/images/Actim{self.actimId:04d}.svg', klass='health')
