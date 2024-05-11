@@ -153,7 +153,7 @@ class ProjectsClass:
         string = ""
         for (projectId, p) in self.projects.items():
             if len(p.actimetreList) > 0:
-                string += f'{projectId}:' + ','.join([str(a) for a in list(p.actimetreList)])
+                string += f'{projectId}:' + ','.join([str(a) for a in list(p.actimetreList)]) + '\n'
         printLog("Projects dump\n" + string)
         return string
 
