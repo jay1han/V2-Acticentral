@@ -130,8 +130,7 @@ class Actimetre:
         self.repoNums   = newActim.repoNums
         self.repoSize   = newActim.repoSize
 
-        if redraw:
-            self.drawGraph()
+        if redraw: self.drawGraph()
         return redraw
 
     def name(self):
@@ -251,8 +250,8 @@ class Actimetre:
                 doc.asis('<br>')
                 text(f"v{self.version}")
             if self.serverId != 0:
-                if Actiservers.isDown(self.serverId) > 0: actis = "down"
-                line('td', f"Actis{self.serverId:03d}", klass=actis)
+                line('td', f"Actis{self.serverId:03d}",
+                     klass="" if (Actiservers.isDown(self.serverId) == 0) else "down")
             else:
                 line('td', "")
             with tag('td'):
@@ -265,10 +264,8 @@ class Actimetre:
                 with tag('td'):
                     doc.asis(htmlRssi(self.rssi))
                     doc.stag('br')
-                    if self.isStopped:
-                        text('stopped')
-                    else:
-                        text("{:.3f}%".format(100.0 * self.rating))
+                    if self.isStopped: text('stopped')
+                    else:              text("{:.3f}%".format(100.0 * self.rating))
             else:
                 line('td', "")
 
@@ -286,8 +283,7 @@ class Actimetre:
                         doc.stag('img', src=f'/images/Actim{self.actimId:04d}.svg', klass='health')
 
             with tag('td', klass='right'):
-                if not self.hasData():
-                    text('No data')
+                if not self.hasData(): text('No data')
                 else:
                     text(f'{self.repoNums} files')
                     doc.stag('br')
