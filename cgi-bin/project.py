@@ -64,7 +64,7 @@ class Project:
     def htmlWrite(self):
         Actimetres = actimetre.Actimetres
         projectActims = ""
-        for actimId in self.actimetreList:
+        for actimId in sorted(self.actimetreList):
             projectActims += Actimetres.html(actimId)
 
         Actiservers = actiserver.Actiservers
@@ -118,8 +118,10 @@ class Project:
         if self.dirty:
             if self.projectId == 0:
                 self.htmlWriteFree()
+                return True
             else:
                 self.htmlWrite()
+        return False
 
 class ProjectsClass:
     def __init__(self):
@@ -294,11 +296,12 @@ class ProjectsClass:
         return self.fileTime > serverTime
 
     def save(self):
+        for p in self.projects.values():
+            p.save()
         if self.dirty:
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
             self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-        for p in self.projects.values():
-            p.save()
+            self.projects[0].save()
 
 Projects = ProjectsClass()
 def initProjects() -> ProjectsClass:

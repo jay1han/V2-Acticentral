@@ -540,8 +540,8 @@ class ActimetresClass:
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
             htmlStr = ''
-            for actim in self.actims.values():
-                htmlStr += actim.html()
+            for actimId in sorted(self.actims.keys()):
+                htmlStr += self.actims[actimId].html()
             writeTemplateSub(open(f'{HTML_ROOT}/actims.html', "w"), ACTIMS_TEMPLATE, {
                 "{Actimetres}": htmlStr,
             })
