@@ -86,13 +86,14 @@ class Project:
                          })
 
     def htmlWriteFree(self):
+        printLog(f"htmlWriteFree {ACTIMS0_HTML}")
         Actimetres = actimetre.Actimetres
         freeActims = ""
         for actimId in self.actimetreList:
             freeActims += Actimetres.html(actimId)
 
         writeTemplateSub(open(ACTIMS0_HTML, "w"), ACTIMS0_TEMPLATE, {
-                             f"{Actimetres}" : freeActims,
+                             "{Actimetres}" : freeActims,
                          })
 
     def html(self):
