@@ -64,18 +64,24 @@ class Project:
     def htmlWrite(self):
         Actimetres = actimetre.Actimetres
         projectActims = ""
+        logStr = f'HTML Project{self.projectId:02d}: '
         for actimId in sorted(self.actimetreList):
             if Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
+                logStr += f' Actim{actimId:04d}'
         for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
             if not Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
+                logStr += f' Actim{actimId:04d}'
 
         Actiservers = actiserver.Actiservers
         serverList = set()
-        for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getServerId(a)):
-            serverList.add(Actimetres.getServerId(actimId))
+        for serverId in sorted(map(Actimetres.getServerId, self.actimetreList)):
+            if serverId != 0:
+                serverList.add(serverId)
+                logStr += f' Actis{serverId:03d}'
 
+        printLog(logStr)
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
         projectEmail = f"<h3>Email: {self.email}</h3>"
 

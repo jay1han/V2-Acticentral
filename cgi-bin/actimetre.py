@@ -422,7 +422,9 @@ class ActimetresClass:
         self.actims[actimId].dirty = True
 
     def getServerId(self, actimId: int):
-        return self.actims[actimId].serverId
+        if actimId in self.actims.keys():
+            return self.actims[actimId].serverId
+        else: return 0
 
     def getLastSeen(self, actimId: int):
         if actimId in self.actims.keys():
@@ -474,17 +476,19 @@ class ActimetresClass:
             # check secret
             message = sys.stdin.read()
             printLog(f'Actim{actim.actimId:04d} "{message}"')
-            actim.reportStr = ""
+            actim.reportStr = message
+            actim.dirty = True
             plain('OK')
 
         elif action == 'actim-clear':
             printLog(f'Actim{actim.actimId:04d} CLEAR "{actim.reportStr}"')
             actim.reportStr = ""
+            actim.dirty = True
             print("Status: 205\n\n")
 
         elif action == 'actim-forget':
             actim.forgetData()
-            print("Location:\\index.html\n\n")
+            print("Status: 205\n\n")
 
         elif action == 'actim-move':
             print("Content-type: text/html\n\n")
