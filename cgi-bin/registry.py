@@ -56,4 +56,7 @@ class RegistryClass:
     def needUpdate(self, serverTime):
         return self.fileTime > serverTime
 
+    def listActims(self):
+        return self.macToId.values()
+
 Registry = RegistryClass()

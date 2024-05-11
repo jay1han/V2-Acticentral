@@ -329,6 +329,9 @@ class ActimetresClass:
 
     def init(self):
         self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
+        for actimId in Registry.listActims():
+            if actimId not in self.actims.keys():
+                self.actims[actimId] = Actimetre(actimId)
 
     def str(self, actimId):
         if actimId in self.actims.keys():
