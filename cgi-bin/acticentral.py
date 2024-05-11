@@ -82,8 +82,9 @@ def assignActim(data):
         serverId = int(actisInfo['serverId'])
         rssi = int(actisInfo['rssi'])
 #        printLog(f'[{index:2d}] Actis{serverId:03d}: -{rssi}dB')
-        alertText += f"Actis{serverId:03d} ({actisInfo.cpuIdle:.1f}% idle) at -{rssi}dB\n"
-        actisList.append(ActisInfo(index, serverId, rssi))
+        actisData = ActisInfo(index, serverId, rssi)
+        actisList.append(actisData)
+        alertText += f"Actis{serverId:03d} ({actisData.cpuIdle:.1f}% idle) at -{rssi}dB\n"
         index += 1
 
     airNotRain = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 37 and actisInfo.cpuIdle >= 0.5]
