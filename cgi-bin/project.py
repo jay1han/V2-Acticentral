@@ -152,6 +152,10 @@ class ProjectsClass:
             self.projects[0] = Project(0, "Not assigned", "No owner")
             self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+        for project in self.projects.values():
+            htmlFile = f'{HTML_ROOT}/project{project.projectId:02d}.html'
+            if not os.path.isfile(htmlFile):
+                project.htmlWrite()
 
     def dump(self):
         string = ""
