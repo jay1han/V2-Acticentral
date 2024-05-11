@@ -26,6 +26,7 @@ def htmlIndex():
         "{Updated}": LAST_UPDATED,
         "{Version}": VERSION_STR,
         "{cgi-bin}": CGI_BIN,
+        "{Index}"  : INDEX_NAME,
     })
 
 def checkAlerts():

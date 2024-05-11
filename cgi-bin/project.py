@@ -84,13 +84,14 @@ class Project:
 
         writeTemplateSub(open(f"{HTML_DIR}/project{self.projectId:02d}.html", "w"),
                          PROJECT_TEMPLATE, {
-                         "{buttons}": buttons,
-                         "{projectTitle}": self.name(),
-                         "{projectOwner}": projectOwner,
-                         "{projectEmail}": projectEmail,
+                         "{buttons}"         : buttons,
+                         "{projectTitle}"    : self.name(),
+                         "{projectOwner}"    : projectOwner,
+                         "{projectEmail}"    : projectEmail,
                          "{projectActimHTML}": projectActimHTML,
-                         "{projectId}": str(self.projectId),
-                         "{Updated}": LAST_UPDATED,
+                         "{projectId}"       : str(self.projectId),
+                         "{Updated}"         : LAST_UPDATED,
+                         "{Index}"           : INDEX_NAME,
                          })
         try:
             os.chmod(f"{HTML_DIR}/project{self.projectId:02d}.html", 0o666)
