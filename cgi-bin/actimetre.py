@@ -323,7 +323,7 @@ class Actimetre:
                 json.dump(self.toD(), data)
             try: os.chmod(filename, 0o666)
             except OSError: pass
-            with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
+            with open(f'{HTML_ROOT}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
             try: os.chmod(filename, 0o666)
             except OSError: pass
@@ -510,9 +510,9 @@ class ActimetresClass:
         actim = self.actims[int(args['actimId'][0])]
 
         if formId == 'actim-move':
+            projectId = int(args['projectId'][0])
             oldProject = actim.projectId
             if args['owner'][0] == Projects.getOwner(oldProject):
-                projectId = int(args['projectId'][0])
                 printLog(f"Changing {actim.name()} from Project{oldProject:02d} to Project{projectId:02d}")
                 Projects.moveActim(actim.actimId, projectId)
                 actim.projectId = projectId
@@ -542,7 +542,7 @@ class ActimetresClass:
             htmlStr = ''
             for actim in self.actims.values():
                 htmlStr += actim.html()
-            writeTemplateSub(open(f'{ACTIM_HTML_DIR}/actims.html', "w"), ACTIMS_TEMPLATE, {
+            writeTemplateSub(open(f'{HTML_ROOT}/actims.html', "w"), ACTIMS_TEMPLATE, {
                 "{Actimetres}": htmlStr,
             })
 
