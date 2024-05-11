@@ -259,10 +259,13 @@ class ProjectsClass:
             for actimId in sorted(self.projects[0].actimetreList,
                                   key=lambda a: Actimetres.getLastSeen(a),
                                   reverse=True):
-                actimetreList += (f'<li><input type="checkbox" name="actimId" value="{actimId}">' +
-                                  Actimetres.htmlCartouche(actimId) +
-                                  f' [{Actimetres.getLastSeen(actimId).strftime(TIMEFORMAT_DISP)}]' +
-                                  '</input></li>')
+                actimetreList += (
+                        f'<li><input type="checkbox" name="actimId" value="{actimId}">' +
+                        Actimetres.getName(actimId) +
+                        ' <span class="small">' +
+                        Actimetres.getLastSeen(actimId).strftime(TIMEFORMAT_DISP) +
+                        '</span></input></li>'
+                )
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formAdd.html", {
                 "{projectId}": str(project.projectId),
