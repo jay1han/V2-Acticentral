@@ -344,7 +344,7 @@ class ActimetresClass:
             if actimId not in self.actims.keys():
                 self.actims[actimId] = Actimetre(actimId)
 
-    def str(self, actimId):
+    def str(self, actimId: int):
         if actimId in self.actims.keys():
             return str(self.actims[actimId])
         else:
@@ -363,7 +363,7 @@ class ActimetresClass:
             self.actims[actimId].projectId = 0
             self.actims[actimId].dirty = True
 
-    def checkOrphan(self, serverId, actimetreList):
+    def checkOrphan(self, serverId: int, actimetreList):
         for a in self.actims.values():
             if a.serverId == serverId and not a.actimId in actimetreList:
                 printLog(f"Actim{a.actimId:04d} orphaned by Actis{serverId}")
@@ -399,7 +399,7 @@ class ActimetresClass:
         printLog(f"Actim{actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
         self.actims[actimId] = Actimetre(actimId, mac, boardType, version, serverId, 0, bootTime, lastSeen=NOW, lastReport=NOW)
 
-    def delete(self, actimId):
+    def delete(self, actimId: int):
         if actimId in self.actims.keys():
             del self.actims[actimId]
             self.dirty = True
@@ -407,27 +407,27 @@ class ActimetresClass:
             os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
         except FileNotFoundError: pass
 
-    def forget(self, actimId):
+    def forget(self, actimId: int):
         if actimId in self.actims.keys():
             self.actims[actimId].forgetData()
 
-    def getProjectId(self, actimId):
+    def getProjectId(self, actimId: int):
         return self.actims[actimId].projectId
 
-    def setProjectId(self, actimId, projectId):
+    def setProjectId(self, actimId: int, projectId: int):
         self.actims[actimId].projectId = projectId
         self.actims[actimId].dirty = True
 
-    def getServerId(self, actimId):
+    def getServerId(self, actimId: int):
         return self.actims[actimId].serverId
 
-    def getLastSeen(self, actimId):
+    def getLastSeen(self, actimId: int):
         if actimId in self.actims.keys():
             return self.actims[actimId].lastSeen
         else:
             return TIMEZERO
 
-    def dies(self, actimId):
+    def dies(self, actimId: int):
         if actimId in self.actims.keys():
             self.actims[actimId].dies()
 

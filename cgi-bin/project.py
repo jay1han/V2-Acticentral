@@ -65,11 +65,15 @@ class Project:
         Actimetres = actimetre.Actimetres
         projectActims = ""
         for actimId in sorted(self.actimetreList):
-            projectActims += Actimetres.html(actimId)
+            if Actimetres[actimId]:
+                projectActims += Actimetres.html(actimId)
+        for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
+            if not Actimetres[actimId]:
+                projectActims += Actimetres.html(actimId)
 
         Actiservers = actiserver.Actiservers
         serverList = set()
-        for actimId in self.actimetreList:
+        for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getServerId(a)):
             serverList.add(Actimetres.getServerId(actimId))
 
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
