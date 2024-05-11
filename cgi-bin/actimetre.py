@@ -459,14 +459,14 @@ class ActimetresClass:
     def processForm(self, formId, args):
         actimId = int(args['actimId'][0])
 
-        if formId == 'actim-move-project':
+        if formId == 'actim-change-project':
             projectId = int(args['projectId'][0])
             oldProject = self.getProjectId(actimId)
             printLog(f"Changing {actimId} from {oldProject} to {projectId}")
             Projects.moveActim(actimId, projectId)
             self.setProjectId(actimId, projectId)
 
-        elif formId == 'retire-actim':
+        elif formId == 'actim-retire':
             owner = args['owner'][0]
             projectId = self.getProjectId(actimId)
             if (projectId == 0 and owner == 'CONFIRM') or \
