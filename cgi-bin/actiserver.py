@@ -236,6 +236,7 @@ class ActiserversClass:
                          '{Actiservers}': self.htmlServers(),
                          '{Updated}'    : LAST_UPDATED,
                          '{Index}'      : INDEX_NAME,
+                         "{Version}"    : VERSION_STR,
         })
 
     def getLastUpdate(self, serverId):
