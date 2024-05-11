@@ -75,12 +75,14 @@ def assignActim(data):
     except JSONDecodeError:
         return 101
 
+    alertText = ""
     actisList = []
     index = 0
     for actisInfo in parseList:
         serverId = int(actisInfo['serverId'])
         rssi = int(actisInfo['rssi'])
-        printLog(f'[{index:2d}] Actis{serverId:03d}: -{rssi}dB')
+#        printLog(f'[{index:2d}] Actis{serverId:03d}: -{rssi}dB')
+        alertText += f"Actis{serverId:03d} ({actisInfo.cpuIdle:.1f}% idle) at -{rssi}dB\n"
         actisList.append(ActisInfo(index, serverId, rssi))
         index += 1
 
@@ -96,8 +98,13 @@ def assignActim(data):
     if len(waterAndCloud) > 0:
         waterAndCloud.sort(key=lambda actis: actis.cpuIdle, reverse=True)
         return waterAndCloud[0].index
-    ### TODO: send alert
+
     actisList.sort(key=lambda actis: actis.rssi)
+    sendEmail("", "Rainy and Muddy",
+              "An Actimetre is trying to connect, only sees these Servers:\n" +
+              alertText +
+              f"\nAssigned Actis{actisList[0].serverId:03dd}")
+
     return actisList[0].index
 
 def plain(text=''):

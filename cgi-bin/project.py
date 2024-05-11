@@ -333,8 +333,7 @@ class ProjectsClass:
         if self.dirty:
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
             self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-        # DEBUG
-        self.projects[0].save()
+            self.projects[0].htmlWriteFree()
 
 Projects = ProjectsClass()
 def initProjects() -> ProjectsClass:
