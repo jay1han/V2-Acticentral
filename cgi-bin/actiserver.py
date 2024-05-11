@@ -173,11 +173,7 @@ class Actiserver:
                         with tag('table'):
                             with tag('tr'):
                                 with tag('td', klass='left-tight'):
-                                    text('CPU')
-                                    doc.asis('<br>')
-                                    text('RAM')
-                                    doc.asis('<br>')
-                                    text('Disk')
+                                    doc.asis('CPU<br>RAM<br>Disk')
                                 with tag('td', klass='left-tight'):
                                     text(f'{self.cpuIdle:.1f}% idle')
                                     doc.asis('<br>')
