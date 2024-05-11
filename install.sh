@@ -31,6 +31,8 @@ chmod 777 html html/images
 cd /etc/actimetre
 echo > central.log
 echo > acticentral.lock
+echo > registry.data
+echo > projects.data
 chown -R www-data:www-data . *
 chmod 666 * history/*
 chmod 777 . *.sh history daily weekly registry
@@ -43,4 +45,5 @@ systemctl start acticentral-daily.timer
 systemctl enable acticentral-weekly.timer
 systemctl start acticentral-weekly.timer
 
+echo "Entry point is /var/www/html/acticentral.html: make links as needed"
 echo "Edit /etc/actimetre/.secret for the secret key"

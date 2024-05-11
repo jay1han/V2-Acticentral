@@ -460,7 +460,6 @@ class ActimetresClass:
             projectId = int(args['projectId'][0])
             oldProject = self.getProjectId(actimId)
             printLog(f"Changing {actimId} from {oldProject} to {projectId}")
-
             Projects.moveActim(actimId, projectId)
             self.setProjectId(actimId, projectId)
 
@@ -491,10 +490,7 @@ class ActimetresClass:
         elif action == 'actim-cut-graph':
             actim.cutHistory()
             actim.drawGraph()
-            if args.get('projectId') is not None:
-                print(f"Location:\\project{actim.projectId:02d}.html\n\n")
-            else:
-                print("Location:\\index.html\n\n")
+            print(f"Location:\\project{actim.projectId:02d}.html\n\n")
 
         elif action == 'actim-forget' or action == 'actim-decouple':
             actim.forgetData()
