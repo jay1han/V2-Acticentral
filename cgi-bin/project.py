@@ -244,8 +244,8 @@ class ProjectsClass:
         print("Location:\\index.html\n\n")
 
     def processAction(self, action, args):
-        project = self.projects[int(args['projectId'][0])]
         if action == 'project-change-info':
+            project = self.projects[int(args['projectId'][0])]
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
                 "{project-change-info}": "project-change-info",
@@ -255,6 +255,7 @@ class ProjectsClass:
             })
 
         elif action == 'project-edit-info':
+            project = self.projects[int(args['projectId'][0])]
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_DIR}/formProject.html", {
                 "{project-change-info}": "project-edit-info",
@@ -267,6 +268,7 @@ class ProjectsClass:
             print("Location:\\formCreate.html\n\n")
 
         elif action == 'project-remove':
+            project = self.projects[int(args['projectId'][0])]
             actimetreStr = ""
             if len(project.actimetreList) == 0:
                 actimetreStr = "(no Actimetres assigned to this project)\n"
