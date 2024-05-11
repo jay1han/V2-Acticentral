@@ -475,7 +475,7 @@ class ActimetresClass:
                 "{actimName}": actim.name(),
                 "{actimInfo}": actim.htmlInfo(),
                 "{projectName}": Projects.getName(actim.projectId),
-                "{projectList}": Projects.htmlChoice(),
+                "{projectList}": Projects.htmlChoice(actim.projectId),
                 "{attached}" : 'hidden' if (actim.projectId == 0) else '',
                 "{notAttached}": 'hidden' if (actim.projectId > 0) else ''
             })

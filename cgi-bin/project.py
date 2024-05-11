@@ -207,7 +207,7 @@ class ProjectsClass:
             p = Project(projectId)
         if p.addActim(actimId): self.dirty = True
 
-    def htmlChoice(self, projectId=None):
+    def htmlChoice(self, projectId=0):
         htmlString = ""
         for p in self.projects.values():
             htmlString += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
