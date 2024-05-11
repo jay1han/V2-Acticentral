@@ -12,14 +12,18 @@
 <h1>Remove {actimName} from all projects</h1>
 <p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
 <p>The Actimetre named <b>{actimName}</b>&nbsp;<span class="small">{actimInfo}</span> is currently attached to the project {projectName}.
-  Please enter the owner's name below to confirm that you want to remove it.</p>
+  Confirm below to remove it.
+</p>
 
 <form action="/bin/acticentral.py" method="get" target="_parent">
   <input type="hidden" name="actimId" value="{actimId}" />
   <input type="hidden" name="formId" value="actim-remove" />
-  {htmlProjectList}
-  <p>
-    <button type="submit" name="action" value="submit">Confirm</button>
+
+  <h3>To Confirm</h3>
+  <p>Enter the name of the current project owner below to confirm</p>
+  <p><input id="title" type="text" name="owner" value="" required></p>
+
+  <button type="submit" name="action" value="submit">Confirm</button>
     <button type="submit" name="action" value="cancel">Cancel</button>
   </p>
   <p><button type="submit" name="action" value="project-project">Create a new Project</button></p>

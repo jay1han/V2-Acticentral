@@ -481,47 +481,41 @@ class ActimetresClass:
             })
 
         elif action == 'actim-remove':
-            Projects.removeActim(actim.actimId)
-            projectId = actim.projectId
-            actim.projectId = 0
-            actim.dirty = True
-            print(f"Location:\\project{projectId:02d}.html\n\n")
-
-        elif action == 'actim-retire':
-            if actim.projectId == 0:
-                print("204 No Content")
-                return
-
-            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formRetire.html", {
+            print("Content-type: text/html\n\n")
+            writeTemplateSub(sys.stdout, f"{HTML_DIR}/formMove.html", {
                 "{actimId}": str(actim.actimId),
                 "{actimName}": actim.name(),
-                "{mac}": actim.mac,
-                "{boardType}": actim.boardType,
-                "{repoNums}": f'{actim.repoNums} files, ' if (actim.repoNums > 0) else '',
-                "{repoSize}": printSize(actim.repoSize),
-                "{owner}": "Enter the owner of the project",
-                "{projectTitle}": Projects.getName(actim.projectId),
+                "{actimInfo}": actim.htmlInfo(),
+                "{projectName}": Projects.getName(actim.projectId),
             })
 
+        elif action == 'actim-retire':
+            print("204 No Content\n\n")
+            return
+
     def processForm(self, formId, args):
-        actimId = int(args['actimId'][0])
+        actim = self.actims[int(args['actimId'][0])]
 
         if formId == 'actim-move':
-            projectId = int(args['projectId'][0])
-            oldProject = self.getProjectId(actimId)
-            printLog(f"Changing Actim{actimId:04d} from Project{oldProject:02d} to Project{projectId:02d}")
-            Projects.moveActim(actimId, projectId)
-            self.setProjectId(actimId, projectId)
+            oldProject = actim.projectId
+            if args['owner'][0] == Projects.getOwner(oldProject):
+                projectId = int(args['projectId'][0])
+                printLog(f"Changing {actim.name()} from Project{oldProject:02d} to Project{projectId:02d}")
+                Projects.moveActim(actim.actimId, projectId)
+                actim.projectId = projectId
+                actim.dirty = True
+            print(f"Location:\\project{projectId:02d}.html\n\n")
+
+        elif formId == 'actim-remove':
+            projectId = actim.projectId
+            if args['owner'][0] == Projects.getOwner(actim.projectId):
+                Projects.removeActim(actim.actimId)
+                actim.projectId = 0
+                actim.dirty = True
             print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif formId == 'actim-retire':
-            projectId = self.getProjectId(actimId)
-            if projectId == 0:
-                printLog()
-            elif Projects.getOwner(projectId) == args['owner'][0]:
-                printLog(f"Remove Actim{actimId:04d} from {Projects.getName(projectId)}")
-                Projects.removeActim(actimId)
-                self.setProjectId(actimId, 0)
+            pass
 
         print("Location:\\index.html\n\n")
 
