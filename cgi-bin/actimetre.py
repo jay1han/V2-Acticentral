@@ -494,7 +494,7 @@ class ActimetresClass:
             })
 
         elif action == 'actim-retire':
-            print("205 Reset Content\n\n")
+            print("Status: 205\n\n")
             return
 
     def processForm(self, formId, args):
@@ -521,7 +521,7 @@ class ActimetresClass:
         elif formId == 'actim-retire':
             pass
 
-        print("204 No Content\n\n")
+        print("Status: 204\n\n")
 
     def save(self):
         for actim in self.actims.values():

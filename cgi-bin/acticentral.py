@@ -118,7 +118,7 @@ def checkSecret():
     if secret != SECRET_KEY:
         printLog(f"Wrong secret {secret} vs. {SECRET_KEY}")
         print(f"Wrong secret {secret}", file=sys.stdout)
-        print("401 Unauthorized")
+        print("Status: 401\n\n")
         return False
     return True
 
@@ -168,7 +168,7 @@ def processAction():
         actimId = int(args['actimId'][0])
         printLog(f'Actim{actimId:04d} CLEAR {Actimetres.getReportStr(actimId)}')
         Actimetres.setReportStr(actimId, "")
-        print("205 Reset Content\n\n")
+        print("Status: 205\n\n")
 
     elif action == 'actimetre-new':
         if not checkSecret(): return
@@ -214,7 +214,7 @@ def processAction():
         elif action == 'remote-stop'   : command = 0x30
         elif action == 'remote-restart': command = 0xF0
         remoteAction(int(args['actimId'][0]), command)
-        print("205 Reset Content\n\n")
+        print("Status: 205\n\n")
 
     elif action.startswith('project-'):
         Projects.processAction(action, args)
@@ -224,7 +224,7 @@ def processAction():
         printLog(f"Submitted form {formId}")
         processForm(formId)
 
-    print("204 No Content\n\n")
+    print("Status: 204\n\n")
 
 def saveAll():
     Registry.save()
