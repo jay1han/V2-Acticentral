@@ -344,6 +344,10 @@ class ActimetresClass:
             if actimId not in self.actims.keys():
                 self.actims[actimId] = Actimetre(actimId)
         printLog(f'Actimetres {str(self.actims.keys())}')
+        for actim in self.actims.values():
+            htmlFile = f'{HTML_ROOT}/actim{actim.actimId:04d}.html'
+            if not os.path.isfile(htmlFile) or olderThanSeconds(os.stat(htmlFile).st_mtime, 3600):
+                actim.dirty = True
 
     def str(self, actimId: int):
         if actimId in self.actims.keys():

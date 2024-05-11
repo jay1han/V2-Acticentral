@@ -154,8 +154,8 @@ class ProjectsClass:
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
         for project in self.projects.values():
             htmlFile = f'{HTML_ROOT}/project{project.projectId:02d}.html'
-            if not os.path.isfile(htmlFile):
-                project.htmlWrite()
+            if not os.path.isfile(htmlFile) or olderThanSeconds(os.stat(htmlFile).st_mtime, 3600) :
+                project.dirty = True
 
     def dump(self):
         string = ""

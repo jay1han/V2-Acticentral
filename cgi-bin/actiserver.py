@@ -216,6 +216,8 @@ class ActiserversClass:
 
     def init(self):
         self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
+        if olderThanSeconds(os.stat(SERVERS_HTML), 3600):
+            self.dirty = True
 
     def __getitem__(self, item: int):
         return item in self.servers

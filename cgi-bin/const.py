@@ -198,3 +198,5 @@ def plain(text=''):
     print("Content-type: text/plain\n\n")
     print(text)
 
+def olderThanSeconds(time, seconds):
+    return NOW - datetime.fromtimestamp(time) > timedelta(seconds=seconds)

@@ -220,8 +220,8 @@ def saveAll():
     Actimetres.save()
     Actiservers.save()
     Projects.save()
-    # DEBUG
-    htmlIndex()
+    if Actimetres.dirty or Actiservers.dirty or Projects.dirty:
+        htmlIndex()
 
 import argparse
 cmdparser = argparse.ArgumentParser()
