@@ -301,7 +301,7 @@ class ProjectsClass:
             Actimetres = actimetre.Actimetres
             projectId = int(args['projectId'][0])
             actimetreList = args['actimId']
-            for actimId in actimetreList:
+            for actimId in map(int, actimetreList):
                 self.projects[projectId].addActim(actimId)
                 Actimetres.setProjectId(actimId, projectId)
             print(f"Location:\\project{projectId:02d}.html\n\n")
@@ -332,7 +332,8 @@ class ProjectsClass:
         if self.dirty:
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
             self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-            self.projects[0].save()
+        # DEBUG
+        self.projects[0].save()
 
 Projects = ProjectsClass()
 def initProjects() -> ProjectsClass:
