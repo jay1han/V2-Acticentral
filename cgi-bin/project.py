@@ -111,7 +111,7 @@ class Project:
                 line('td', self.owner)
                 with tag('td', klass='left'):
                     for actimId in self.actimetreList:
-                        doc.asis(Actimetres.htmlCartouche(actimId, withTag='div'))
+                        doc.asis('<div>' + Actimetres.htmlCartouche(actimId) + '</div>')
         return doc.getvalue()
 
     def save(self):
@@ -238,42 +238,67 @@ class ProjectsClass:
 
         elif action == 'project-delete':
             project = self.projects[int(args['projectId'][0])]
-            actimetreStr = ""
+            actimetreList = ""
             if len(project.actimetreList) == 0:
                 actimetreStr = "(no Actimetres assigned to this project)\n"
             else:
                 Actimetres = actimetre.Actimetres
                 for actimId in project.actimetreList:
-                    actimetreStr += Actimetres.htmlCartouche(actimId, withTag='li')
+                    actimetreList += '<li>' + Actimetres.htmlCartouche(actimId) + '</li>'
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formDelete.html", {
                 "{projectId}": str(project.projectId),
                 "{projectTitle}": project.name(),
-                "{actimetreList}": actimetreStr,
+                "{actimetreList}": actimetreList,
+            })
+
+        elif action == 'project-add':
+            Actimetres = actimetre.Actimetres
+            project = self.projects[int(args['projectId'][0])]
+            actimetreList = ""
+            for actimId in self.projects[0].actimetreList:
+                actimetreList += f'<input type="checkbox" name="actimId" value="{actimId}>' +\
+                                Actimetres.htmlCartouche(actimId) + '</input>'
+            print("Content-type: text/html\n\n")
+            writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formAdd.html", {
+                "{projectId}": str(project.projectId),
+                "{projectTitle}": project.name(),
+                "{actimetreList}": actimetreList,
             })
 
         else:
             print("Status: 4205n\n")
 
     def processForm(self, formId, args):
-        title = args['title'][0]
-        owner = args['owner'][0]
-        email = args['email'][0]
-
         if formId == 'project-edit':
             projectId = int(args['projectId'][0])
+            title = args['title'][0]
+            owner = args['owner'][0]
+            email = args['email'][0]
             printLog(f"Setting project {projectId} data: {title}, {owner}, {email}")
             if title != "" and owner != "" and email != "":
                 self.setInfo(projectId, title, owner, email)
             print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif formId == 'project-create':
+            title = args['title'][0]
+            owner = args['owner'][0]
+            email = args['email'][0]
             printLog(f"Create new project with data: {title}, {owner}, {email}")
             if title != "" and owner != "" and email != "":
                 projectId = self.new(title, owner, email)
                 print(f"Location:\\project{projectId:02d}.html\n\n")
             else:
                 print("Location:\\index.html\n\n")
+
+        elif formId == 'project-add':
+            Actimetres = actimetre.Actimetres
+            projectId = int(args['projectId'][0])
+            actimetreList = args['actimId']
+            for actimId in actimetreList:
+                self.projects[projectId].addActim(actimId)
+                Actimetres.setProjectId(actimId, projectId)
+            print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif formId == 'project-delete':
             projectId = int(args['projectId'][0])

@@ -378,14 +378,9 @@ class ActimetresClass:
         else:
             return ""
 
-    def htmlCartouche(self, actimId: int, *, withTag=None):
+    def htmlCartouche(self, actimId: int):
         if actimId in self.actims.keys():
-            if withTag is not None:
-                doc, tag, text, line = Doc().ttl()
-                with tag(withTag):
-                    doc.asis(self.actims[actimId].htmlCartouche())
-                return doc.getvalue()
-            else: return self.actims[actimId].htmlCartouche()
+            return self.actims[actimId].htmlCartouche()
         else: return ""
 
     def htmlRepo(self, actimId: int, ip: str):

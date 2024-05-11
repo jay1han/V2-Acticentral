@@ -31,7 +31,7 @@
     <h1>Project <u>{projectTitle}</u></h1>
     {projectOwner}
     {projectEmail}
-    <form action="/bin/acticentral.py" method="get" {hidden}>
+    <form action="/bin/acticentral.py" method="get">
       <input type="hidden" name="projectId" value="{projectId}" />
       <button type="submit" name="action" value="project-edit">Edit info</button>
       <button type="submit" name="action" value="project-delete">Delete project</button>
@@ -51,6 +51,13 @@
       </tr>
       {projectActims}
     </table>
+
+        <form action="/bin/acticentral.py" method="get">
+          <input type="hidden" name="projectId" value="{projectId}" />
+          <p>
+      <button type="submit" name="action" value="project-add">Add Actimetre</button>
+          </p>
+    </form>
 
     <h1>Servers</h1>
 
