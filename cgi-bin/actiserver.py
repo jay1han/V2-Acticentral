@@ -184,7 +184,7 @@ class Actiserver:
                 with tag('td', klass='left'):
                     for actimId in self.actimetreList:
                         with tag('div'):
-                            doc.asis('<li>' + Actimetres.htmlCartouche(actimId) + '</li>')
+                            doc.asis(Actimetres.htmlCartouche(actimId))
                 if self.isLocal:
                     with tag('td', klass='right'):
                         for actimId in self.actimetreList:
