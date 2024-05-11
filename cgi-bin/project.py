@@ -64,24 +64,19 @@ class Project:
     def htmlWrite(self):
         Actimetres = actimetre.Actimetres
         projectActims = ""
-        logStr = f'HTML Project{self.projectId:02d}: '
         for actimId in sorted(self.actimetreList):
             if Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
-                logStr += f' Actim{actimId:04d}'
         for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
             if not Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
-                logStr += f' Actim{actimId:04d}'
 
         Actiservers = actiserver.Actiservers
         serverList = set()
         for serverId in sorted(map(Actimetres.getServerId, self.actimetreList)):
             if serverId != 0:
                 serverList.add(serverId)
-                logStr += f' Actis{serverId:03d}'
 
-        printLog(logStr)
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
         projectEmail = f"<h3>Email: {self.email}</h3>"
 
@@ -96,7 +91,6 @@ class Project:
                          })
 
     def htmlWriteFree(self):
-        printLog(f"htmlWriteFree {ACTIMS0_HTML}")
         Actimetres = actimetre.Actimetres
         freeActims = ""
         for actimId in self.actimetreList:
@@ -168,7 +162,6 @@ class ProjectsClass:
         for (projectId, p) in self.projects.items():
             if len(p.actimetreList) > 0:
                 string += f'{projectId}:' + ','.join([str(a) for a in list(p.actimetreList)]) + '\n'
-        printLog("Projects dump\n" + string)
         return string
 
     def htmlProjects(self, *, picker=None):

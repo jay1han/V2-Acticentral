@@ -343,6 +343,7 @@ class ActimetresClass:
         for actimId in Registry.listActims():
             if actimId not in self.actims.keys():
                 self.actims[actimId] = Actimetre(actimId)
+        printLog(f'Actimetres {str(self.actims.keys())}')
 
     def str(self, actimId: int):
         if actimId in self.actims.keys():
@@ -475,13 +476,11 @@ class ActimetresClass:
         elif action == 'actim-report':
             # check secret
             message = sys.stdin.read()
-            printLog(f'Actim{actim.actimId:04d} "{message}"')
             actim.reportStr = message
             actim.dirty = True
             plain('OK')
 
         elif action == 'actim-clear':
-            printLog(f'Actim{actim.actimId:04d} CLEAR "{actim.reportStr}"')
             actim.reportStr = ""
             actim.dirty = True
             print("Status: 205\n\n")

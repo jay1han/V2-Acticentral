@@ -14,9 +14,9 @@ import actimetre
 import actiserver
 import project
 
-Projects = project.initProjects()
-Actiservers = actiserver.initActiservers()
 Actimetres = actimetre.initActimetres()
+Actiservers = actiserver.initActiservers()
+Projects = project.initProjects()
 
 def htmlIndex():
     os.truncate(INDEX_HTML, 0)
