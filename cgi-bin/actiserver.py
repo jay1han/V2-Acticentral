@@ -3,15 +3,13 @@ import actimetre
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000",
-                 channel=0, ip = "0.0.0.0", isLocal = False,
-                 isDown = 0, lastUpdate=TIMEZERO, dbTime=TIMEZERO,
+                 channel=0, ip = "0.0.0.0", isDown = 0, lastUpdate=TIMEZERO, dbTime=TIMEZERO,
                  actimetreList=None):
         self.serverId   = int(serverId)
         self.machine    = machine
         self.version    = version
         self.channel    = int(channel)
         self.ip         = ip
-        self.isLocal    = isLocal
         self.diskSize   = 0
         self.diskFree   = 0
         self.lastUpdate = lastUpdate
@@ -43,7 +41,6 @@ class Actiserver:
                 'version'   : self.version,
                 'channel'   : self.channel,
                 'ip'        : self.ip,
-                'isLocal'   : self.isLocal,
                 'diskSize'  : self.diskSize,
                 'diskFree'  : self.diskFree,
                 'diskLow'   : self.diskLow,
@@ -64,7 +61,6 @@ class Actiserver:
         self.version    = d['version']
         self.channel    = int(d['channel'])
         self.ip         = d['ip']
-        self.isLocal = (str(d['isLocal']).strip().upper() == "TRUE")
         self.diskSize = int(d['diskSize'])
         self.diskFree = int(d['diskFree'])
         self.actimetreList = set()
@@ -157,15 +153,11 @@ class Actiserver:
                     doc.asis("<br>")
                     if self.channel != 0:
                         text(f"Ch. {self.channel}")
-                else:
-                    text("?")
-            if self.lastUpdate == TIMEZERO:
-                line('td', "?", klass=alive)
-            else:
-                line('td', self.lastUpdate.strftime(TIMEFORMAT_DISP), klass=alive)
+            line('td', self.lastUpdate.strftime(TIMEFORMAT_DISP), klass=alive)
             if alive != 'up':
+                with tag('td', klass=alive):
+                    text(f'Missing {printTimeSpan(NOW - self.lastUpdate)}')
                 line('td', '')
-                line('td', "None")
                 line('td', '')
                 line('td', '')
             else:
@@ -186,20 +178,16 @@ class Actiserver:
                     for actimId in self.actimetreList:
                         with tag('div'):
                             doc.asis(Actimetres.htmlCartouche(actimId))
-                if self.isLocal:
-                    with tag('td', klass='right'):
-                        for actimId in self.actimetreList:
-                            with tag('div'):
-                                doc.asis(Actimetres.htmlRepo(actimId, self.ip))
-                    if self.diskSize > 0:
-                        diskState = ''
-                        if self.diskFree < self.diskSize // 10:
-                            diskState = 'disk-low'
-                        line('td', f'{printSize(self.diskFree)} ({100.0*self.diskFree/self.diskSize:.1f}%)', klass=diskState)
-                    else:
-                        line('td', '')
+                with tag('td', klass='right'):
+                    for actimId in self.actimetreList:
+                        with tag('div'):
+                            doc.asis(Actimetres.htmlRepo(actimId, self.ip))
+                if self.diskSize > 0:
+                    diskState = ''
+                    if self.diskFree < self.diskSize // 10:
+                        diskState = 'disk-low'
+                    line('td', f'{printSize(self.diskFree)} ({100.0*self.diskFree/self.diskSize:.1f}%)', klass=diskState)
                 else:
-                    line('td', '')
                     line('td', '')
         return doc.getvalue()
 

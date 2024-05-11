@@ -275,8 +275,8 @@ class Actimetre:
                 line('td', "")
 
             if alive == 'retire':
-                line('td', (f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)} ' +
-                            f'({printTimeSpan(NOW - self.lastSeen)} ago)'),
+                line('td', (f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}' +
+                            f'<br>({printTimeSpan(NOW - self.lastSeen)} ago)'),
                            klass=f'health retire')
             else:
                 with tag('td', klass=f'health left'):
