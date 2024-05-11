@@ -240,7 +240,7 @@ class ProjectsClass:
             project = self.projects[int(args['projectId'][0])]
             actimetreList = ""
             if len(project.actimetreList) == 0:
-                actimetreStr = "(no Actimetres assigned to this project)\n"
+                actimetreList = "(no Actimetres assigned to this project)\n"
             else:
                 Actimetres = actimetre.Actimetres
                 for actimId in project.actimetreList:
@@ -257,7 +257,7 @@ class ProjectsClass:
             project = self.projects[int(args['projectId'][0])]
             actimetreList = ""
             for actimId in self.projects[0].actimetreList:
-                actimetreList += f'<input type="checkbox" name="actimId" value="{actimId}>' +\
+                actimetreList += f'<input type="checkbox" name="actimId" value="{actimId}">' +\
                                 Actimetres.htmlCartouche(actimId) + '</input>'
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formAdd.html", {
