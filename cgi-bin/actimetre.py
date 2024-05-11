@@ -430,6 +430,12 @@ class ActimetresClass:
     def getServerId(self, actimId):
         return self.actims[actimId].serverId
 
+    def getLastSeen(self, actimId):
+        if actimId in self.actims.keys():
+            return self.actims[actimId].lastSeen
+        else:
+            return TIMEZERO
+
     def dies(self, actimId):
         if actimId in self.actims.keys():
             self.actims[actimId].dies()

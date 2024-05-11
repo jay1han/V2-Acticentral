@@ -256,9 +256,13 @@ class ProjectsClass:
             Actimetres = actimetre.Actimetres
             project = self.projects[int(args['projectId'][0])]
             actimetreList = ""
-            for actimId in self.projects[0].actimetreList:
-                actimetreList += f'<input type="checkbox" name="actimId" value="{actimId}">' +\
-                                Actimetres.htmlCartouche(actimId) + '</input>'
+            for actimId in sorted(self.projects[0].actimetreList,
+                                  key=lambda a: Actimetres.getLastSeen(a),
+                                  reverse=True):
+                actimetreList += (f'<li><input type="checkbox" name="actimId" value="{actimId}">' +
+                                  Actimetres.htmlCartouche(actimId) +
+                                  f' [{Actimetres.getLastSeen(actimId).strftime(TIMEFORMAT_DISP)}]' +
+                                  '</input></li>')
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formAdd.html", {
                 "{projectId}": str(project.projectId),
