@@ -432,6 +432,8 @@ class ActimetresClass:
         if self.actims[actimId].projectId != projectId:
             self.actims[actimId].projectId = projectId
             self.actims[actimId].dirty = True
+            return True
+        return False
 
     def getServerId(self, actimId: int):
         if not actimId in self.actims.keys(): return 0

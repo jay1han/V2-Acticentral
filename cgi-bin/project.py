@@ -156,14 +156,17 @@ class ProjectsClass:
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
         Actimetres = actimetre.Actimetres
         for project in self.projects.values():
-            for actimId in project.actimetreList:
-                Actimetres.setProjectId(actimId, project.projectId)
             if project.projectId == 0:
                 for actimId in Actimetres.available():
-                    project.actimetreList.add(actimId)
+                    if not actimId in project.actimetreList:
+                        project.actimetreList.add(actimId)
+                        project.dirty = True
+                        self.dirty = True
                 if fileOlderThan(ACTIMS0_HTML, 3600) :
                     project.dirty = True
             else:
+                for actimId in project.actimetreList:
+                    Actimetres.setProjectId(actimId, project.projectId)
                 if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
                     project.dirty = True
 
