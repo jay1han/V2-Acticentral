@@ -4,7 +4,7 @@ import os, json, subprocess
 from datetime import datetime, timedelta, timezone
 from yattag import Doc
 
-VERSION_STR     = "v428"
+VERSION_STR     = "v430"
 FILE_ROOT       = "/etc/actimetre"
 HTML_ROOT       = "/var/www/html"
 
@@ -207,3 +207,4 @@ def jsDateString(when: datetime) -> str:
     # Sun, 01 May 2024 03:11:23 GMT
     return (Weekday[when.weekday()] + when.strftime(", %d ") +
             Month[when.month - 1] + when.strftime(" %%Y %H:%M:%S GMT"))
+TIMEZERO_JS     = jsDateString(TIMEZERO)

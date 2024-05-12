@@ -27,14 +27,14 @@
 
     <script>
       {allpages}
-      const testpage = {id: "page1", ref: "/actims.html", date: "Sun, 01 May 2024 03:11:23 GMT"};
+      const testpage = {id: "page1", ref: "/actims.html"};
       {date}
       const testdate = "Sun, 01 May 2024 03:11:23 GMT";
 
       function checkOne(page) {
            var http = new XMLHttpRequest();
            http.open("HEAD", page.ref);
-           http.setRequestHeader("If-Modified-Since", page.date);
+           http.setRequestHeader("If-Modified-Since", date);
            http.onload = function() {
                if (this.status == 200) {
                    document.getElementById(page.id).outerHTML = this.responseText;
@@ -46,7 +46,7 @@
       function checkAll() {
           var http = new XMLHttpRequest();
           http.open("HEAD", document.URL)
-          http.setRequestHeader("If-Modified-Since", testdate);
+          http.setRequestHeader("If-Modified-Since", date);
           http.onload = function() {
               location.reload(true);
           }

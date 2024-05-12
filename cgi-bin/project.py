@@ -64,9 +64,13 @@ class Project:
     def htmlWrite(self):
         Actimetres = actimetre.Actimetres
         projectActims = ""
+        allActims = []
         for actimId in sorted(self.actimetreList):
             if Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
+                allActims.append('{' +
+                    f'id: Actim"{actimId:04d}", ' +
+                    f'ref: "/actimetre/actim{actimId:04d}.html"' + '}')
         for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
             if not Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
@@ -88,6 +92,8 @@ class Project:
                          "{projectActims}" : projectActims,
                          "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
                          "{projectId}"     : str(self.projectId),
+                         "{allpages}"      : f'const allpages = [{",".join(allActims)}];',
+                         "{date}"          : f'const date = "{jsDateString(NOW + timedelta(seconds=1))}";'
                          })
 
     def htmlWriteFree(self):

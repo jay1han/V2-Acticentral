@@ -65,7 +65,7 @@ class Actimetre:
                 'reportStr' : self.reportStr,
                 }
 
-    def fromD(self, d, actual=False):
+    def fromD(self, d:dict, actual=False):
         self.actimId    = int(d['actimId'])
         self.mac        = d['mac']
         self.boardType  = d['boardType']
@@ -88,6 +88,7 @@ class Actimetre:
             self.lastDrawn  = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr  = d['reportStr']
+
         self.dirty = actual
         return self
 
@@ -232,7 +233,7 @@ class Actimetre:
 
     def html(self):
         doc, tag, text, line = Doc().ttl()
-        with tag('tr'):
+        with tag('tr', id=f'Actim{self.actimId:04d}'):
             doc.asis(f'<form action="/bin/acticentral.py" method="get">')
             doc.asis(f'<input type="hidden" name="actimId" value="{self.actimId}"/>')
             alive = 'up'
@@ -336,9 +337,9 @@ class Actimetre:
     def save(self):
         if self.dirty:
             printLog(f'Actim{self.actimId:04d}[{self.projectId}] is dirty')
-            Projects.dirtyProject(self.projectId)
             with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
+            Projects.dirtyProject(self.projectId)
             return True
         else:
             return False
