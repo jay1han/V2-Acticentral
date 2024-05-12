@@ -157,7 +157,7 @@ class ProjectsClass:
         Actimetres = actimetre.Actimetres
         for project in self.projects.values():
             if project.projectId == 0:
-                for actimId in Actimetres.available():
+                for actimId in Actimetres.fromProject(0):
                     if not actimId in project.actimetreList:
                         project.actimetreList.add(actimId)
                         project.dirty = True

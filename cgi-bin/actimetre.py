@@ -359,8 +359,8 @@ class ActimetresClass:
             if fileOlderThan(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', 3600):
                 actim.dirty = True
 
-    def available(self):
-        return [actimId for actimId in self.actims.keys() if self.actims[actimId].projectId == 0]
+    def fromProject(self, projectId):
+        return [actimId for actimId in self.actims.keys() if self.actims[actimId].projectId == projectId]
 
     def str(self, actimId: int):
         if not actimId in self.actims.keys(): return ""
