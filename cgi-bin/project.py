@@ -158,8 +158,12 @@ class ProjectsClass:
         for project in self.projects.values():
             for actimId in project.actimetreList:
                 Actimetres.setProjectId(actimId, project.projectId)
-            if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
-                project.dirty = True
+            if project.projectId == 0:
+                if fileOlderThan(ACTIMS0_HTML, 3600) :
+                    project.dirty = True
+            else:
+                if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
+                    project.dirty = True
 
     def dump(self):
         string = ""
