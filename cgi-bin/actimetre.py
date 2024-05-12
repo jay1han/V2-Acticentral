@@ -350,8 +350,7 @@ class ActimetresClass:
             if actimId not in self.actims.keys():
                 self.actims[actimId] = Actimetre(actimId)
         for actim in self.actims.values():
-            htmlFile = f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html'
-            if not os.path.isfile(htmlFile) or olderThanSeconds(os.stat(htmlFile).st_mtime, 3600):
+            if fileOlderThan(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', 3600):
                 actim.dirty = True
 
     def str(self, actimId: int):

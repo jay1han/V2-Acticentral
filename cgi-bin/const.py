@@ -199,5 +199,6 @@ def plain(text=''):
     print("Content-type: text/plain\n\n")
     print(text)
 
-def olderThanSeconds(time, seconds):
-    return NOW - datetime.fromtimestamp(time, timezone.utc) > timedelta(seconds=seconds)
+def fileOlderThan(filename: str, seconds: int) -> bool:
+    return not os.path.isfile(filename) or \
+        NOW - datetime.fromtimestamp(os.stat(filename).st_mtime, timezone.utc) > timedelta(seconds=seconds)

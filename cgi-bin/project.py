@@ -158,8 +158,7 @@ class ProjectsClass:
         for project in self.projects.values():
             for actimId in project.actimetreList:
                 Actimetres.setProjectId(actimId, project.projectId)
-            htmlFile = f'{HTML_ROOT}/project{project.projectId:02d}.html'
-            if not os.path.isfile(htmlFile) or olderThanSeconds(os.stat(htmlFile).st_mtime, 3600) :
+            if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
                 project.dirty = True
 
     def dump(self):

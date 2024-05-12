@@ -207,11 +207,10 @@ class ActiserversClass:
 
     def init(self):
         self.servers = {int(serverId):Actiserver().fromD(d) for serverId, d in loadData(ACTISERVERS).items()}
-        if olderThanSeconds(os.stat(SERVERS_HTML).st_mtime, 3600):
+        if fileOlderThan(SERVERS_HTML, 3600):
             self.dirty = True
         for server in self.servers.values():
-            htmlFile = f'{SERVER_HTML_DIR}/server{server.serverId:03d}.html'
-            if not os.path.isfile(htmlFile) or olderThanSeconds(os.stat(htmlFile).st_mtime, 3600):
+            if fileOlderThan(f'{SERVER_HTML_DIR}/server{server.serverId:03d}.html', 3600):
                 server.dirty = True
 
     def __getitem__(self, item: int):
