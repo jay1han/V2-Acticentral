@@ -315,11 +315,11 @@ class Actimetre:
                         doc.asis('<br>')
                         with tag('button', type='submit', name='action', value='actim-remove'):
                             doc.asis('Remove')
-                elif alive == 'up' and self.hasData() and Actiservers.getVersion(self.serverId) >= '380':
+                elif (not self.isStopped) and alive == 'up' and self.hasData() and Actiservers.getVersion(self.serverId) >= '380':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-stop'):
                         doc.asis('Stop')
-                elif alive != 'up' and self.hasData() and Actiservers.isDown(self.serverId) == 0:
+                elif (alive != 'up' or self.isStopped) and self.hasData() and Actiservers.isDown(self.serverId) == 0:
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-sync'):
                         text('Sync')
