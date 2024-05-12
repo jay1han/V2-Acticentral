@@ -171,7 +171,7 @@ class Actiserver:
                                 with tag('td', klass='left-tight'):
                                     text(f'{self.cpuIdle:.1f}% idle')
                                     doc.asis('<br>')
-                                    text(f'{self.memAvail:.1f}% free')
+                                    text(f'{self.memAvail:.1f}% avail.')
                                     doc.asis('<br>')
                                     text(f'{self.diskTput:.0f}kB/s({self.diskUtil:.1f}%)')
                     else: text('')
