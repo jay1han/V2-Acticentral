@@ -244,10 +244,11 @@ class ProjectsClass:
     def htmlChoice(self, projectId=0):
         htmlString = ""
         for p in self.projects.values():
-            htmlString += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
-            if p.projectId == projectId:
-                htmlString += ' checked="true"'
-            htmlString += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
+            if p.projectId != 0:
+                htmlString += f'<input id="{p.projectId}" type="radio" name="projectId" value="{p.projectId}"'
+                if p.projectId == projectId:
+                    htmlString += ' checked="true"'
+                htmlString += f'><label for="{p.projectId}">{p.name()} ({p.owner})</label><br>\n'
         return htmlString
 
     def processAction(self, action, args):

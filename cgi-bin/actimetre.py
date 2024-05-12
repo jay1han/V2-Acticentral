@@ -520,7 +520,7 @@ class ActimetresClass:
         if formId == 'actim-move':
             projectId = int(args['projectId'][0])
             oldProject = actim.projectId
-            if args['owner'][0] == Projects.getOwner(oldProject):
+            if oldProject == 0 or args['owner'][0] == Projects.getOwner(oldProject):
                 printLog(f"Changing {actim.name()} from Project{oldProject:02d} to Project{projectId:02d}")
                 Projects.moveActim(actim.actimId, projectId)
                 actim.projectId = projectId
