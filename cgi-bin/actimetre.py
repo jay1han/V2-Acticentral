@@ -249,7 +249,7 @@ class Actimetre:
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='actim-retire'):
                         text('Retire')
-            with tag('td', klass='actimproject'):
+            with tag('td', name='actimproject'):
                 if self.projectId == 0:
                     with tag('a', href=ACTIMS0_HTML):
                         text('Available')

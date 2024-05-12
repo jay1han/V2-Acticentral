@@ -23,6 +23,15 @@
         .up {color:green;}
         .retire {color:grey; font-style:italic}
     </style>
+    <script>
+        function hide() {
+            let projectColumn = document.getElementsByName("actimproject");
+            for (let element of projectColumn) {
+                element.hidden = "hidden";
+            }
+        }
+        window.addEventListener("load", hide);
+    </script>
     <title>Actimetres Available</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
 </head>
@@ -32,7 +41,6 @@
 <table>
     <tr>
         <th>Name</th>
-        <th>Project</th>
         <th>Type<br>Version</th>
         <th>Server</th>
         <th>Sensors</th>
