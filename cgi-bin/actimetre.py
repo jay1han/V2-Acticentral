@@ -360,10 +360,8 @@ class ActimetresClass:
                 actim.dirty = True
 
     def str(self, actimId: int):
-        if actimId in self.actims.keys():
-            return str(self.actims[actimId])
-        else:
-            return ""
+        if not actimId in self.actims.keys(): return ""
+        return str(self.actims[actimId])
 
     def fromD(self, data, actual=True):
         a = Actimetre().fromD(data, actual)
@@ -391,17 +389,15 @@ class ActimetresClass:
         return json.dumps(self.actims[actimId].toD())
 
     def html(self, actimId: int):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].html()
-        else:
-            return ""
+        if not actimId in self.actims.keys(): return ""
+        return self.actims[actimId].html()
 
     def htmlCartouche(self, actimId: int):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].htmlCartouche()
-        else: return ""
+        if not actimId in self.actims.keys(): return ""
+        return self.actims[actimId].htmlCartouche()
 
-    def htmlRepo(self, actimId: int, ip: str):
+    def htmlRepo(self, actimId: int, ip: str) -> str:
+        if not actimId in self.actims.keys(): return ""
         a = self.actims[actimId]
         doc, tag, text, line = Doc().ttl()
 
@@ -435,15 +431,12 @@ class ActimetresClass:
             self.actims[actimId].dirty = True
 
     def getServerId(self, actimId: int):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].serverId
-        else: return 0
+        if not actimId in self.actims.keys(): return 0
+        return self.actims[actimId].serverId
 
     def getLastSeen(self, actimId: int):
-        if actimId in self.actims.keys():
-            return self.actims[actimId].lastSeen
-        else:
-            return TIMEZERO
+        if not actimId in self.actims.keys(): return TIMEZERO
+        return self.actims[actimId].lastSeen
 
     def dies(self, actimId: int):
         if actimId in self.actims.keys():
@@ -466,9 +459,8 @@ class ActimetresClass:
                 self.actims[actimId].alert(subject, content)
 
     def getName(self, actimId: int):
-        if actimId in self.actims:
-            return self.actims[actimId].name()
-        else: return ""
+        if not actimId in self.actims: return ""
+        return self.actims[actimId].name()
 
     def processAction(self, action, args):
         actim = self.actims[int(args['actimId'][0])]
