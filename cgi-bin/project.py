@@ -295,10 +295,11 @@ class ProjectsClass:
                                   key=lambda a: Actimetres.getLastSeen(a),
                                   reverse=True):
                 actimetreList += (
-                        f'<li> <input type="checkbox" name="actimId" value="{actimId}"> ' +
-                        Actimetres.getName(actimId) + ' - ' +
+                        f'<div><input type="checkbox" name="actimId" value="{actimId}"> ' +
+                        Actimetres.getName(actimId) + ' [' +
+                        Actimetres.htmlActimType(actimId) + '] Last seen ' +
                         Actimetres.getLastSeen(actimId).strftime(TIMEFORMAT_DISP) +
-                        '</input></li>'
+                        f' ({printTimeSpan(Actimetres.getLastSeen())})</input></div>'
                 )
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formAdd.html", {

@@ -147,6 +147,9 @@ class Actimetre:
     def htmlCartouche(self):
         return f'{self.name()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
 
+    def htmlActimType(self):
+        return f'{self.boardType}/v{self.version}'
+
     def addFreqEvent(self, now, frequency):
         from history import ActimHistory
         ActimHistory(self).addFreqEvent(now, frequency)
@@ -398,6 +401,10 @@ class ActimetresClass:
     def htmlCartouche(self, actimId: int):
         if not actimId in self.actims.keys(): return ""
         return self.actims[actimId].htmlCartouche()
+
+    def htmlActimType(self, actimId: int):
+        if not actimId in self.actims.keys(): return ""
+        return self.actims[actimId].htmlActimType()
 
     def htmlRepo(self, actimId: int, ip: str) -> str:
         if not actimId in self.actims.keys(): return ""
