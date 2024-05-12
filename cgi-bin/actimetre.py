@@ -250,8 +250,12 @@ class Actimetre:
                     with tag('button', type='submit', name='action', value='actim-retire'):
                         text('Retire')
             with tag('td', klass='actimproject'):
-                with tag('a', href=f'/project{self.projectId:02d}.html'):
-                    text(Projects.getName(self.projectId))
+                if self.projectId == 0:
+                    with tag('a', href=ACTIMS0_HTML):
+                        text('Available')
+                else:
+                    with tag('a', href=f'/project{self.projectId:02d}.html'):
+                        text(Projects.getName(self.projectId))
             with tag('td'):
                 text(self.boardType)
                 doc.asis('<br>')

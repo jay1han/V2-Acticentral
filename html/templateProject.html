@@ -24,10 +24,13 @@
       .retire {color:grey; font-style:italic}
     </style>
     <script>
-    let projectColumn = document.getElementByClassName("actimproject");
-    for (let element of projectColumn) {
-    element.hidden = "hidden";
-    }
+      function hide() {
+          let projectColumn = document.getElementByClassName("actimproject");
+          for (let element of projectColumn) {
+              element.hidden = "hidden";
+          }
+      }
+      window.addEventListener("load", hide);
     </script>
     <title>{projectTitle}</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
