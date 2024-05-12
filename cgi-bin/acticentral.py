@@ -191,9 +191,7 @@ def processAction():
         actimId = int(args['actimId'][0])
         if action   == 'remote-switch' : command = 0x10
         elif action == 'remote-sync'   : command = 0x20
-        elif action == 'remote-stop'   :
-            command = 0x30
-            Actimetres.stop(actimId)
+        elif action == 'remote-stop'   : command = 0x30
         elif action == 'remote-restart': command = 0xF0
         remoteAction(actimId, command)
         print("Status: 205\n\n")

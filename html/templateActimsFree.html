@@ -29,11 +29,12 @@
 
         function checkOne(page) {
              var http = new XMLHttpRequest();
-             http.open("HEAD", page.ref);
+             http.open("GET", page.ref);
              http.setRequestHeader("If-Modified-Since", date);
              http.onload = function() {
                  if (this.status == 200) {
                      document.getElementById(page.id).outerHTML = this.responseText;
+                     hide();
                  }
              }
              http.send();
@@ -66,10 +67,10 @@
             for (let element of projectFree) {
                 element.hidden = "hidden";
             }
-            // setupCheck();
         }
 
         window.addEventListener("load", hide);
+      window.addEventListener("load", setupCheck);
     </script>
     <title>Actimetres Available</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
