@@ -34,6 +34,7 @@
            http.onload = function() {
                if (this.status == 200) {
                    document.getElementById(page.id).outerHTML = this.responseText;
+                   hide();
                }
            }
            http.send();
@@ -62,9 +63,9 @@
           for (let element of projectColumn) {
               element.hidden = "hidden";
           }
-          //setupCheck();
       }
       window.addEventListener("load", hide);
+      window.addEventListener("load", setupCheck);
     </script>
     <title>{projectTitle}</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
