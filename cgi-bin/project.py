@@ -264,6 +264,7 @@ class ProjectsClass:
                 "{projectTitle}": project.title,
                 "{projectName}": project.name(),
                 "{projectOwner}": project.owner,
+                "{projectEmail}": project.email,
                 "{projectId}": str(project.projectId),
             })
 
