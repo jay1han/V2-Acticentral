@@ -251,7 +251,7 @@ class Actimetre:
                         text('Retire')
             with tag('td', name='actimproject'):
                 if self.projectId == 0:
-                    with tag('a', href=ACTIMS0_HTML):
+                    with tag('a', href="/actims-free.html"):
                         text('Available')
                 else:
                     with tag('a', href=f'/project{self.projectId:02d}.html'):
