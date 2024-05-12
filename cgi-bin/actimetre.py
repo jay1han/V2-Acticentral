@@ -85,7 +85,6 @@ class Actimetre:
 
         if not actual:
             self.projectId  = int(d['projectId'])
-            self.projectId  = Projects.setActimetre(self.projectId, self.actimId)
             self.lastDrawn  = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr  = d['reportStr']
