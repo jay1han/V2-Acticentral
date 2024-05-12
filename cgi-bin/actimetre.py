@@ -391,6 +391,10 @@ class ActimetresClass:
                 printLog(f"Actim{a.actimId:04d} orphaned by Actis{serverId}")
                 a.forgetData()
 
+    def stop(self, actimId):
+        if actimId in self.actims.keys():
+            self.actims[actimId].isStopped = True
+
     def dump(self, actimId: int):
         return json.dumps(self.actims[actimId].toD())
 
