@@ -261,24 +261,24 @@ class Actimetre:
                 doc.asis('<br>')
                 text(f"v{self.version}")
             if self.serverId != 0:
-                line('td', f"Actis{self.serverId:03d}",
+                line('td', f"Actis{self.serverId:03d}", name="actimfree",
                      klass="" if (Actiservers.isDown(self.serverId) == 0) else "down")
             else:
-                line('td', "")
-            with tag('td'):
+                line('td', "", name="actimfree")
+            with tag('td', name="actimfree"):
                 doc.asis(self.frequencyText(self.sensorStr))
                 if alive == 'up':
                     doc.asis('<br>')
                     with tag('button', type='submit', name='action', value='remote-switch'):
                         text('Switch')
             if alive == 'up':
-                with tag('td'):
+                with tag('td', name="actimfree"):
                     doc.asis(htmlRssi(self.rssi))
                     doc.stag('br')
                     if self.isStopped: text('stopped')
                     else:              text("{:.3f}%".format(100.0 * self.rating))
             else:
-                line('td', "")
+                line('td', "", name="actimfree")
 
             if alive == 'retire':
                 with tag('td', klass=f'health retire'):
@@ -299,7 +299,7 @@ class Actimetre:
                         doc.stag('img', src=f'/images/Actim{self.actimId:04d}.svg', klass='health')
 
             with tag('td', klass='right'):
-                if not self.hasData(): text('No data')
+                if not self.hasData(): text('No data', name="actimfree")
                 else:
                     text(f'{self.repoNums} files')
                     doc.stag('br')

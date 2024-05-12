@@ -29,6 +29,10 @@
             for (let element of projectColumn) {
                 element.hidden = "hidden";
             }
+            let projectFree = document.getElementsByName("actimfree");
+            for (let element of projectFree) {
+                element.hidden = "hidden";
+            }
         }
         window.addEventListener("load", hide);
     </script>
@@ -42,11 +46,8 @@
     <tr>
         <th>Name</th>
         <th>Type<br>Version</th>
-        <th>Server</th>
-        <th>Sensors</th>
-        <th>Signal<br>Rating</th>
         <th>Health</th>
-        <th>Local Files</th>
+        <th>Assisgn</th>
         <th class="no-borders"></th>
     </tr>
     {Actimetres}
