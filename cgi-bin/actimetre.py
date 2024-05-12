@@ -131,7 +131,6 @@ class Actimetre:
         self.repoSize   = newActim.repoSize
 
         if redraw: self.drawGraph()
-        return redraw
 
     def name(self):
         return f"Actim{self.actimId:04d}"
@@ -297,7 +296,7 @@ class Actimetre:
                     line('span', f' {self.uptime()}', klass=alive)
                     if not os.path.isfile(f'{IMAGES_DIR}/Actim{self.actimId:04d}.svg'):
                         self.cutHistory()
-                        self.drawGraph()
+                        self.dirty = True
                     with tag('div'):
                         doc.stag('img', src=f'/images/Actim{self.actimId:04d}.svg', klass='health')
 
@@ -340,10 +339,9 @@ class Actimetre:
             Projects.dirtyProject(self.projectId)
             with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
-            try: os.chmod(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', 0o666)
-            except OSError: pass
             return True
-        else: return False
+        else:
+            return False
 
 class ActimetresClass:
     def __init__(self):
@@ -394,6 +392,7 @@ class ActimetresClass:
     def stop(self, actimId):
         if actimId in self.actims.keys():
             self.actims[actimId].isStopped = True
+            self.actims[actimId].dirty = True
 
     def dump(self, actimId: int):
         return json.dumps(self.actims[actimId].toD())
@@ -559,6 +558,7 @@ class ActimetresClass:
 
     def save(self):
         for actim in self.actims.values():
+            actim.drawGraphMaybe()
             if actim.save():
                 self.dirty = True
         if self.dirty:
