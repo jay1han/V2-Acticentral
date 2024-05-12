@@ -299,7 +299,7 @@ class Actimetre:
                         doc.stag('img', src=f'/images/Actim{self.actimId:04d}.svg', klass='health')
 
             with tag('td', klass='right'):
-                if not self.hasData(): text('No data', name="actimfree")
+                if not self.hasData(): line('span', 'No data', name="actimfree")
                 else:
                     text(f'{self.repoNums} files')
                     doc.stag('br')

@@ -65,7 +65,6 @@ class Actiserver:
         self.diskFree = int(d['diskFree'])
         self.actimetreList = set()
         self.dbTime = utcStrptime(d['dbTime'])
-        self.isDown = int(d['isDown'])
         self.cpuIdle  = float(d['cpuIdle'])
         self.memAvail = float(d['memAvail'])
         self.diskTput = float(d['diskTput'])
@@ -80,6 +79,7 @@ class Actiserver:
         if actual:
             self.lastUpdate = NOW
         else:
+            self.isDown = int(d['isDown'])
             self.lastUpdate = utcStrptime(d['lastUpdate'])
             self.diskLow = int(d['diskLow'])
         self.dirty = actual
