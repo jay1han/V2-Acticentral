@@ -19,6 +19,7 @@ Actiservers = actiserver.initActiservers()
 Projects = project.initProjects()
 
 def htmlIndex():
+    #TODO
     writeTemplateSub(open(INDEX_HTML, "w"), INDEX_TEMPLATE, {
         "{Projects}"   : Projects.htmlProjects(picker=lambda p: p.projectId != 0),
         "{Actiservers}": Actiservers.html(picker=lambda s: len(s.actimetreList) > 0),

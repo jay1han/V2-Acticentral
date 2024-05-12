@@ -69,13 +69,13 @@ class Project:
             if Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
                 allPages.append('{' +
-                    f'id: Actim"{actimId:04d}", ' +
+                    f'id: "Actim{actimId:04d}", ' +
                     f'ref: "/actimetre/actim{actimId:04d}.html"' + '}')
         for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
             if not Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
                 allPages.append('{' +
-                                f'id: Actim"{actimId:04d}", ' +
+                                f'id: "Actim{actimId:04d}", ' +
                                 f'ref: "/actimetre/actim{actimId:04d}.html"' + '}')
 
         Actiservers = actiserver.Actiservers
@@ -84,7 +84,7 @@ class Project:
             if serverId != 0:
                 serverList.add(serverId)
                 allPages.append('{' +
-                                f'id: Actis"{serverId:03d}", ' +
+                                f'id: "Actis{serverId:03d}", ' +
                                 f'ref: "/actiserver/server{serverId:03d}.html"' + '}')
 
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
@@ -104,6 +104,7 @@ class Project:
 
     def htmlWriteFree(self):
         Actimetres = actimetre.Actimetres
+        #TODO
         freeActims = ""
         for actimId in self.actimetreList:
             freeActims += Actimetres.html(actimId)

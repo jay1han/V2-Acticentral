@@ -564,6 +564,7 @@ class ActimetresClass:
                 self.dirty = True
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
+            #TODO
             htmlStr = ''
             for actimId in sorted(self.actims.keys()):
                 htmlStr += self.actims[actimId].html()
