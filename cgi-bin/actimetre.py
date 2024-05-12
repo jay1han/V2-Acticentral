@@ -275,9 +275,9 @@ class Actimetre:
                 line('td', "")
 
             if alive == 'retire':
-                line('td', (f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}' +
-                            f'<br>({printTimeSpan(NOW - self.lastSeen)} ago)'),
-                           klass=f'health retire')
+                with tag('td', klass=f'health retire'):
+                    doc.asis(f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}' +
+                             f'<br>({printTimeSpan(NOW - self.lastSeen)} ago)'),
             else:
                 with tag('td', klass=f'health left'):
                     if self.graphSince == TIMEZERO:
