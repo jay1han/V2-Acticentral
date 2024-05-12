@@ -159,6 +159,8 @@ class ProjectsClass:
             for actimId in project.actimetreList:
                 Actimetres.setProjectId(actimId, project.projectId)
             if project.projectId == 0:
+                for actimId in Actimetres.available():
+                    project.actimetreList.add(actimId)
                 if fileOlderThan(ACTIMS0_HTML, 3600) :
                     project.dirty = True
             else:

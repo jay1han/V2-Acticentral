@@ -352,12 +352,15 @@ class ActimetresClass:
 
     def init(self):
         self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
-        for actimId in Registry.listActims():
+        for mac, actimId in Registry.macToId.items():
             if actimId not in self.actims.keys():
-                self.actims[actimId] = Actimetre(actimId)
+                self.actims[actimId] = Actimetre(actimId, mac=mac, projectId=0)
         for actim in self.actims.values():
             if fileOlderThan(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', 3600):
                 actim.dirty = True
+
+    def available(self):
+        return [actimId for actimId in self.actims.keys() if self.actims[actimId].projectId == 0]
 
     def str(self, actimId: int):
         if not actimId in self.actims.keys(): return ""

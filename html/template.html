@@ -80,7 +80,11 @@
       </tr>
       {Projects}
     </table>
-    
+    <form action="/bin/acticentral.py" method="get">
+      <p><button type="submit" name="action" value="project-create">Create a new project</button></p>
+    </form>
+
+
     <h1>Active Servers</h1>
     <p><a href="/servers.html">Full list</a></p>
     <table>
@@ -97,10 +101,6 @@
       {Actiservers}
     </table>
     
-    <form action="/bin/acticentral.py" method="get">
-      <p><button type="submit" name="action" value="project-create">Create a new project</button></p>
-    </form>
-
     <h1>Actimetres</h1>
     <p><a href="/actims-free.html">Available Actimetres</a> |
         <a href="/actims.html">Full List</a></p>
