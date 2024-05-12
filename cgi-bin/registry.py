@@ -44,8 +44,7 @@ class RegistryClass:
             except OSError:
                 pass
 
-            os.truncate(REGISTRY, 0)
-            with open(REGISTRY, "r+") as registry:
+            with open(REGISTRY, "w") as registry:
                 json.dump(self.macToId, registry)
             printLog("Saved Registry " + str(self.macToId))
             self.fileTime = datetime.fromtimestamp(os.stat(REGISTRY).st_mtime, tz=timezone.utc)

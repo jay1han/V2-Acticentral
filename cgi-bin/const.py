@@ -85,11 +85,7 @@ def loadData(filename):
 
 def dumpData(filename, data):
     printLog(f"[DUMP {filename}]")
-    try:
-        os.truncate(filename, 0)
-    except OSError:
-        pass
-    with open(filename, "r+") as registry:
+    with open(filename, "w") as registry:
         json.dump(data, registry)
 
 def printSize(size, unit='', precision=0):
@@ -202,3 +198,11 @@ def plain(text=''):
 def fileOlderThan(filename: str, seconds: int) -> bool:
     return not os.path.isfile(filename) or \
         NOW - datetime.fromtimestamp(os.stat(filename).st_mtime, timezone.utc) > timedelta(seconds=seconds)
+
+Weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+def jsDateString(when: datetime) -> str:
+    # Sun, 01 May 2024 03:11:23 GMT
+    return (Weekday[when.weekday()] + when.strftime(", %d ") +
+            Month[when.month - 1] + when.strftime(" %%Y %H:%M:%S GMT"))

@@ -19,8 +19,7 @@ Actiservers = actiserver.initActiservers()
 Projects = project.initProjects()
 
 def htmlIndex():
-    os.truncate(INDEX_HTML, 0)
-    writeTemplateSub(open(INDEX_HTML, "r+"), INDEX_TEMPLATE, {
+    writeTemplateSub(open(INDEX_HTML, "w"), INDEX_TEMPLATE, {
         "{Projects}"   : Projects.htmlProjects(picker=lambda p: p.projectId != 0),
         "{Actiservers}": Actiservers.html(picker=lambda s: len(s.actimetreList) > 0),
     })
@@ -44,11 +43,7 @@ def loadRemotes():
     return remote
 
 def saveRemotes(remote):
-    try:
-        os.truncate(REMOTE_FILE, 0)
-    except OSError:
-        return
-    with open(REMOTE_FILE, "r+") as remoteFile:
+    with open(REMOTE_FILE, "w") as remoteFile:
         json.dump(remote, remoteFile)
         
 def remoteAction(actimId, command):
