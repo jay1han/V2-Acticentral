@@ -64,22 +64,28 @@ class Project:
     def htmlWrite(self):
         Actimetres = actimetre.Actimetres
         projectActims = ""
-        allActims = []
+        allPages = []
         for actimId in sorted(self.actimetreList):
             if Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
-                allActims.append('{' +
+                allPages.append('{' +
                     f'id: Actim"{actimId:04d}", ' +
                     f'ref: "/actimetre/actim{actimId:04d}.html"' + '}')
         for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
             if not Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
+                allPages.append('{' +
+                                f'id: Actim"{actimId:04d}", ' +
+                                f'ref: "/actimetre/actim{actimId:04d}.html"' + '}')
 
         Actiservers = actiserver.Actiservers
         serverList = set()
         for serverId in sorted(map(Actimetres.getServerId, self.actimetreList)):
             if serverId != 0:
                 serverList.add(serverId)
+                allPages.append('{' +
+                                f'id: Actis"{serverId:03d}", ' +
+                                f'ref: "/actiserver/server{serverId:03d}.html"' + '}')
 
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
         projectEmail = f"<h3>Email: {self.email}</h3>"
@@ -92,7 +98,7 @@ class Project:
                          "{projectActims}" : projectActims,
                          "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
                          "{projectId}"     : str(self.projectId),
-                         "{allpages}"      : f'const allpages = [{",".join(allActims)}];',
+                         "{allpages}"      : f'const allpages = [{",".join(allPages)}];',
                          "{date}"          : f'const date = "{jsDateString(NOW + timedelta(seconds=1))}";'
                          })
 

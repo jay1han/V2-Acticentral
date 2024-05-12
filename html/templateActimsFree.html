@@ -24,6 +24,39 @@
         .retire {color:grey; font-style:italic}
     </style>
     <script>
+        {allpages}
+        {date}
+
+        function checkOne(page) {
+             var http = new XMLHttpRequest();
+             http.open("HEAD", page.ref);
+             http.setRequestHeader("If-Modified-Since", date);
+             http.onload = function() {
+                 if (this.status == 200) {
+                     document.getElementById(page.id).outerHTML = this.responseText;
+                 }
+             }
+             http.send();
+        }
+
+        function checkAll() {
+            var http = new XMLHttpRequest();
+            http.open("HEAD", document.URL)
+            http.setRequestHeader("If-Modified-Since", date);
+            http.onload = function() {
+                location.reload(true);
+            }
+
+            for (let page of allpages) {
+                checkOne(page);
+            }
+            setTimeout(checkAll, 1000);
+        }
+
+        function setupCheck() {
+            setTimeout(checkAll, 1000);
+        }
+
         function hide() {
             let projectColumn = document.getElementsByName("actimproject");
             for (let element of projectColumn) {
@@ -33,7 +66,9 @@
             for (let element of projectFree) {
                 element.hidden = "hidden";
             }
+            // setupCheck();
         }
+
         window.addEventListener("load", hide);
     </script>
     <title>Actimetres Available</title>
