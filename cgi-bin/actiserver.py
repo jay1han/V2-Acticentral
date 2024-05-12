@@ -157,7 +157,7 @@ class Actiserver:
             line('td', self.lastUpdate.strftime(TIMEFORMAT_DISP), klass=alive)
             if alive != 'up':
                 with tag('td', klass=alive):
-                    text(f'Missing {printTimeSpan(NOW - self.lastUpdate)}')
+                    text(f'Missing {printTimeAgo(self.lastUpdate)}')
                 line('td', '')
                 line('td', '')
                 line('td', '')

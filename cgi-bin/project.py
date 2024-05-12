@@ -299,7 +299,7 @@ class ProjectsClass:
                         Actimetres.getName(actimId) + ' [' +
                         Actimetres.htmlActimType(actimId) + '] Last seen ' +
                         Actimetres.getLastSeen(actimId).strftime(TIMEFORMAT_DISP) +
-                        f' ({printTimeSpan(Actimetres.getLastSeen())})</input></div>'
+                        f' ({printTimeAgo(Actimetres.getLastSeen(actimId))})</input></div>'
                 )
             print("Content-type: text/html\n\n")
             writeTemplateSub(sys.stdout, f"{HTML_ROOT}/formAdd.html", {

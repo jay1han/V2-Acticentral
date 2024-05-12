@@ -113,7 +113,8 @@ def printSize(size, unit='', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
-def printTimeSpan(span: timedelta):
+def printTimeAgo(since: datetime):
+    span = NOW - since
     months = span // timedelta(days=30)
     days = span // timedelta(days=1)
     hours = (span % timedelta(days=1)) // timedelta(hours=1)

@@ -223,10 +223,10 @@ class Actimetre:
 
     def uptime(self):
         if self.isDead > 0 or self.frequency == 0:
-            up = NOW - self.lastReport
+            up = self.lastReport
         else:
-            up = NOW - self.bootTime
-        return printTimeSpan(up)
+            up = self.bootTime
+        return printTimeAgo(up)
 
     def hasData(self):
         return self.repoNums > 0 or self.repoSize > 0
@@ -286,7 +286,7 @@ class Actimetre:
             if alive == 'retire':
                 with tag('td', klass=f'health retire'):
                     doc.asis(f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}' +
-                             f'<br>({printTimeSpan(NOW - self.lastSeen)} ago)'),
+                             f'<br>({printTimeAgo(self.lastSeen)} ago)'),
             else:
                 with tag('td', klass=f'health left'):
                     if self.graphSince == TIMEZERO:
