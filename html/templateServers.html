@@ -32,6 +32,7 @@
            http.setRequestHeader("If-Modified-Since", date);
            http.onload = function() {
                if (this.status == 200) {
+                   page.date = this.getResponseHeader("Last-Modified");
                    document.getElementById(page.id).outerHTML = this.responseText;
                }
            }

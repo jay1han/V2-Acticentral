@@ -33,6 +33,7 @@
              http.onload = function() {
                  if (this.status == 200) {
                      document.getElementById(page.id).outerHTML = this.responseText;
+                     page.date = this.getResponseHeader("Last-Modified");
                  }
              }
              http.send();
