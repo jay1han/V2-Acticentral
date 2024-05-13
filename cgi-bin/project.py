@@ -65,21 +65,18 @@ class Project:
         Actimetres = actimetre.Actimetres
         projectActims = ""
         allPages = []
+        allImages = []
         date = jsDateString(NOW + timedelta(seconds=1))
         for actimId in sorted(self.actimetreList):
-            if Actimetres.isAlive(actimId):
-                projectActims += Actimetres.html(actimId)
-                allPages.append('{' +
-                    f'id: "Actim{actimId:04d}", ' +
-                    f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                    f'date: "{date}"' + '}')
-        for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
-            if not Actimetres.isAlive(actimId):
-                projectActims += Actimetres.html(actimId)
-                allPages.append('{' +
-                                f'id: "Actim{actimId:04d}", ' +
-                                f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                                f'date: "{date}"' + '}')
+            projectActims += Actimetres.html(actimId)
+            allPages.append('{' +
+                            f'id: "Actim{actimId:04d}", ' +
+                            f'ref: "/actimetre/actim{actimId:04d}.html", ' +
+                            f'date: "{date}"' + '}')
+            allImages.append('{' +
+                             f'id: "Image{actimId:04d}", ' +
+                             f'ref: "/images/actim{actimId:04d}.svg", ' +
+                             f'date: "{date}"' + '}')
 
         Actiservers = actiserver.Actiservers
         serverList = set()
@@ -101,7 +98,7 @@ class Project:
                          "{projectActims}" : projectActims,
                          "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
                          "{projectId}"     : str(self.projectId),
-                         "{allpages}"      : f'const allpages = [{",".join(allPages)}];',
+                         "{allpages}"      : f'const allpages = [{",\n".join(allPages)}];',
                          "{date}"          : f'const date = "{date}";'
                          })
 

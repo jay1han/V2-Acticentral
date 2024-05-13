@@ -25,17 +25,31 @@
     </style>
     <script>
       {allpages}
+      {allimages}
       {date}
 
-      function checkOne(page) {
+      function checkPage(page) {
            var http = new XMLHttpRequest();
            http.open("GET", page.ref);
            http.setRequestHeader("If-Modified-Since", page.date);
            http.onload = function() {
                if (this.status == 200) {
-                   page.date = new Date(document.lastModified).toUTCString();
+                   page.date = this.getResponseHeader("Last-Modified");
                    document.getElementById(page.id).outerHTML = this.responseText;
                    hide();
+               }
+           }
+           http.send();
+      }
+
+      function checkImage(image) {
+           var http = new XMLHttpRequest();
+           http.open("HEAD", image.ref);
+           http.setRequestHeader("If-Modified-Since", image.date);
+           http.onload = function() {
+               if (this.status == 200) {
+                   image.date = this.getResponseHeader("Last-Modified");
+                   document.getElementById(image.id).ref = image.ref;
                }
            }
            http.send();
@@ -50,7 +64,10 @@
           }
 
           for (let page of allpages) {
-              checkOne(page);
+              checkPage(page);
+          }
+          for (let image of allimages) {
+              checkImage(image);
           }
           setTimeout(checkAll, 1000);
       }

@@ -1,6 +1,7 @@
 import os.path
 import sys
 
+from yattag import indent
 from const import *
 from registry import Registry
 from project import Projects
@@ -299,7 +300,10 @@ class Actimetre:
                         self.cutHistory()
                         self.dirty = True
                     with tag('div'):
-                        doc.stag('img', src=f'/images/Actim{self.actimId:04d}.svg', klass='health')
+                        doc.stag('img',
+                                 src=f'/images/Actim{self.actimId:04d}.svg',
+                                 klass='health',
+                                 id=f'Image{self.actimId:04d}')
 
             with tag('td', klass='right'):
                 if not self.hasData(): line('span', 'No data', name="actimfree")
@@ -332,7 +336,7 @@ class Actimetre:
                     text(self.reportStr)
                     doc.asis('<br><button type="submit" name="action" value="actim-clear">Clear</button>\n')
             doc.asis('</form>\n')
-        return doc.getvalue()
+        return indent(doc.getvalue())
 
     def save(self):
         if self.dirty:
