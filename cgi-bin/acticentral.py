@@ -23,7 +23,7 @@ def htmlIndex():
     date = jsDateString(NOW + timedelta(seconds=1))
     for serverId in Actiservers.listIds():
         allPages.append('{' +
-                        f'id: "Server{serverId:03d}", ' +
+                        f'id: "Actis{serverId:03d}", ' +
                         f'ref: "/actiserver/server{serverId:03d}.html", ' +
                         f'date: "{date}"' + '}')
     for projectId in Projects.listIds():
