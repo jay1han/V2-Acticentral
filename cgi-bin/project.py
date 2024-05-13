@@ -65,18 +65,21 @@ class Project:
         Actimetres = actimetre.Actimetres
         projectActims = ""
         allPages = []
+        date = f'const date = "{jsDateString(NOW + timedelta(seconds=1))}";'
         for actimId in sorted(self.actimetreList):
             if Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
                 allPages.append('{' +
                     f'id: "Actim{actimId:04d}", ' +
-                    f'ref: "/actimetre/actim{actimId:04d}.html"' + '}')
+                    f'ref: "/actimetre/actim{actimId:04d}.html", ' +
+                    f'date: "{date}"' + '}')
         for actimId in sorted(self.actimetreList, key=lambda a: Actimetres.getLastSeen(a), reverse=True):
             if not Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
                 allPages.append('{' +
                                 f'id: "Actim{actimId:04d}", ' +
-                                f'ref: "/actimetre/actim{actimId:04d}.html"' + '}')
+                                f'ref: "/actimetre/actim{actimId:04d}.html", ' +
+                                f'date: "{date}"' + '}')
 
         Actiservers = actiserver.Actiservers
         serverList = set()

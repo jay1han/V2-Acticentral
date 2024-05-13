@@ -30,9 +30,10 @@
       function checkOne(page) {
            var http = new XMLHttpRequest();
            http.open("GET", page.ref);
-           http.setRequestHeader("If-Modified-Since", date);
+           http.setRequestHeader("If-Modified-Since", page.date);
            http.onload = function() {
                if (this.status == 200) {
+                   page.date = new Date(document.lastModified).toUTCString();
                    document.getElementById(page.id).outerHTML = this.responseText;
                    hide();
                }

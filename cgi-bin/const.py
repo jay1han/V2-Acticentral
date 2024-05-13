@@ -80,7 +80,7 @@ def loadData(filename):
         printLog(f"Decode error in {filename}")
         data = {}
     registry.close()
-    printLog(f"Loaded from {filename}: {len(data)} items")
+#    printLog(f"Loaded from {filename}: {len(data)} items")
     return data
 
 def dumpData(filename, data):
@@ -206,5 +206,5 @@ Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', '
 def jsDateString(when: datetime) -> str:
     # Sun, 01 May 2024 03:11:23 GMT
     return (Weekday[when.weekday()] + when.strftime(", %d ") +
-            Month[when.month - 1] + when.strftime(" %%Y %H:%M:%S GMT"))
+            Month[when.month - 1] + when.strftime(" %Y %H:%M:%S GMT"))
 TIMEZERO_JS     = jsDateString(TIMEZERO)
