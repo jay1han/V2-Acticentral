@@ -59,7 +59,9 @@
           http.open("HEAD", document.URL)
           http.setRequestHeader("If-Modified-Since", date);
           http.onload = function() {
-              location.reload(true);
+               if (this.status == 200) {
+                      location.reload();
+               }
           }
 
           for (let page of allpages) {
