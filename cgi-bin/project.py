@@ -75,7 +75,7 @@ class Project:
                             f'date: "{date}"' + '}')
             allImages.append('{' +
                              f'id: "Image{actimId:04d}", ' +
-                             f'ref: "/images/Actim{actimId:04d}.svg", ' +
+                             f'ref: "/images/actim{actimId:04d}.svg", ' +
                              f'date: "{date}"' + '}')
 
         Actiservers = actiserver.Actiservers
@@ -150,7 +150,10 @@ class Project:
                 return True
             else:
                 printLog(f'Project{self.projectId:02d} is dirty')
+                with open(f'{PROJECT_DIR}/project{self.projectId:02d}.html', 'w') as html:
+                    print(self.html(), file=html)
                 self.htmlWrite()
+
         return False
 
 class ProjectsClass:

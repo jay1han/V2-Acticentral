@@ -15,6 +15,7 @@ mkdir /var/www/cgi-bin
 mkdir /var/www/html/images
 mkdir /var/www/html/actimetre
 mkdir /var/www/html/actiserver
+mkdir /var/www/html/project
 
 cp .secret *.sh administrators /etc/actimetre
 cp cgi-bin/*.py /var/www/cgi-bin/
@@ -24,7 +25,7 @@ cp *.timer /etc/systemd/system/
 
 cd /var/www
 chown -R www-data:www-data *
-chmod 666 html/* html/images/* html/actimetre/* html/actiserver/*
+chmod 666 html/* html/images/* html/actimetre/* html/actiserver/* html/project/*
 chmod 664 html/index.html
 chmod 775 cgi-bin/acticentral.py
 chmod 777 html html/images html/actimetre html/actiserver

@@ -16,6 +16,7 @@ cd /var/www/html
 rm -f images/*
 rm -f actimetre/*
 rm -f actiserver/*
+rm -f project/*
 rm -f actim*.html server*.html project*.html
 
 ls -lRA

@@ -110,10 +110,10 @@ class ActimHistory:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
         else:
             ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
-        pyplot.savefig(f"{IMAGES_DIR}/Actim{self.a.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
+        pyplot.savefig(f"{IMAGES_DIR}/actim{self.a.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
         pyplot.close()
         try:
-            os.chmod(f"{IMAGES_DIR}/Actim{self.a.actimId:04d}.svg", 0o666)
+            os.chmod(f"{IMAGES_DIR}/actim{self.a.actimId:04d}.svg", 0o666)
         except OSError:
             pass
         self.a.lastDrawn = NOW

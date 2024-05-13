@@ -296,12 +296,12 @@ class Actimetre:
                         text(self.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
                     doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
                     line('span', f' {self.uptime()}', klass=alive)
-                    if not os.path.isfile(f'{IMAGES_DIR}/Actim{self.actimId:04d}.svg'):
+                    if not os.path.isfile(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg'):
                         self.cutHistory()
                         self.dirty = True
                     with tag('div'):
                         doc.stag('img',
-                                 src=f'/images/Actim{self.actimId:04d}.svg',
+                                 src=f'/images/actim{self.actimId:04d}.svg',
                                  klass='health',
                                  id=f'Image{self.actimId:04d}')
 
