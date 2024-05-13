@@ -33,6 +33,7 @@ class Actimetre:
         self.lastDrawn  = TIMEZERO
         self.graphSince = TIMEZERO
         self.reportStr  = ""
+        self.remote     = 0
         self.dirty      = True
 
     def __str__(self):
@@ -64,6 +65,7 @@ class Actimetre:
                 'lastDrawn' : self.lastDrawn.strftime(TIMEFORMAT_FN),
                 'graphSince': self.graphSince.strftime(TIMEFORMAT_FN),
                 'reportStr' : self.reportStr,
+                'remote'    : self.remote,
                 }
 
     def fromD(self, d:dict, actual=False):
@@ -89,6 +91,8 @@ class Actimetre:
             self.lastDrawn  = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr  = d['reportStr']
+            if 'remote' in d.keys():
+                self.remote = int(d['remote'])
 
         self.dirty = actual
         return self
@@ -364,9 +368,6 @@ class ActimetresClass:
             self.actims[a.actimId] = a
         return a.actimId
 
-    def isAlive(self, actimId: int):
-        return actimId in self.actims.keys() and self.actims[actimId].isDead == 0
-
     def removeProject(self, actimId: int):
         if actimId in self.actims:
             self.actims[actimId].projectId = 0
@@ -410,14 +411,6 @@ class ActimetresClass:
         printLog(f"Actim{actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
         self.actims[actimId] = Actimetre(actimId, mac, boardType, version, serverId, 0, bootTime, lastSeen=NOW, lastReport=NOW)
 
-    def delete(self, actimId: int):
-        if actimId in self.actims.keys():
-            del self.actims[actimId]
-            self.dirty = True
-        try:
-            os.remove(f"{HISTORY_DIR}/Actim{actimId:04d}.hist")
-        except FileNotFoundError: pass
-
     def forget(self, actimId: int):
         if actimId in self.actims.keys():
             self.actims[actimId].forgetData()
@@ -460,6 +453,20 @@ class ActimetresClass:
     def getName(self, actimId: int):
         if not actimId in self.actims: return ""
         return self.actims[actimId].name()
+
+    def addRemote(self, actimId, command):
+        if actimId in self.actims.keys():
+            self.actims[actimId].remote = command
+            self.actims[actimId].dirty = True
+
+    def getRemotes(self, serverId):
+        remotes = []
+        for actim in self.actims.values():
+            if actim.remote != 0 and actim.serverId == serverId:
+                remotes.append((actim.actimId, actim.remote))
+                actim.remote = 0
+                actim.dirty = True
+        return remotes
 
     def processAction(self, action, args):
         actim = self.actims[int(args['actimId'][0])]

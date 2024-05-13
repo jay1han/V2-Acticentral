@@ -44,29 +44,6 @@ def checkAlerts():
     Actimetres.checkAlerts()
     Actiservers.checkAlerts()
 
-def loadRemotes():
-    try:
-        remoteFile = open(REMOTE_FILE, "r")
-    except OSError:
-        return {}
-    try:
-        remoteJson = json.load(remoteFile)
-    except json.JSONDecodeError:
-        return {}
-    remote = {}
-    for (key, value) in remoteJson.items():
-        remote[int(key)] = int(value)
-    return remote
-
-def saveRemotes(remote):
-    with open(REMOTE_FILE, "w") as remoteFile:
-        json.dump(remote, remoteFile)
-        
-def remoteAction(actimId, command):
-    remotes = loadRemotes()
-    remotes[actimId] = command
-    saveRemotes(remotes)
-
 class ActisInfo:
     def __init__(self, index, serverId, rssi):
         self.index = index
@@ -141,18 +118,11 @@ def processAction():
         if action == 'actiserver':
             plain(Registry.dump())
         else:
+            for actimId, command in Actimetres.getRemotes(serverId):
+                plain(f'+{actimId}:{command}')
             if Registry.needUpdate(s.dbTime) or Projects.needUpdate(s.dbTime):
                 printLog(f'{s.dbTime} needs update')
                 plain('!')
-            else:
-                remotes = loadRemotes()
-                for actimId in remotes.keys():
-                    if actimId in s.actimetreList:
-                        plain(f'+{actimId}:{remotes[actimId]}')
-                        del remotes[actimId]
-                        saveRemotes(remotes)
-                        return
-                plain('OK')
 
     elif action == 'registry':
         if not checkSecret(): return
@@ -202,13 +172,13 @@ def processAction():
         Actimetres.processAction(action, args)
 
     elif action.startswith('remote-'):
-        command = 0
         actimId = int(args['actimId'][0])
+        command = 0
         if action   == 'remote-switch' : command = 0x10
         elif action == 'remote-sync'   : command = 0x20
         elif action == 'remote-stop'   : command = 0x30
         elif action == 'remote-restart': command = 0xF0
-        remoteAction(actimId, command)
+        Actimetres.addRemote(actimId, command)
         print("Status: 205\n\n")
 
     elif action.startswith('project-'):
