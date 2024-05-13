@@ -153,7 +153,6 @@ class Project:
                 with open(f'{PROJECT_DIR}/project{self.projectId:02d}.html', 'w') as html:
                     print(self.html(), file=html)
                 self.htmlWrite()
-
         return False
 
 class ProjectsClass:
@@ -180,8 +179,8 @@ class ProjectsClass:
             self.projects[0] = Project(0, "Not assigned", "No owner")
             self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-        if fileOlderThan(ACTIMS0_HTML, 3600) or fileOlderThan(ACTIMS_HTML, 3600):
-            self.dirty = True
+        if fileOlderThan(ACTIMS0_HTML, 3600):
+            self.projects[0].dirty = True
         Actimetres = actimetre.Actimetres
 
         allActimId = set()
@@ -198,7 +197,8 @@ class ProjectsClass:
                     project.dirty = True
                     self.dirty = True
                 else:
-                    Actimetres.setProjectId(actimId, project.projectId)
+                    if Actimetres.setProjectId(actimId, project.projectId):
+                        self.dirty = True
         for project in self.projects.values():
             if project.projectId != 0:
                 if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
@@ -245,18 +245,6 @@ class ProjectsClass:
         self.dirty = True
         return self[projectId]
 
-    def setActimetre(self, projectId: int, actimId: int) -> int:
-        for p in self.projects.values():
-            if actimId in p.actimetreList and p.projectId != projectId:
-                p.removeActim(actimId)
-                self.dirty = True
-        if projectId in self.projects:
-            if self.projects[projectId].addActim(actimId):
-                self.dirty = True
-            return projectId
-        else:
-            return 0
-
     def removeActim(self, actimId):
         for p in self.projects.values():
             if actimId in p.actimetreList:
@@ -265,8 +253,8 @@ class ProjectsClass:
                 self.dirty = True
 
     def moveActim(self, actimId, projectId):
-        if self.removeActim(actimId): self.dirty = True
-        if self.addActim(projectId, actimId): self.dirty = True
+        self.removeActim(actimId)
+        self.addActim(projectId, actimId)
 
     def new(self, title, owner, email) -> int:
         projectId = 1
@@ -402,7 +390,7 @@ class ProjectsClass:
     def save(self):
         for p in self.projects.values():
             p.save()
-        if self.dirty: #TODO: refine dirtiness
+        if self.dirty:
             dumpData(PROJECTS, {int(p.projectId):p.toD() for p in self.projects.values()})
             self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
             self.projects[0].htmlWriteFree()
