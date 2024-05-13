@@ -200,10 +200,7 @@ class ProjectsClass:
                 else:
                     Actimetres.setProjectId(actimId, project.projectId)
         for project in self.projects.values():
-            if project.projectId == 0:
-                if fileOlderThan(ACTIMS0_HTML, 3600) :
-                    project.dirty = True
-            else:
+            if project.projectId != 0:
                 if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
                     project.dirty = True
 
