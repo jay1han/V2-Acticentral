@@ -232,119 +232,102 @@ class Actimetre:
     def hasData(self):
         return self.repoNums > 0 or self.repoSize > 0
 
+    def htmlButton(self, action, text):
+        return ('<form action="/bin/acticentral.py" method="get">' +
+                f'<input type="hidden" name="actimId" value="{self.actimId}"/>' +
+                f'<button type="submit" name="action" value="{action}>' +
+                f'{text}</button></form>\n')
+
     def html(self):
-        return f'<tr id="Actim{self.actimId:04d}">\n' + self.innerHTML() +  '\n</tr>\n'
-
-    def innerHTML(self):
         doc, tag, text, line = Doc().ttl()
-        doc.asis(f'<form action="/bin/acticentral.py" method="get">')
-        doc.asis(f'<input type="hidden" name="actimId" value="{self.actimId}"/>')
-        alive = 'up'
-        if NOW - self.lastReport > ACTIM_RETIRE_P:
-            alive = 'retire'
-        elif self.frequency == 0 or self.isDead > 0:
-            alive = 'down'
+        with tag('tr', id=f'Actim{self.actimId:04d}'):
+            alive = 'up'
+            if NOW - self.lastReport > ACTIM_RETIRE_P:
+                alive = 'retire'
+            elif self.frequency == 0 or self.isDead > 0:
+                alive = 'down'
 
-        with tag('td', klass=alive):
-            doc.asis('Actim&shy;{:04d}'.format(self.actimId))
-            if alive == 'up':
-                doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='remote-restart'):
-                    text('Restart')
-            elif alive == 'retire':
-                doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='actim-retire'):
-                    text('Retire')
-        with tag('td', name='actimproject'):
-            if self.projectId == 0:
-                with tag('a', href="/actims-free.html"):
-                    text('Available')
-            else:
-                with tag('a', href=f'/project{self.projectId:02d}.html'):
-                    text(Projects.getName(self.projectId))
-        with tag('td'):
-            text(self.boardType)
-            doc.asis('<br>')
-            text(f"v{self.version}")
-        if self.serverId != 0:
-            line('td', f"Actis{self.serverId:03d}", name="actimfree",
-                 klass="" if (Actiservers.isDown(self.serverId) == 0) else "down")
-        else:
-            line('td', "", name="actimfree")
-        with tag('td', name="actimfree"):
-            doc.asis(self.frequencyText(self.sensorStr))
-            if alive == 'up':
-                doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='remote-switch'):
-                    text('Switch')
-        if alive == 'up':
-            with tag('td', name="actimfree"):
-                doc.asis(htmlRssi(self.rssi))
-                doc.stag('br')
-                if self.isStopped: text('stopped')
-                else:              text("{:.3f}%".format(100.0 * self.rating))
-        else:
-            line('td', "", name="actimfree")
-
-        if alive == 'retire':
-            with tag('td', klass=f'health retire'):
-                doc.asis(f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}' +
-                         f'<br>({printTimeAgo(self.lastSeen)} ago)'),
-        else:
-            with tag('td', klass=f'health left'):
-                if self.graphSince == TIMEZERO:
-                    text('? ')
-                else:
-                    text(self.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
-                doc.asis('<button type="submit" name="action" value="actim-cut-graph">&#x2702;</button>\n')
-                line('span', f' {self.uptime()}', klass=alive)
-                if not os.path.isfile(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg'):
-                    self.cutHistory()
-                    self.dirty = True
-                with tag('div'):
-                    doc.stag('img',
-                             src=f'/images/actim{self.actimId:04d}.svg',
-                             klass='health',
-                             id=f'Image{self.actimId:04d}')
-
-        with tag('td', klass='right'):
-            if not self.hasData(): line('span', 'No data', name="actimfree")
-            else:
-                text(f'{self.repoNums} files')
-                doc.stag('br')
-                text(printSize(self.repoSize))
-            if self.serverId == 0 or not self.hasData():
-                doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='actim-move'):
-                    doc.asis('Move')
-                if self.projectId != 0:
+            with tag('td', klass=alive):
+                doc.asis('Actim&shy;{:04d}'.format(self.actimId))
+                if alive == 'up':
                     doc.asis('<br>')
-                    with tag('button', type='submit', name='action', value='actim-remove'):
-                        doc.asis('Remove')
-            elif (not self.isStopped) and alive == 'up' and self.hasData() and Actiservers.getVersion(self.serverId) >= '380':
+                    doc.asis(self.htmlButton("remote-restart", "Restart"))
+                elif alive == 'retire':
+                    doc.asis('<br>')
+                    doc.asis(self.htmlButton("actim-retire", "Retire"))
+            with tag('td', name='actimproject'):
+                if self.projectId == 0:
+                    with tag('a', href="/actims-free.html"):
+                        text('Available')
+                else:
+                    with tag('a', href=f'/project{self.projectId:02d}.html'):
+                        text(Projects.getName(self.projectId))
+            with tag('td'):
+                text(self.boardType)
                 doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='remote-stop'):
-                    doc.asis('Stop')
-            elif (alive != 'up' or self.isStopped) and self.hasData() and Actiservers.isDown(self.serverId) == 0:
-                doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='remote-sync'):
-                    text('Sync')
-            elif alive == 'retire' and self.hasData():
-                doc.asis('<br>')
-                with tag('button', type='submit', name='action', value='actim-forget'):
-                    doc.asis('Forget')
-        if self.reportStr != "":
-            with tag('td', klass="report"):
-                text(self.reportStr)
-                doc.asis('<br><button type="submit" name="action" value="actim-clear">Clear</button>\n')
-        doc.asis('</form>\n')
+                text(f"v{self.version}")
+            if self.serverId != 0:
+                line('td', f"Actis{self.serverId:03d}", name="actimfree",
+                     klass="" if (Actiservers.isDown(self.serverId) == 0) else "down")
+            else:
+                line('td', "", name="actimfree")
+            with tag('td', name="actimfree"):
+                doc.asis(self.frequencyText(self.sensorStr))
+                if alive == 'up':
+                    doc.asis('<br>')
+                    doc.asis(self.htmlButton("remote-switch", "Switch"))
+            if alive == 'up':
+                with tag('td', name="actimfree"):
+                    doc.asis(htmlRssi(self.rssi))
+                    doc.stag('br')
+                    if self.isStopped: text('stopped')
+                    else:              text("{:.3f}%".format(100.0 * self.rating))
+            else:
+                line('td', "", name="actimfree")
+
+            if alive == 'retire':
+                with tag('td', klass=f'health retire'):
+                    doc.asis(f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}' +
+                             f'<br>({printTimeAgo(self.lastSeen)} ago)'),
+            else:
+                with tag('td', klass=f'health left'):
+                    if self.graphSince == TIMEZERO:
+                        text('? ')
+                    else:
+                        text(self.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
+                    doc.asis(self.htmlButton("actim-cut-graph", "&#x2702;"))
+                    line('span', f' {self.uptime()}', klass=alive)
+                    if not os.path.isfile(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg'):
+                        self.cutHistory()
+                        self.dirty = True
+                    with tag('div'):
+                        doc.stag('img',
+                                 src=f'/images/actim{self.actimId:04d}.svg',
+                                 klass='health',
+                                 id=f'Image{self.actimId:04d}')
+
+            with tag('td', klass='right'):
+                if not self.hasData(): line('span', 'No data', name="actimfree")
+                else:
+                    text(f'{self.repoNums} files')
+                    doc.stag('br')
+                    text(printSize(self.repoSize))
+                if self.serverId == 0 or not self.hasData():
+                    doc.stag('br')
+                    doc.asis(self.htmlButton("actim-move", "Move"))
+            if self.reportStr != "":
+                with tag('td', klass="report"):
+                    text(self.reportStr)
+                    doc.stag('br')
+                    doc.asis(self.htmlButton("actim-clear", "Clear"))
+            doc.asis('</form>\n')
         return indent(doc.getvalue())
 
     def save(self):
         if self.dirty:
             printLog(f'Actim{self.actimId:04d}[{self.projectId}] is dirty')
             with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
-                print(self.innerHTML(), file=html)
+                print(self.html(), file=html)
             Projects.dirtyProject(self.projectId)
             return True
         else:
