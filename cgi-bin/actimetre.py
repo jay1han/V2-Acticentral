@@ -320,7 +320,6 @@ class Actimetre:
                     text(self.reportStr)
                     doc.stag('br')
                     doc.asis(self.htmlButton("actim-clear", "Clear"))
-            doc.asis('</form>\n')
         return indent(doc.getvalue())
 
     def save(self):

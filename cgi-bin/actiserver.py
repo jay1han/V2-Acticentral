@@ -130,8 +130,6 @@ class Actiserver:
         doc, tag, text, line = Doc().ttl()
 
         with tag('tr', id=f'Actis{self.serverId:03d}'):
-            doc.asis(f'<form action="/bin/acticentral.py" method="get">')
-            doc.asis(f'<input type="hidden" name="serverId" value="{self.serverId}" />')
             if NOW - self.lastUpdate < ACTIS_FAIL_TIME:
                 alive = 'up'
             elif NOW - self.lastUpdate > ACTIS_RETIRE_P:
@@ -143,7 +141,10 @@ class Actiserver:
                 text(self.name())
                 if alive == 'retire':
                     doc.asis('<br>')
+                    doc.asis(f'<form action="/bin/acticentral.py" method="get">')
+                    doc.asis(f'<input type="hidden" name="serverId" value="{self.serverId}" />')
                     line('button', 'Retire', type='submit', name='action', value='server-retire')
+                    doc.asis('</form>')
                 else:
                     doc.asis('<br>')
                     line('span', self.ip, klass='small')
