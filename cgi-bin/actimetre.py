@@ -235,7 +235,7 @@ class Actimetre:
     def htmlButton(self, action, text):
         return ('<form action="/bin/acticentral.py" method="get">' +
                 f'<input type="hidden" name="actimId" value="{self.actimId}"/>' +
-                f'<button type="submit" name="action" value="{action}>' +
+                f'<button type="submit" name="action" value="{action}">' +
                 f'{text}</button></form>\n')
 
     def html(self):
@@ -320,7 +320,7 @@ class Actimetre:
                     text(self.reportStr)
                     doc.stag('br')
                     doc.asis(self.htmlButton("actim-clear", "Clear"))
-        return indent(doc.getvalue())
+        return doc.getvalue()
 
     def save(self):
         if self.dirty:
