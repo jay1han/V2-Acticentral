@@ -175,7 +175,9 @@ class ProjectsClass:
 
     def init(self):
         self.projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
+        printLog('Projects data\n' + self)
         if self.projects.get(0) is None:
+            printLog(f'Missing Project00, created')
             self.projects[0] = Project(0, "Not assigned", "No owner")
             self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
