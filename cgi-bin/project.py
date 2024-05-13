@@ -98,8 +98,9 @@ class Project:
                          "{projectActims}" : projectActims,
                          "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
                          "{projectId}"     : str(self.projectId),
-                         "{allpages}"      : f'const allpages = [{",\n".join(allPages)}];',
-                         "{date}"          : f'const date = "{date}";'
+                         "{allpages}"      : ',\n'.join(allPages),
+                         "{allimages}"     : ',\n'.join(allImages),
+                         "{date}"          : date,
                          })
 
     def htmlWriteFree(self):
