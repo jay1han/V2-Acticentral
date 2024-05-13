@@ -201,7 +201,7 @@ def fileOlderThan(filename: str, seconds: int) -> bool:
     return not os.path.isfile(filename) or \
         NOW - datetime.fromtimestamp(os.stat(filename).st_mtime, timezone.utc) > timedelta(seconds=seconds)
 
-Weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+Weekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 def jsDateString(when: datetime) -> str:
