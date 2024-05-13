@@ -27,7 +27,8 @@ def htmlIndex():
                         f'ref: "/actiserver/server{serverId:03d}.html", ' +
                         f'date: "{date}"' + '}')
     for projectId in Projects.listIds():
-        allPages.append('{' +
+        if projectId != 0:
+            allPages.append('{' +
                          f'id: "Project{projectId:02d}", ' +
                          f'ref: "/project{projectId:02d}.html", ' +
                          f'date: "{date}"' + '}')
