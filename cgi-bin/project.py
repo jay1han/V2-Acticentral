@@ -75,7 +75,7 @@ class Project:
                             f'date: "{date}"' + '}')
             allImages.append('{' +
                              f'id: "Image{actimId:04d}", ' +
-                             f'ref: "/images/actim{actimId:04d}.svg", ' +
+                             f'ref: "/images/Actim{actimId:04d}.svg", ' +
                              f'date: "{date}"' + '}')
 
         Actiservers = actiserver.Actiservers
