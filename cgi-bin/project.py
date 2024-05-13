@@ -65,7 +65,7 @@ class Project:
         Actimetres = actimetre.Actimetres
         projectActims = ""
         allPages = []
-        date = f'const date = "{jsDateString(NOW + timedelta(seconds=1))}";'
+        date = jsDateString(NOW + timedelta(seconds=1))
         for actimId in sorted(self.actimetreList):
             if Actimetres.isAlive(actimId):
                 projectActims += Actimetres.html(actimId)
@@ -102,7 +102,7 @@ class Project:
                          "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
                          "{projectId}"     : str(self.projectId),
                          "{allpages}"      : f'const allpages = [{",".join(allPages)}];',
-                         "{date}"          : f'const date = "{jsDateString(NOW + timedelta(seconds=1))}";'
+                         "{date}"          : f'const date = "{date}";'
                          })
 
     def htmlWriteFree(self):
