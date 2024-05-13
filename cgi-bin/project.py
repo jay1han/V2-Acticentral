@@ -101,6 +101,7 @@ class Project:
                          "{allpages}"      : ',\n'.join(allPages),
                          "{allimages}"     : ',\n'.join(allImages),
                          "{date}"          : date,
+                         "{document}"      : f'/project{self.projectId:02d}.html',
                          })
 
     def htmlWriteFree(self):

@@ -41,7 +41,7 @@
 
       function checkAll() {
           var http = new XMLHttpRequest();
-          http.open("HEAD", document.URL)
+          http.open("HEAD", "/servers.html")
           http.setRequestHeader("If-Modified-Since", date);
           http.onload = function() {
                if (this.status == 200) {
