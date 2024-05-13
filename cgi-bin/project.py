@@ -105,13 +105,23 @@ class Project:
 
     def htmlWriteFree(self):
         Actimetres = actimetre.Actimetres
-        #TODO
         freeActims = ""
-        for actimId in self.actimetreList:
+        date = jsDateString(NOW + timedelta(seconds=1))
+        allPages = []
+        allImages = []
+        for actimId in sorted(self.actimetreList):
             freeActims += Actimetres.html(actimId)
+            allPages.append('{' +
+                            f'id: "Actim{actimId:04d}", ' +
+                            f'ref: "/actimetre/actim{actimId:04d}.html", ' +
+                            f'date: "{date}"' + '}')
 
-        writeTemplateSub(open(ACTIMS0_HTML, "w"), ACTIMS0_TEMPLATE, {
+        writeTemplateSub(open(ACTIMS0_HTML, "w"),
+                         ACTIMS0_TEMPLATE,
+                         {
                              "{Actimetres}" : freeActims,
+                             "{allpages}": ',\n'.join(allPages),
+                             "{date}": date,
                          })
 
     def html(self):

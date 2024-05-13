@@ -24,8 +24,8 @@
         .retire {color:grey; font-style:italic}
     </style>
     <script>
-        {allpages}
-        {date}
+        const allpages = [{allpages}];
+        const date = "{date}";
 
         function checkOne(page) {
              var http = new XMLHttpRequest();
@@ -33,6 +33,7 @@
              http.setRequestHeader("If-Modified-Since", date);
              http.onload = function() {
                  if (this.status == 200) {
+                     page.date = this.getResponseHeader("Last-Modified");
                      document.getElementById(page.id).outerHTML = this.responseText;
                      hide();
                  }
@@ -70,7 +71,7 @@
         }
 
         window.addEventListener("load", hide);
-//      window.addEventListener("load", setupCheck);
+        window.addEventListener("load", setupCheck);
     </script>
     <title>Actimetres Available</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
