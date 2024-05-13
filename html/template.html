@@ -26,8 +26,8 @@
     </style>
 
     <script>
-      {allpages}
-      {date}
+      const allpages = [{allpages}];
+      const date = "{date}";
 
       function checkOne(page) {
            var http = new XMLHttpRequest();
@@ -35,6 +35,7 @@
            http.setRequestHeader("If-Modified-Since", date);
            http.onload = function() {
                if (this.status == 200) {
+                   page.date = this.getResponseHeader("Last-Modified");
                    document.getElementById(page.id).outerHTML = this.responseText;
                }
            }
@@ -59,7 +60,7 @@
           setTimeout(checkAll, 1000);
       }
 
-//      window.addEventListener("load", setupCheck);
+      window.addEventListener("load", setupCheck);
     </script>
     
     <title>Actimetre Dashboard</title>

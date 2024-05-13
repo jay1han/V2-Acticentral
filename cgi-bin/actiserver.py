@@ -229,6 +229,9 @@ class ActiserversClass:
                          '{Actiservers}': self.html(picker=picker),
         })
 
+    def listIds(self):
+        return sorted(self.servers.keys())
+
     def getLastUpdate(self, serverId):
         return self.servers[serverId].lastUpdate
 

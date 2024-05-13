@@ -108,7 +108,6 @@ class Project:
         freeActims = ""
         date = jsDateString(NOW + timedelta(seconds=1))
         allPages = []
-        allImages = []
         for actimId in sorted(self.actimetreList):
             freeActims += Actimetres.html(actimId)
             allPages.append('{' +
@@ -200,6 +199,9 @@ class ProjectsClass:
             if len(p.actimetreList) > 0:
                 string += f'{projectId}:' + ','.join([str(a) for a in list(p.actimetreList)]) + '\n'
         return string
+
+    def listIds(self):
+        return sorted(self.projects.keys())
 
     def htmlProjects(self, *, picker=None):
         htmlString = ""
