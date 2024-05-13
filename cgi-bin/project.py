@@ -338,7 +338,7 @@ class ProjectsClass:
             })
 
         else:
-            print("Status: 4205n\n")
+            print("Status: 205\n\n")
 
     def processForm(self, formId, args):
         if formId == 'project-edit':
@@ -360,7 +360,7 @@ class ProjectsClass:
                 projectId = self.new(title, owner, email)
                 print(f"Location:\\project{projectId:02d}.html\n\n")
             else:
-                print("Location:\\index.html\n\n")
+                print(f"Location:\\{INDEX_NAME}\n\n")
 
         elif formId == 'project-add':
             Actimetres = actimetre.Actimetres
@@ -380,7 +380,7 @@ class ProjectsClass:
                     self.projects[projectId].removeActim(actimId)
                 del self.projects[projectId]
                 self.dirty = True
-            print("Location:\\index.html\n\n")
+            print(f"Location:\\{INDEX_NAME}\n\n")
 
         else:
             print("Status: 205\n\n")
