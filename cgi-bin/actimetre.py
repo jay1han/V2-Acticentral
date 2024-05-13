@@ -291,12 +291,12 @@ class Actimetre:
                              f'<br>({printTimeAgo(self.lastSeen)} ago)'),
             else:
                 with tag('td', klass=f'health left'):
-                    if self.graphSince == TIMEZERO:
-                        text('? ')
-                    else:
-                        text(self.graphSince.strftime(TIMEFORMAT_DISP) + "\n")
-                    doc.asis(self.htmlButton("actim-cut-graph", "&#x2702;"))
-                    line('span', f' {self.uptime()}', klass=alive)
+                    prelabel = '? '
+                    if self.graphSince != TIMEZERO:
+                        prelabel = self.graphSince.strftime(TIMEFORMAT_DISP) + "\n"
+                    postlabel = f'<span class="{alive}">{self.uptime()}</span>'
+                    doc.asis(self.htmlButton("actim-cut-graph",
+                                             f'{prelabel}&#x2702;{postlabel}'))
                     if not os.path.isfile(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg'):
                         self.cutHistory()
                         self.dirty = True
