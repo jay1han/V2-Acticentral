@@ -505,6 +505,7 @@ class ActimetresClass:
                 "{actimInfo}": actim.htmlInfo(),
                 "{projectName}": Projects.getName(actim.projectId),
                 "{projectList}": Projects.htmlChoice(actim.projectId),
+                "{ownermaybe}": '' if (actim.projectId == 0) else Projects.getOwner(actim.projectId)
                 "{attached}" : 'hidden' if (actim.projectId == 0) else '',
                 "{notAttached}": 'hidden' if (actim.projectId > 0) else ''
             })

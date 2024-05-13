@@ -7,7 +7,6 @@ echo > acticentral.lock
 echo > ./secrets
 echo {} > actiservers.data
 echo {} > actimetres.data
-echo {} > projects.data
 
 chmod 666 *.data *.log
 rm -f history/Actim*.hist
