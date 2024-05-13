@@ -187,17 +187,20 @@ class ProjectsClass:
         for project in self.projects.values():
             for actimId in project.actimetreList:
                 if actimId in allActimId:
+                    printLog(f'Actim{actimId:04d}[{project.projectId}] in duplicate, removed')
                     project.actimetreList.remove(actimId)
                     project.dirty = True
                     self.dirty = True
         for project in self.projects.values():
             for actimId in Actimetres.fromProject(project.projectId):
                 if not actimId in allActimId:
+                    printLog(f'Actim{actimId:04d}[{project.projectId}] missing, added')
                     project.actimetreList.add(actimId)
                     project.dirty = True
                     self.dirty = True
                 else:
                     if Actimetres.setProjectId(actimId, project.projectId):
+                        printLog(f'Actim{actimId:04d}[{project.projectId}] reassigned')
                         self.dirty = True
         for project in self.projects.values():
             if project.projectId != 0:
