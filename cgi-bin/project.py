@@ -183,18 +183,27 @@ class ProjectsClass:
         if fileOlderThan(ACTIMS0_HTML, 3600) or fileOlderThan(ACTIMS_HTML, 3600):
             self.dirty = True
         Actimetres = actimetre.Actimetres
+
+        allActimId = set()
+        for project in self.projects.values():
+            for actimId in project.actimetreList:
+                if actimId in allActimId:
+                    project.actimetreList.remove(actimId)
+                    project.dirty = True
+                    self.dirty = True
+        for project in self.projects.values():
+            for actimId in Actimetres.fromProject(project.projectId):
+                if not actimId in allActimId:
+                    project.actimetreList.add(actimId)
+                    project.dirty = True
+                    self.dirty = True
+                else:
+                    Actimetres.setProjectId(actimId, project.projectId)
         for project in self.projects.values():
             if project.projectId == 0:
-                for actimId in Actimetres.fromProject(0):
-                    if not actimId in project.actimetreList:
-                        project.actimetreList.add(actimId)
-                        project.dirty = True
-                        self.dirty = True
                 if fileOlderThan(ACTIMS0_HTML, 3600) :
                     project.dirty = True
             else:
-                for actimId in project.actimetreList:
-                    Actimetres.setProjectId(actimId, project.projectId)
                 if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
                     project.dirty = True
 

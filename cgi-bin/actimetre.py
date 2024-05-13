@@ -424,6 +424,10 @@ class ActimetresClass:
             return True
         return False
 
+    def getProjectId(self, actimId: int):
+        if not actimId in self.actims.keys(): return 0
+        else: return self.actims[actimId].projectId
+
     def getServerId(self, actimId: int):
         if not actimId in self.actims.keys(): return 0
         return self.actims[actimId].serverId
