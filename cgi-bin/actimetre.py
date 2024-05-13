@@ -316,9 +316,12 @@ class Actimetre:
                     text(f'{self.repoNums} files')
                     doc.stag('br')
                     text(printSize(self.repoSize))
-                if self.serverId == 0 or not self.hasData():
+                if not self.hasData():
                     doc.stag('br')
                     doc.asis(self.htmlButton("actim-move", "Move"))
+                    if self.serverId != 0:
+                        doc.stag('br')
+                        doc.asis(self.htmlButton("actim-remove", "Remove"))
             if self.reportStr != "":
                 with tag('td', klass="report"):
                     text(self.reportStr)
@@ -558,11 +561,22 @@ class ActimetresClass:
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
             #TODO
+            htmlAll = ""
+            date = jsDateString(NOW + timedelta(seconds=1))
+            allPages = []
+            for actim in self.actims.values():
+                htmlAll += actim.html()
+                allPages.append('{' +
+                                f'id: "Actim{actim.actimId:04d}", ' +
+                                f'ref: "/actimetre/actim{actim.actimId:04d}.html", ' +
+                                f'date: "{date}"' + '}')
             htmlStr = ''
             for actimId in sorted(self.actims.keys()):
                 htmlStr += self.actims[actimId].html()
             writeTemplateSub(open(f'{HTML_ROOT}/actims.html', "w"), ACTIMS_TEMPLATE, {
                 "{Actimetres}": htmlStr,
+                "{allpages}"  : ',\n'.join(allPages),
+                "{date}"      : date,
             })
 
 Actimetres = ActimetresClass()

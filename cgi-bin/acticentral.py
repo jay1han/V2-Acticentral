@@ -114,14 +114,15 @@ def processAction():
         serverId = int(args['serverId'][0])
         s = Actiservers.processUpdate(serverId, sys.stdin)
 
+        plain()
         if action == 'actiserver':
-            plain(Registry.dump())
+            print(Registry.dump())
         else:
-            for actimId, command in Actimetres.getRemotes(serverId):
-                plain(f'+{actimId}:{command}')
             if Registry.needUpdate(s.dbTime) or Projects.needUpdate(s.dbTime):
                 printLog(f'{s.dbTime} needs update')
-                plain('!')
+                print('!')
+            for actimId, command in Actimetres.getRemotes(serverId):
+                print(f'+{actimId}:{command}')
 
     elif action == 'registry':
         if not checkSecret(): return
