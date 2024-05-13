@@ -30,9 +30,8 @@ def htmlIndex():
         if projectId != 0:
             allPages.append('{' +
                          f'id: "Project{projectId:02d}", ' +
-                         f'ref: "/project{projectId:02d}.html", ' +
+                         f'ref: "/project/project{projectId:02d}.html", ' +
                          f'date: "{date}"' + '}')
-    #TODO
     writeTemplateSub(open(INDEX_HTML, "w"), INDEX_TEMPLATE, {
         "{Projects}"   : Projects.htmlProjects(picker=lambda p: p.projectId != 0),
         "{Actiservers}": Actiservers.html(picker=lambda s: len(s.actimetreList) > 0),

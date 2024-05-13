@@ -126,7 +126,7 @@ class Project:
     def html(self):
         Actimetres = actimetre.Actimetres
         doc, tag, text, line = Doc().ttl()
-        with tag('tr'):
+        with tag('tr', id=f'Project{self.projectId:02d}'):
             with tag('td', klass='left'):
                 with tag('a', href=f'/project{self.projectId:02d}.html'):
                     text(self.name())
