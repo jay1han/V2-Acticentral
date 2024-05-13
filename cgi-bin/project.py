@@ -180,6 +180,8 @@ class ProjectsClass:
             self.projects[0] = Project(0, "Not assigned", "No owner")
             self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
+        if fileOlderThan(ACTIMS0_HTML, 3600) or fileOlderThan(ACTIMS_HTML, 3600):
+            self.dirty = True
         Actimetres = actimetre.Actimetres
         for project in self.projects.values():
             if project.projectId == 0:

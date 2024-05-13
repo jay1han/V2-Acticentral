@@ -1,7 +1,6 @@
 import os.path
 import sys
 
-from yattag import indent
 from const import *
 from registry import Registry
 from project import Projects
@@ -560,7 +559,6 @@ class ActimetresClass:
                 self.dirty = True
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
-            #TODO
             htmlAll = ""
             date = jsDateString(NOW + timedelta(seconds=1))
             allPages = []
