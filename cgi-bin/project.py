@@ -175,7 +175,6 @@ class ProjectsClass:
 
     def init(self):
         self.projects = {int(projectId):Project().fromD(d) for projectId, d in loadData(PROJECTS).items()}
-        printLog('Projects data\n' + self)
         if self.projects.get(0) is None:
             printLog(f'Missing Project00, created')
             self.projects[0] = Project(0, "Not assigned", "No owner")
@@ -193,6 +192,8 @@ class ProjectsClass:
                     project.actimetreList.remove(actimId)
                     project.dirty = True
                     self.dirty = True
+                else:
+                    allActimId.add(actimId)
         for project in self.projects.values():
             for actimId in Actimetres.fromProject(project.projectId):
                 if not actimId in allActimId:
