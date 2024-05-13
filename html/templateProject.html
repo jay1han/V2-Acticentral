@@ -34,7 +34,7 @@
            http.onload = function() {
                if (this.status == 200) {
                    page.date = this.getResponseHeader("Last-Modified");
-                   document.getElementById(page.id).outerHTML = this.responseText;
+                   document.getElementById(page.id).innerHTML = this.responseText;
                    hide();
                }
            }
