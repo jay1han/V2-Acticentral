@@ -254,7 +254,7 @@ class Actimetre:
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
                 if alive == 'up':
-                    doc.asis(self.htmlButton("remote-restart", "Restart"))
+                    doc.asis(self.htmlButton("actim-remote-restart", "Restart"))
                 elif alive == 'retire':
                     doc.asis(self.htmlButton("actim-retire", "Retire"))
             with tag('td', name='actimproject'):
@@ -464,9 +464,9 @@ class ActimetresClass:
 
     def addRemote(self, actimId, command):
         if actimId in self.actims.keys():
+            printLog(f'addRemote: Actim{actimId:04d} command 0x{command:02X}')
             self.actims[actimId].remote = command
             self.actims[actimId].dirty = True
-        else: printLog(f'addRemote: Actim{actimId:04d} unknown')
 
     def getRemotes(self, serverId):
         remotes = []
