@@ -73,7 +73,7 @@ class Project:
             allPages.append('{' +
                            f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                            f'date: {JS_TIMEZERO}"' + '}')
+                            f'date: "{JS_TIMEZERO}"' + '}')
 
         serverList = set()
         for serverId in map(Actimetres.getServerId, self.actimetreList):
