@@ -254,10 +254,8 @@ class Actimetre:
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
                 if alive == 'up':
-                    doc.asis('<br>')
                     doc.asis(self.htmlButton("remote-restart", "Restart"))
                 elif alive == 'retire':
-                    doc.asis('<br>')
                     doc.asis(self.htmlButton("actim-retire", "Retire"))
             with tag('td', name='actimproject'):
                 if self.projectId == 0:
@@ -278,7 +276,6 @@ class Actimetre:
             with tag('td', name="actimfree"):
                 doc.asis(self.frequencyText(self.sensorStr))
                 if alive == 'up':
-                    doc.asis('<br>')
                     doc.asis(self.htmlButton("actim-remote-switch", "Switch"))
             if alive == 'up':
                 with tag('td', name="actimfree"):
@@ -315,21 +312,16 @@ class Actimetre:
                     text(f'{self.repoNums} files')
                     doc.stag('br')
                     text(printSize(self.repoSize))
-                    doc.stag('br')
                     doc.asis(self.htmlButton("actim-remote-stop", "Stop"))
-                    doc.stag('br')
                     doc.asis(self.htmlButton("actim-remote-sync", "Sync"))
                 else:
                     line('span', 'No data', name='actimfree')
-                    doc.stag('br')
                     doc.asis(self.htmlButton("actim-move", "Move"))
                     if self.serverId != 0:
-                        doc.stag('br')
                         doc.asis(self.htmlButton("actim-remove", "Remove"))
             if self.reportStr != "":
                 with tag('td', klass="report"):
                     text(self.reportStr)
-                    doc.stag('br')
                     doc.asis(self.htmlButton("actim-clear", "Clear"))
         return doc.getvalue()
 
