@@ -28,25 +28,22 @@
 
         function checkOne(page) {
              var http = new XMLHttpRequest();
-             http.open("GET", page.ref);
+             http.open("GET", page.ref, false);
              http.setRequestHeader("If-Modified-Since", date);
-             http.onload = function() {
-                 if (this.status == 200) {
-                     document.getElementById(page.id).outerHTML = this.responseText;
-                     page.date = this.getResponseHeader("Last-Modified");
-                 }
-             }
              http.send();
+             if (http.status == 200) {
+                 document.getElementById(page.id).outerHTML = http.responseText;
+                 page.date = http.getResponseHeader("Last-Modified");
+             }
         }
 
         function checkAll() {
             var http = new XMLHttpRequest();
-            http.open("HEAD", "/actims.html")
+            http.open("HEAD", document.URL, false)
             http.setRequestHeader("If-Modified-Since", date);
-            http.onload = function() {
-               if (this.status == 200) {
-                      location.reload();
-               }
+            http.send();
+            if (http.status == 200) {
+                location.reload();
             }
 
             for (let page of allpages) {

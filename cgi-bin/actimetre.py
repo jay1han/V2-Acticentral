@@ -108,6 +108,7 @@ class Actimetre:
                         self.addFreqEvent(newActim.bootTime, 0)
                     self.frequency = 0
                 redraw = True
+                Projects.actimIsStale(self.projectId, self.actimId, newActim.serverId, self.serverId)
             if self.bootTime != newActim.bootTime:
                 self.addFreqEvent(newActim.bootTime, 0)
                 self.frequency = 0
@@ -190,6 +191,7 @@ class Actimetre:
         self.repoNums = 0
         self.repoSize = 0
         Actiservers.removeActim(self.actimId)
+        Projects.actimIsStale(self.projectId, self.actimId, self.serverId, 0)
         self.serverId = 0
         printLog(f"{self.name()} data forgotten")
         self.dirty = True
@@ -206,7 +208,6 @@ class Actimetre:
         self.serverId = 0
         self.repoSize = 0
         self.repoNums = 0
-        Projects.dirtyProject(self.projectId)
         self.dirty = True
 
     def frequencyText(self, sensorStr = None):
@@ -333,7 +334,6 @@ class Actimetre:
             printLog(f'Actim{self.actimId:04d}[{self.projectId}] is dirty')
             with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
-            Projects.dirtyProject(self.projectId)
             return True
         else:
             return False

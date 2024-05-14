@@ -17,7 +17,9 @@ class Project:
             self.actimetreList = set()
         else:
             self.actimetreList = actimetreList
+        self.serverList   = set()
         self.dirty        = True
+        self.stale        = True
 
     def __str__(self):
         Actimetres = actimetre.Actimetres
@@ -41,6 +43,7 @@ class Project:
         self.email         = d['email']
         self.actimetreList = set([int(actimId) for actimId in d['actimetreList']])
         self.dirty         = False
+        self.stale         = False
         return self
 
     def addActim(self, actimId: int):
@@ -150,10 +153,11 @@ class Project:
                 self.htmlWriteFree()
                 return True
             else:
-                printLog(f'Project{self.projectId:02d} is dirty')
                 with open(f'{PROJECT_DIR}/project{self.projectId:02d}.html', 'w') as html:
                     print(self.html(), file=html)
-                self.htmlWrite()
+        if self.stale:
+            printLog(f'Project{self.projectId:02d} is stale')
+            self.htmlWrite()
         return False
 
 class ProjectsClass:
@@ -210,6 +214,9 @@ class ProjectsClass:
             if project.projectId != 0:
                 if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
                     project.dirty = True
+        for project in self.projects.values():
+            for actimId in project.actimetreList:
+                project.serverList.add(Actimetres.getServerId(actimId))
 
     def dump(self):
         string = ""
@@ -388,8 +395,11 @@ class ProjectsClass:
         else:
             print("Status: 205\n\n")
 
-    def dirtyProject(self, projectId):
-        self.projects[projectId].dirty = True
+    def actimIsStale(self, projectId, actimId, oldServerId, newServerId):
+        if oldServerId != newServerId:
+            project = self.projects[projectId]
+            if actimId in project.actimetreList:
+                self.projects[projectId].stale = True
 
     def needUpdate(self, serverTime):
         return self.fileTime > serverTime
