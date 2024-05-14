@@ -20,20 +20,24 @@ Projects = project.initProjects()
 
 def htmlIndex():
     allPages = []
+    allServers = ""
     for serverId in Actiservers.listIds():
         allPages.append('{' +
                         f'id: "Actis{serverId:03d}", ' +
                         f'ref: "/actiserver/server{serverId:03d}.html", ' +
                         f'date: "{JS_TIMEZERO}"' + '}')
+        allServers += f'<tr id="Actis{serverId:03d}"></tr>\n'
+    allProjects = ""
     for projectId in Projects.listIds():
         if projectId != 0:
             allPages.append('{' +
                          f'id: "Project{projectId:02d}", ' +
                          f'ref: "/project/project{projectId:02d}.html", ' +
                          f'date: "{JS_TIMEZERO}"' + '}')
+            allProjects += f'<tr id="Project{projectId:02d}"></tr>\n'
     writeTemplateSub(open(INDEX_HTML, "w"), INDEX_TEMPLATE, {
-        "{Projects}"   : Projects.htmlProjects(picker=lambda p: p.projectId != 0),
-        "{Actiservers}": Actiservers.html(picker=lambda s: len(s.actimetreList) > 0),
+        "{Projects}"   : allProjects,
+        "{Actiservers}": allServers,
         "{allpages}"   : ',\n'.join(allPages),
         "{date}"       : JS_NOW_PLUS,
     })
