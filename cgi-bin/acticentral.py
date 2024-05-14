@@ -122,6 +122,7 @@ def processAction():
                 printLog(f'{s.dbTime} needs update')
                 print('!')
             for actimId, command in Actimetres.getRemotes(serverId):
+                printLog(f'Send Actim{actimId:04d} command 0x{command:02X}')
                 print(f'+{actimId}:{command}')
 
     elif action == 'registry':

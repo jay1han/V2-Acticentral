@@ -281,7 +281,7 @@ class Actimetre:
                 with tag('td', name="actimfree"):
                     doc.asis(htmlRssi(self.rssi))
                     doc.stag('br')
-                    if self.isStopped: text('stopped')
+                    if self.isStopped: line('span', 'Stopped', klass='down')
                     else:              text("{:.3f}%".format(100.0 * self.rating))
             else:
                 line('td', "", name="actimfree")
@@ -466,6 +466,7 @@ class ActimetresClass:
         if actimId in self.actims.keys():
             self.actims[actimId].remote = command
             self.actims[actimId].dirty = True
+        else: printLog(f'addRemote: Actim{actimId:04d} unknown')
 
     def getRemotes(self, serverId):
         remotes = []
