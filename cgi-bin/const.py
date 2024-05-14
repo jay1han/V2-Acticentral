@@ -210,7 +210,7 @@ def fileNeedsUpdate(filename: str, lastUpdate: datetime, minPeriod: timedelta = 
         elif elapsed > timedelta(days=7): period = timedelta(days=1)
         elif elapsed > timedelta(days=1): period = timedelta(hours=1)
         else: period = timedelta(minutes=1)
-        if period < minPeriod: period = minPeriod
+        if minPeriod is not None and period < minPeriod: period = minPeriod
         return NOW - datetime.fromtimestamp(os.stat(filename).st_mtime, timezone.utc) > period
 
 Weekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
