@@ -31,9 +31,9 @@
            http.open("GET", page.ref, false);
            http.setRequestHeader("If-Modified-Since", page.date);
            http.send();
-           if (this.status == 200 && http.responseText != "") {
-               page.date = this.getResponseHeader("Last-Modified");
-               document.getElementById(page.id).outerHTML = this.responseText;
+           if (http.status == 200 && http.responseText != "") {
+               page.date = http.getResponseHeader("Last-Modified");
+               document.getElementById(page.id).outerHTML = http.responseText;
            }
       }
 
@@ -45,7 +45,7 @@
           http.open("HEAD", "/servers.html", false);
           http.setRequestHeader("If-Modified-Since", date);
           http.send();
-           if (this.status == 200) {
+           if (http.status == 200) {
                 window.location.reload();
           }
           setTimeout(checkAll, 2000);

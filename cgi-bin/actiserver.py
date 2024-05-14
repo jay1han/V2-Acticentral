@@ -217,13 +217,6 @@ class ActiserversClass:
     def __getitem__(self, item: int):
         return item in self.servers
 
-    def html(self, *, picker=None):
-        htmlString = ""
-        for serverId in sorted(self.servers.keys()):
-            if picker is None or picker(self.servers[serverId]):
-                htmlString += self.servers[serverId].html()
-        return htmlString
-
     def htmlWrite(self, *, picker=None):
         allPages = []
         allServers = ""
