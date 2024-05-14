@@ -105,11 +105,9 @@ class Project:
                          })
 
     def htmlWriteFree(self):
-        Actimetres = actimetre.Actimetres
         freeActims = ""
         allPages = []
         for actimId in sorted(self.actimetreList):
-            # freeActims += Actimetres.html(actimId)
             freeActims += f'<tr id="Actim{actimId:04d}"></tr>\n'
             allPages.append('{' +
                             f'id: "Actim{actimId:04d}", ' +

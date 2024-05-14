@@ -569,7 +569,6 @@ class ActimetresClass:
     def save(self):
         for actim in self.actims.values():
             if actim.save():
-                self.dirty = True
                 actim.drawGraphMaybe()
             if fileOlderThan(f'{IMAGES_DIR}/actim{actim.actimId:04d}.svg', 3600):
                 actim.drawGraph()
