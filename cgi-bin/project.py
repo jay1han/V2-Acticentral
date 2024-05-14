@@ -68,31 +68,28 @@ class Project:
         Actimetres = actimetre.Actimetres
         projectActims = ""
         allPages = []
-        allImages = []
         date = jsDateString(NOW + timedelta(seconds=1))
         for actimId in sorted(self.actimetreList):
-            # projectActims += Actimetres.html(actimId)
-            projectActims += f'<td id="Actim{actimId:04d}"></td>\n'
+            projectActims += f'<tr id="Actim{actimId:04d}"></tr>\n'
             allPages.append('{' +
                            f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
                             f'date: "{date}"' + '}')
-            # if Actimetres.hasGraph(actimId):
-            #     allImages.append('{' +
-            #                  f'id: "Image{actimId:04d}", ' +
-            #                  f'ref: "/images/actim{actimId:04d}.svg", ' +
-            #                  f'date: "{date}"' + '}')
 
         Actiservers = actiserver.Actiservers
-        # serverList = set()
-        projectServers = ""
-        for serverId in sorted(map(Actimetres.getServerId, self.actimetreList)):
+        serverList = set()
+        for serverId in map(Actimetres.getServerId, self.actimetreList):
             if serverId != 0:
-                # serverList.add(serverId)
-                projectServers += f'<td id="Actis{serverId:03d}"></td>\n'
-                allPages.append('{' +
-                                f'id: "Actis{serverId:03d}", ' +
-                                f'ref: "/actiserver/server{serverId:03d}.html"' + '}')
+                serverList.add(serverId)
+
+        projectServers = ""
+        for serverId in sorted(serverList):
+            projectServers += f'<tr id="Actis{serverId:03d}"></tr>\n'
+            allPages.append('{' +
+                            f'id: "Actis{serverId:03d}", ' +
+                            f'ref: "/actiserver/server{serverId:03d}.html", ' +
+                            f'date: {date}'
+                            '}')
 
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
         projectEmail = f"<h3>Email: {self.email}</h3>"
@@ -103,11 +100,9 @@ class Project:
                          "{projectOwner}"  : projectOwner,
                          "{projectEmail}"  : projectEmail,
                          "{projectActims}" : projectActims,
-                         # "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
                          "{projectServers}": projectServers,
                          "{projectId}"     : str(self.projectId),
                          "{allpages}"      : ',\n'.join(allPages),
-                         "{allimages}"     : ',\n'.join(allImages),
                          "{date}"          : date,
                          "{document}"      : f'/project{self.projectId:02d}.html',
                          })
@@ -119,7 +114,7 @@ class Project:
         allPages = []
         for actimId in sorted(self.actimetreList):
             # freeActims += Actimetres.html(actimId)
-            freeActims += f'<td id="Actim{actimId:04d}"></td>\n'
+            freeActims += f'<tr id="Actim{actimId:04d}"></tr>\n'
             allPages.append('{' +
                             f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +

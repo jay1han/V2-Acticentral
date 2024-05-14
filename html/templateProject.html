@@ -24,11 +24,10 @@
     </style>
     <script>
       const allpages = [{allpages}];
-      const allimages = [{allimages}];
       const date = "{date}";
 
       function checkPage(page) {
-           var http = new XMLHttpRequest();
+           const http = new XMLHttpRequest();
            http.open("GET", page.ref, false);
            http.setRequestHeader("If-Modified-Since", page.date);
            http.send();
@@ -39,43 +38,32 @@
            }
       }
 
-      function checkImage(image) {
-           var http = new XMLHttpRequest();
-           http.open("HEAD", image.ref, false);
-           http.setRequestHeader("If-Modified-Since", image.date);
-           http.send();
-           if (http.status == 200) {
-               image.date = http.getResponseHeader("Last-Modified");
-               document.getElementById(image.id).src = image.ref;
-           }
-      }
-
       function checkAll() {
-          var http = new XMLHttpRequest();
-          http.open("HEAD", document.URL, false);
-          http.setRequestHeader("If-Modified-Since", date);
-          http.send();
-          if (http.status == 200) {
-              location.reload();
-          }
+          window.removeEventListener("load", checkAll);
 
           for (let page of allpages) {
               checkPage(page);
           }
-          for (let image of allimages) {
-              checkImage(image);
+
+          const http = new XMLHttpRequest();
+          http.open("HEAD", document.URL, false);
+          http.setRequestHeader("If-Modified-Since", date);
+          http.send();
+          if (http.status == 200) {
+              window.location.reload();
           }
-          setTimeout(checkAll, 1000);
+          setTimeout(checkAll, 2000);
       }
 
       function hide() {
-          let projectColumn = document.getElementsByName("actimproject");
+          const projectColumn = document.getElementsByName("actimproject");
           for (let element of projectColumn) {
               element.hidden = "hidden";
           }
       }
 
-      window.addEventListener("load", checkAll);
+      window.addEventListener("load", checkAll, {once: true});
+
     </script>
     <title>{projectTitle}</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">

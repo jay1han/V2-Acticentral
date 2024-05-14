@@ -579,7 +579,7 @@ class ActimetresClass:
             allPages = []
             htmlAll = ""
             for actimId in sorted(self.actims.keys()):
-                htmlAll += f'<td id="Actim{actimId:04d}"></td>\n'
+                htmlAll += f'<tr id="Actim{actimId:04d}"></tr>\n'
                 allPages.append('{' +
                                 f'id: "Actim{actimId:04d}", ' +
                                 f'ref: "/actimetre/actim{actimId:04d}.html", ' +
