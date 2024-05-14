@@ -314,11 +314,14 @@ class ActiserversClass:
         print("Status: 205\n\n")
 
     def save(self):
+        stale = False
         for server in self.servers.values():
-            server.save()
+            if server.save(): stale = True
         if self.dirty:
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
             self.htmlWrite()
+        elif stale:
+            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
 
 Actiservers = ActiserversClass()
 def initActiservers() -> ActiserversClass:
