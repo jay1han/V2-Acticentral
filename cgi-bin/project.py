@@ -88,8 +88,7 @@ class Project:
             allPages.append('{' +
                             f'id: "Actis{serverId:03d}", ' +
                             f'ref: "/actiserver/server{serverId:03d}.html", ' +
-                            f'date: {date}'
-                            '}')
+                            f'date: "{date}"' + '}')
 
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
         projectEmail = f"<h3>Email: {self.email}</h3>"
