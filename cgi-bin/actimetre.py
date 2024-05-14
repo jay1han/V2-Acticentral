@@ -79,7 +79,8 @@ class Actimetre:
         self.lastSeen   = utcStrptime(d['lastSeen'])
         self.lastReport = utcStrptime(d['lastReport'])
         self.sensorStr  = d['sensorStr']
-        self.frequency  = int(d['frequency'])
+        if self.isDead == 0: self.frequency  = int(d['frequency'])
+        else:                self.frequency = 0
         self.rating     = float(d['rating'])
         self.rssi       = int(d['rssi'])
         self.repoNums   = int(d['repoNums'])

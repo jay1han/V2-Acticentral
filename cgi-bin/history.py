@@ -67,10 +67,6 @@ class ActimHistory:
             with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w") as history:
                 print(NOW.strftime(TIMEFORMAT_FN), ':', self.a.frequency, sep="", file=history)
             self.a.graphSince = NOW
-            try:
-                os.chmod(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", 0o666)
-            except OSError:
-                pass
 
         timeline = []
         frequencies = []
