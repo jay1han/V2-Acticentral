@@ -311,12 +311,14 @@ class Actimetre:
                                  id=f'Image{self.actimId:04d}')
 
             with tag('td', klass='right'):
-                if not self.hasData(): line('span', 'No data', name="actimfree")
-                else:
+                if self.hasData():
                     text(f'{self.repoNums} files')
                     doc.stag('br')
                     text(printSize(self.repoSize))
-                if not self.hasData():
+                    doc.stag('br')
+                    doc.asis(self.htmlButton("actim-stop", "Stop"))
+                else:
+                    line('span', 'No data', name="actimfree")
                     doc.stag('br')
                     doc.asis(self.htmlButton("actim-move", "Move"))
                     if self.serverId != 0:
