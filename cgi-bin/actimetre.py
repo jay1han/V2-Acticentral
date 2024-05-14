@@ -547,10 +547,10 @@ class ActimetresClass:
 
         if formId == 'actim-move':
             projectId = int(args['projectId'][0])
-            oldProject = actim.projectId
-            if oldProject == 0 or args['owner'][0] == Projects.getOwner(oldProject):
-                printLog(f"Changing {actim.name()} from Project{oldProject:02d} to Project{projectId:02d}")
-                Projects.moveActim(actim.actimId, projectId)
+            oldProjectId = actim.projectId
+            if oldProjectId == 0 or args['owner'][0] == Projects.getOwner(oldProjectId):
+                printLog(f"Changing {actim.name()} from Project{oldProjectId:02d} to Project{projectId:02d}")
+                Projects.moveActim(actim.actimId, oldProjectId, projectId)
                 actim.projectId = projectId
                 actim.dirty = True
             print(f"Location:\\project{projectId:02d}.html\n\n")

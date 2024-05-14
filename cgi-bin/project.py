@@ -18,8 +18,8 @@ class Project:
         else:
             self.actimetreList = actimetreList
         self.serverList   = set()
-        self.dirty        = True
-        self.stale        = True
+        self.dirty        = True        # refresh inner HTML (actim changed)
+        self.stale        = True        # refresh outer HTML (actim or server changed)
 
     def __str__(self):
         Actimetres = actimetre.Actimetres
@@ -149,6 +149,8 @@ class Project:
 
     def save(self):
         if self.dirty:
+            printLog(f'Project{self.projectId:02d} is dirty')
+            self.htmlWrite()
             if self.projectId == 0:
                 printLog('Write free Actimetres list')
                 self.htmlWriteFree()
@@ -156,7 +158,7 @@ class Project:
             else:
                 with open(f'{PROJECT_DIR}/project{self.projectId:02d}.html', 'w') as html:
                     print(self.html(), file=html)
-        if self.stale:
+        elif self.stale:
             printLog(f'Project{self.projectId:02d} is stale')
             self.htmlWrite()
         return False
@@ -269,7 +271,7 @@ class ProjectsClass:
                 p.dirty = True
                 self.dirty = True
 
-    def moveActim(self, actimId, projectId):
+    def moveActim(self, actimId, oldProjectId, projectId):
         self.removeActim(actimId)
         self.addActim(projectId, actimId)
 
