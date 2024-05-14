@@ -186,7 +186,9 @@ def saveAll():
     Actimetres.save()
     Actiservers.save()
     Projects.save()
-    if Projects.dirty or Actiservers.dirty: htmlIndex()
+    if Projects.dirty or Actiservers.dirty or \
+        fileOlderThan(INDEX_HTML, 3600):
+        htmlIndex()
 
 import argparse
 cmdparser = argparse.ArgumentParser()
