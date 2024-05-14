@@ -9,18 +9,18 @@ GRAPH_CULL   = timedelta(days=6)
 FSCALE       = {100:2, 1000:5, 4000:10}
 FSCALETAG    = {100:2, 1000:5, 4000:10}
 
+def scaleFreq(origFreq):
+    if origFreq == 0:
+        return 0
+    for limit, scale in FSCALE.items():
+        if origFreq <= limit:
+            return scale
+    else:
+        return origFreq // 10
+
 class ActimHistory:
     def __init__(self, actim):
         self.a: Actimetre = actim
-
-    def scaleFreq(self, origFreq):
-        if origFreq == 0:
-            return 0
-        for limit, scale in FSCALE.items():
-            if origFreq <= limit:
-                return scale
-        else:
-            return origFreq // 10
 
     def cutHistory(self, cutLength):
         if cutLength is None:
@@ -78,14 +78,14 @@ class ActimHistory:
             for line in history:
                 timeStr, part, freqStr = line.partition(':')
                 time = utcStrptime(timeStr.strip())
-                freq = self.scaleFreq(int(freqStr))
+                freq = scaleFreq(int(freqStr))
                 if len(timeline) == 0 or freq != frequencies[-1]:
                     timeline.append(time)
                     frequencies.append(freq)
 
         timeline.append(NOW)
-        frequencies.append(self.scaleFreq(self.a.frequency))
-        freq = [self.scaleFreq(self.a.frequency) for _ in range(len(timeline))]
+        frequencies.append(scaleFreq(self.a.frequency))
+        freq = [scaleFreq(self.a.frequency) for _ in range(len(timeline))]
 
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()

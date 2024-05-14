@@ -350,6 +350,10 @@ class ActimetresClass:
         for actim in self.actims.values():
             if fileOlderThan(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', 3600):
                 actim.dirty = True
+            if fileOlderThan(f'{IMAGES_DIR}/actim{actim.actimId:04d}.svg', 3600):
+                actim.dirty = True
+        if fileOlderThan(ACTIMS_HTML, 3600):
+            self.dirty = True
 
     def fromProject(self, projectId):
         return [actimId for actimId in self.actims.keys() if self.actims[actimId].projectId == projectId]
@@ -585,7 +589,7 @@ class ActimetresClass:
             htmlStr = ''
             for actimId in sorted(self.actims.keys()):
                 htmlStr += self.actims[actimId].html()
-            writeTemplateSub(open(f'{HTML_ROOT}/actims.html', "w"), ACTIMS_TEMPLATE, {
+            writeTemplateSub(open(ACTIMS_HTML, "w"), ACTIMS_TEMPLATE, {
                 "{Actimetres}": htmlStr,
                 "{allpages}"  : ',\n'.join(allPages),
                 "{date}"      : date,
