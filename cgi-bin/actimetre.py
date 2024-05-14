@@ -318,7 +318,7 @@ class Actimetre:
                     doc.stag('br')
                     doc.asis(self.htmlButton("actim-stop", "Stop"))
                 else:
-                    line('span', 'No data', name="actimfree")
+                    line('span', 'No data', name='actimfree')
                     doc.stag('br')
                     doc.asis(self.htmlButton("actim-move", "Move"))
                     if self.serverId != 0:
