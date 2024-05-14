@@ -230,7 +230,7 @@ class ActiserversClass:
             if picker is None or picker(self.servers[serverId]):
                 allPages.append('{' +
                                 f'id: "Actis{serverId:03d}", ' +
-                                f'ref: "/actiserver/server{serverId:03d}.html"' +
+                                f'ref: "/actiserver/server{serverId:03d}.html", ' +
                                 f'date: "{JS_TIMEZERO}"' + '}')
         writeTemplateSub(open(SERVERS_HTML, "w"), SERVERS_TEMPLATE, {
                          '{Actiservers}': self.html(picker=picker),
