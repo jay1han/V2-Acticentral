@@ -4,7 +4,7 @@ import os, json, subprocess
 from datetime import datetime, timedelta, timezone
 from yattag import Doc
 
-VERSION_STR     = "v448"
+VERSION_STR     = "v449"
 FILE_ROOT       = "/etc/actimetre"
 HTML_ROOT       = "/var/www/html"
 
@@ -115,21 +115,6 @@ def printSize(size, unit='', precision=0):
     formatStr = '{:.' + str(precision) + 'f}'
     return formatStr.format(inUnits) + unit
 
-def printTimeAgo(since: datetime):
-    span = NOW - since
-    months = span // timedelta(days=30)
-    days = span // timedelta(days=1)
-    hours = (span % timedelta(days=1)) // timedelta(hours=1)
-    minutes = (span % timedelta(hours=1)) // timedelta(minutes=1)
-    if span > timedelta(days=60):
-        return f'{months} months'
-    if span > timedelta(days=7):
-        return f'{days} days'
-    elif span > timedelta(days=1):
-        return f'{days}d{hours}h'
-    else:
-        return f'{hours}h{minutes:02d}m'
-
 def utcStrptime(string):
     return datetime.strptime(string.strip() + "+0000", TIMEFORMAT_UTC)
 
@@ -198,9 +183,35 @@ def plain(text=''):
     print("Content-type: text/plain\n\n")
     print(text)
 
+def printTimeAgo(since: datetime):
+    span = NOW - since
+    months = span // timedelta(days=30)
+    days = span // timedelta(days=1)
+    hours = (span % timedelta(days=1)) // timedelta(hours=1)
+    minutes = (span % timedelta(hours=1)) // timedelta(minutes=1)
+    if span > timedelta(days=60):
+        return f'{months} months'
+    if span > timedelta(days=7):
+        return f'{days} days'
+    elif span > timedelta(days=1):
+        return f'{days}d{hours}h'
+    else:
+        return f'{hours}h{minutes:02d}m'
+
 def fileOlderThan(filename: str, seconds: int) -> bool:
     return not os.path.isfile(filename) or \
         NOW - datetime.fromtimestamp(os.stat(filename).st_mtime, timezone.utc) > timedelta(seconds=seconds)
+
+def fileNeedsUpdate(filename: str, lastUpdate: datetime, minPeriod: timedelta = None) -> bool:
+    if not os.path.isfile(filename): return True
+    else:
+        elapsed = NOW - lastUpdate
+        if elapsed > timedelta(days=60): period = timedelta(days=30)
+        elif elapsed > timedelta(days=7): period = timedelta(days=1)
+        elif elapsed > timedelta(days=1): period = timedelta(hours=1)
+        else: period = timedelta(minutes=1)
+        if period < minPeriod: period = minPeriod
+        return NOW - datetime.fromtimestamp(os.stat(filename).st_mtime, timezone.utc) > period
 
 Weekday = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 Month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

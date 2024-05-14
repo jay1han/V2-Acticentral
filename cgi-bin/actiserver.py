@@ -211,7 +211,7 @@ class ActiserversClass:
         if fileOlderThan(SERVERS_HTML, 3600):
             self.dirty = True
         for server in self.servers.values():
-            if fileOlderThan(f'{SERVER_HTML_DIR}/server{server.serverId:03d}.html', 3600):
+            if fileNeedsUpdate(f'{SERVER_HTML_DIR}/server{server.serverId:03d}.html', server.lastUpdate):
                 server.dirty = True
 
     def __getitem__(self, item: int):
@@ -318,9 +318,9 @@ class ActiserversClass:
         for server in self.servers.values():
             if server.save(): stale = True
         if self.dirty:
-            dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
             self.htmlWrite()
-        elif stale:
+            stale = True
+        if stale:
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
 
 Actiservers = ActiserversClass()

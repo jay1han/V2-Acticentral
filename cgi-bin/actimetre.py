@@ -345,7 +345,7 @@ class ActimetresClass:
             if actimId not in self.actims.keys():
                 self.actims[actimId] = Actimetre(actimId, mac=mac, projectId=0)
         for actim in self.actims.values():
-            if fileOlderThan(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', 3600):
+            if fileNeedsUpdate(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', actim.lastReport):
                 actim.dirty = True
         if fileOlderThan(ACTIMS_HTML, 3600):
             self.dirty = True
@@ -567,10 +567,11 @@ class ActimetresClass:
             print("Status: 205\n\n")
 
     def save(self):
+        from history import REDRAW_TIME
         for actim in self.actims.values():
             if actim.save():
                 actim.drawGraphMaybe()
-            if fileOlderThan(f'{IMAGES_DIR}/actim{actim.actimId:04d}.svg', 3600):
+            if fileNeedsUpdate(f'{IMAGES_DIR}/actim{actim.actimId:04d}.svg', actim.lastReport, REDRAW_TIME):
                 actim.drawGraph()
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
