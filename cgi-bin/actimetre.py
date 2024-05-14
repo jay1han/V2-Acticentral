@@ -575,7 +575,6 @@ class ActimetresClass:
                 actim.drawGraph()
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
-            date = jsDateString(NOW + PROCESSING_TIME)
             allPages = []
             htmlAll = ""
             for actimId in sorted(self.actims.keys()):
@@ -583,11 +582,11 @@ class ActimetresClass:
                 allPages.append('{' +
                                 f'id: "Actim{actimId:04d}", ' +
                                 f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                                f'date: "{date}"' + '}')
+                                f'date: "{JS_TIMEZERO}"' + '}')
             writeTemplateSub(open(ACTIMS_HTML, "w"), ACTIMS_TEMPLATE, {
                 "{Actimetres}": htmlAll,
                 "{allpages}"  : ',\n'.join(allPages),
-                "{date}"      : date,
+                "{date}"      : JS_NOW_PLUS,
             })
 
 Actimetres = ActimetresClass()

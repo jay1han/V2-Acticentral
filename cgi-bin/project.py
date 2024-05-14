@@ -68,13 +68,12 @@ class Project:
         Actimetres = actimetre.Actimetres
         projectActims = ""
         allPages = []
-        date = jsDateString(NOW + PROCESSING_TIME)
         for actimId in sorted(self.actimetreList):
             projectActims += f'<tr id="Actim{actimId:04d}"></tr>\n'
             allPages.append('{' +
                            f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                            f'date: "{date}"' + '}')
+                            f'date: {JS_TIMEZERO}"' + '}')
 
         serverList = set()
         for serverId in map(Actimetres.getServerId, self.actimetreList):
@@ -87,7 +86,7 @@ class Project:
             allPages.append('{' +
                             f'id: "Actis{serverId:03d}", ' +
                             f'ref: "/actiserver/server{serverId:03d}.html", ' +
-                            f'date: "{date}"' + '}')
+                            f'date: "{JS_TIMEZERO}"' + '}')
 
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
         projectEmail = f"<h3>Email: {self.email}</h3>"
@@ -101,14 +100,13 @@ class Project:
                          "{projectServers}": projectServers,
                          "{projectId}"     : str(self.projectId),
                          "{allpages}"      : ',\n'.join(allPages),
-                         "{date}"          : date,
+                         "{date}"          : JS_NOW_PLUS,
                          "{document}"      : f'/project{self.projectId:02d}.html',
                          })
 
     def htmlWriteFree(self):
         Actimetres = actimetre.Actimetres
         freeActims = ""
-        date = jsDateString(NOW + PROCESSING_TIME)
         allPages = []
         for actimId in sorted(self.actimetreList):
             # freeActims += Actimetres.html(actimId)
@@ -116,14 +114,14 @@ class Project:
             allPages.append('{' +
                             f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                            f'date: "{date}"' + '}')
+                            f'date: "{JS_TIMEZERO}"' + '}')
 
         writeTemplateSub(open(ACTIMS0_HTML, "w"),
                          ACTIMS0_TEMPLATE,
                          {
                              "{Actimetres}" : freeActims,
                              "{allpages}": ',\n'.join(allPages),
-                             "{date}": date,
+                             "{date}": JS_NOW_PLUS,
                          })
 
     def html(self):

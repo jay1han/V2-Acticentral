@@ -20,23 +20,22 @@ Projects = project.initProjects()
 
 def htmlIndex():
     allPages = []
-    date = jsDateString(NOW + PROCESSING_TIME)
     for serverId in Actiservers.listIds():
         allPages.append('{' +
                         f'id: "Actis{serverId:03d}", ' +
                         f'ref: "/actiserver/server{serverId:03d}.html", ' +
-                        f'date: "{date}"' + '}')
+                        f'date: "{JS_TIMEZERO}"' + '}')
     for projectId in Projects.listIds():
         if projectId != 0:
             allPages.append('{' +
                          f'id: "Project{projectId:02d}", ' +
                          f'ref: "/project/project{projectId:02d}.html", ' +
-                         f'date: "{date}"' + '}')
+                         f'date: "{JS_TIMEZERO}"' + '}')
     writeTemplateSub(open(INDEX_HTML, "w"), INDEX_TEMPLATE, {
         "{Projects}"   : Projects.htmlProjects(picker=lambda p: p.projectId != 0),
         "{Actiservers}": Actiservers.html(picker=lambda s: len(s.actimetreList) > 0),
         "{allpages}"   : ',\n'.join(allPages),
-        "{date}"       : date,
+        "{date}"       : JS_NOW_PLUS,
     })
 
 def checkAlerts():

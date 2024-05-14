@@ -226,16 +226,16 @@ class ActiserversClass:
 
     def htmlWrite(self, *, picker=None):
         allPages = []
-        date = jsDateString(NOW + PROCESSING_TIME)
         for serverId in sorted(self.servers.keys()):
             if picker is None or picker(self.servers[serverId]):
                 allPages.append('{' +
                                 f'id: "Actis{serverId:03d}", ' +
-                                f'ref: "/actiserver/server{serverId:03d}.html"' + '}')
+                                f'ref: "/actiserver/server{serverId:03d}.html"' +
+                                f'date: "{JS_TIMEZERO}"' + '}')
         writeTemplateSub(open(SERVERS_HTML, "w"), SERVERS_TEMPLATE, {
                          '{Actiservers}': self.html(picker=picker),
                          '{allpages}': ',\n'.join(allPages),
-                         '{date}': date,
+                         '{date}': JS_NOW_PLUS,
         })
 
     def listIds(self):
