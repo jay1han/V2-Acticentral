@@ -39,8 +39,6 @@
       }
 
       function checkAll() {
-          window.removeEventListener("load", checkAll);
-
           for (let page of allpages) {
               checkPage(page);
           }

@@ -68,7 +68,7 @@ class Project:
         Actimetres = actimetre.Actimetres
         projectActims = ""
         allPages = []
-        date = jsDateString(NOW + timedelta(seconds=1))
+        date = jsDateString(NOW + PROCESSING_TIME)
         for actimId in sorted(self.actimetreList):
             projectActims += f'<tr id="Actim{actimId:04d}"></tr>\n'
             allPages.append('{' +
@@ -76,7 +76,6 @@ class Project:
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
                             f'date: "{date}"' + '}')
 
-        Actiservers = actiserver.Actiservers
         serverList = set()
         for serverId in map(Actimetres.getServerId, self.actimetreList):
             if serverId != 0:
@@ -109,7 +108,7 @@ class Project:
     def htmlWriteFree(self):
         Actimetres = actimetre.Actimetres
         freeActims = ""
-        date = jsDateString(NOW + timedelta(seconds=1))
+        date = jsDateString(NOW + PROCESSING_TIME)
         allPages = []
         for actimId in sorted(self.actimetreList):
             # freeActims += Actimetres.html(actimId)

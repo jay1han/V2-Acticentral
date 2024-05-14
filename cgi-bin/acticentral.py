@@ -20,7 +20,7 @@ Projects = project.initProjects()
 
 def htmlIndex():
     allPages = []
-    date = jsDateString(NOW + timedelta(seconds=1))
+    date = jsDateString(NOW + PROCESSING_TIME)
     for serverId in Actiservers.listIds():
         allPages.append('{' +
                         f'id: "Actis{serverId:03d}", ' +

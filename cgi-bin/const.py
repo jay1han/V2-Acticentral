@@ -46,6 +46,8 @@ try:
 except (OSError, FileNotFoundError):
     pass
 
+PROCESSING_TIME = timedelta(seconds=5)
+
 ACTIM_ALERT1    = timedelta(minutes=5)
 ACTIM_ALERT2    = timedelta(minutes=30)
 ACTIS_ALERT1    = timedelta(minutes=5)

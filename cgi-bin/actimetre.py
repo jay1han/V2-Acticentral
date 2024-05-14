@@ -575,7 +575,7 @@ class ActimetresClass:
                 actim.drawGraph()
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
-            date = jsDateString(NOW + timedelta(seconds=1))
+            date = jsDateString(NOW + PROCESSING_TIME)
             allPages = []
             htmlAll = ""
             for actimId in sorted(self.actims.keys()):

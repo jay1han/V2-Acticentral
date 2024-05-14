@@ -226,7 +226,7 @@ class ActiserversClass:
 
     def htmlWrite(self, *, picker=None):
         allPages = []
-        date = jsDateString(NOW + timedelta(seconds=1))
+        date = jsDateString(NOW + PROCESSING_TIME)
         for serverId in sorted(self.servers.keys()):
             if picker is None or picker(self.servers[serverId]):
                 allPages.append('{' +
