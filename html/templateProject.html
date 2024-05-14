@@ -68,18 +68,14 @@
           setTimeout(checkAll, 1000);
       }
 
-      function setupCheck() {
-          setTimeout(checkAll, 1000);
-      }
-
       function hide() {
           let projectColumn = document.getElementsByName("actimproject");
           for (let element of projectColumn) {
               element.hidden = "hidden";
           }
       }
-      window.addEventListener("load", hide);
-      window.addEventListener("load", setupCheck);
+
+      window.addEventListener("load", checkAll);
     </script>
     <title>{projectTitle}</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">

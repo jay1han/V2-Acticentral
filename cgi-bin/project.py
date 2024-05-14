@@ -71,22 +71,25 @@ class Project:
         allImages = []
         date = jsDateString(NOW + timedelta(seconds=1))
         for actimId in sorted(self.actimetreList):
-            projectActims += Actimetres.html(actimId)
+            # projectActims += Actimetres.html(actimId)
+            projectActims += f'<td id="Actim{actimId:04d}"></td>\n'
             allPages.append('{' +
-                            f'id: "Actim{actimId:04d}", ' +
+                           f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
                             f'date: "{date}"' + '}')
-            if Actimetres.hasGraph(actimId):
-                allImages.append('{' +
-                             f'id: "Image{actimId:04d}", ' +
-                             f'ref: "/images/actim{actimId:04d}.svg", ' +
-                             f'date: "{date}"' + '}')
+            # if Actimetres.hasGraph(actimId):
+            #     allImages.append('{' +
+            #                  f'id: "Image{actimId:04d}", ' +
+            #                  f'ref: "/images/actim{actimId:04d}.svg", ' +
+            #                  f'date: "{date}"' + '}')
 
         Actiservers = actiserver.Actiservers
-        serverList = set()
+        # serverList = set()
+        projectServers = ""
         for serverId in sorted(map(Actimetres.getServerId, self.actimetreList)):
             if serverId != 0:
-                serverList.add(serverId)
+                # serverList.add(serverId)
+                projectServers += f'<td id="Actis{serverId:03d}"></td>\n'
                 allPages.append('{' +
                                 f'id: "Actis{serverId:03d}", ' +
                                 f'ref: "/actiserver/server{serverId:03d}.html"' + '}')
@@ -100,7 +103,8 @@ class Project:
                          "{projectOwner}"  : projectOwner,
                          "{projectEmail}"  : projectEmail,
                          "{projectActims}" : projectActims,
-                         "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
+                         # "{projectServers}": Actiservers.html(picker=lambda s: s.serverId in serverList),
+                         "{projectServers}": projectServers,
                          "{projectId}"     : str(self.projectId),
                          "{allpages}"      : ',\n'.join(allPages),
                          "{allimages}"     : ',\n'.join(allImages),
@@ -114,7 +118,8 @@ class Project:
         date = jsDateString(NOW + timedelta(seconds=1))
         allPages = []
         for actimId in sorted(self.actimetreList):
-            freeActims += Actimetres.html(actimId)
+            # freeActims += Actimetres.html(actimId)
+            freeActims += f'<td id="Actim{actimId:04d}"></td>\n'
             allPages.append('{' +
                             f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
