@@ -347,8 +347,6 @@ class ActimetresClass:
         for actim in self.actims.values():
             if fileOlderThan(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', 3600):
                 actim.dirty = True
-            if fileOlderThan(f'{IMAGES_DIR}/actim{actim.actimId:04d}.svg', 3600):
-                actim.dirty = True
         if fileOlderThan(ACTIMS_HTML, 3600):
             self.dirty = True
 
@@ -570,9 +568,11 @@ class ActimetresClass:
 
     def save(self):
         for actim in self.actims.values():
-            actim.drawGraphMaybe()
             if actim.save():
                 self.dirty = True
+                actim.drawGraphMaybe()
+            if fileOlderThan(f'{IMAGES_DIR}/actim{actim.actimId:04d}.svg', 3600):
+                actim.drawGraph()
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
             htmlAll = ""
