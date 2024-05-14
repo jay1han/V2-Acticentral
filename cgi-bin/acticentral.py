@@ -171,16 +171,6 @@ def processAction():
     elif action.startswith('actim-'):
         Actimetres.processAction(action, args)
 
-    elif action.startswith('remote-'):
-        actimId = int(args['actimId'][0])
-        command = 0
-        if action   == 'remote-switch' : command = 0x10
-        elif action == 'remote-sync'   : command = 0x20
-        elif action == 'remote-stop'   : command = 0x30
-        elif action == 'remote-restart': command = 0xF0
-        Actimetres.addRemote(actimId, command)
-        print("Status: 205\n\n")
-
     elif action.startswith('project-'):
         Projects.processAction(action, args)
 

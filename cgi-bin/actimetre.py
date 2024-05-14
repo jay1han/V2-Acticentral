@@ -279,7 +279,7 @@ class Actimetre:
                 doc.asis(self.frequencyText(self.sensorStr))
                 if alive == 'up':
                     doc.asis('<br>')
-                    doc.asis(self.htmlButton("remote-switch", "Switch"))
+                    doc.asis(self.htmlButton("actim-remote-switch", "Switch"))
             if alive == 'up':
                 with tag('td', name="actimfree"):
                     doc.asis(htmlRssi(self.rssi))
@@ -316,7 +316,9 @@ class Actimetre:
                     doc.stag('br')
                     text(printSize(self.repoSize))
                     doc.stag('br')
-                    doc.asis(self.htmlButton("actim-stop", "Stop"))
+                    doc.asis(self.htmlButton("actim-remote-stop", "Stop"))
+                    doc.stag('br')
+                    doc.asis(self.htmlButton("actim-remote-sync", "Sync"))
                 else:
                     line('span', 'No data', name='actimfree')
                     doc.stag('br')
@@ -523,6 +525,16 @@ class ActimetresClass:
                 "{actimInfo}": actim.htmlInfo(),
                 "{projectName}": Projects.getName(actim.projectId),
             })
+
+        elif action.startswith('actim-remote-'):
+            actimId = int(args['actimId'][0])
+            command = 0
+            if action   == 'actim-remote-switch' : command = 0x10
+            elif action == 'actim-remote-sync'   : command = 0x20
+            elif action == 'actim-remote-stop'   : command = 0x30
+            elif action == 'actim-remote-restart': command = 0xF0
+            self.addRemote(actimId, command)
+            print("Status: 205\n\n")
 
         elif action == 'actim-retire':
             # TODO
