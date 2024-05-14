@@ -302,6 +302,8 @@ class ActiserversClass:
             else:
                 if thisServer.diskSize > 0 and thisServer.diskFree > thisServer.diskSize // 10:
                     thisServer.diskLow = 0
+        if not serverId in self.servers.keys():
+            self.dirty = True
         self.servers[serverId] = thisServer
         printLog(thisServer)
         return thisServer
@@ -318,8 +320,7 @@ class ActiserversClass:
 
     def save(self):
         for server in self.servers.values():
-            if server.save(): #TODO refine dirtiness
-                self.dirty = True
+            server.save()
         if self.dirty:
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
             self.htmlWrite()
