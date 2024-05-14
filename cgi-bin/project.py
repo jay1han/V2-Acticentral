@@ -76,7 +76,8 @@ class Project:
                             f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
                             f'date: "{date}"' + '}')
-            allImages.append('{' +
+            if Actimetres.hasGraph(actimId):
+                allImages.append('{' +
                              f'id: "Image{actimId:04d}", ' +
                              f'ref: "/images/actim{actimId:04d}.svg", ' +
                              f'date: "{date}"' + '}')
@@ -213,6 +214,8 @@ class ProjectsClass:
         for project in self.projects.values():
             if project.projectId != 0:
                 if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
+                    project.stale = True
+                if fileOlderThan(f'{PROJECT_DIR}/project{project.projectId:02d}.html', 3600) :
                     project.dirty = True
         for project in self.projects.values():
             for actimId in project.actimetreList:

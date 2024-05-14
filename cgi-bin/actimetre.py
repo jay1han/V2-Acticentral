@@ -237,7 +237,7 @@ class Actimetre:
         return self.repoNums > 0 or self.repoSize > 0
 
     def htmlButton(self, action, text):
-        return ('<form action="/bin/acticentral.py" method="get">' +
+        return ('<form action="/bin/acticentral.py" method="get" style="padding:0;margin:0">' +
                 f'<input type="hidden" name="actimId" value="{self.actimId}"/>' +
                 f'<button type="submit" name="action" value="{action}">' +
                 f'{text}</button></form>\n')
@@ -431,6 +431,10 @@ class ActimetresClass:
     def getLastSeen(self, actimId: int):
         if not actimId in self.actims.keys(): return TIMEZERO
         return self.actims[actimId].lastSeen
+
+    def hasGraph(self, actimId: int):
+        if not actimId in self.actims.keys(): return False
+        return NOW - self.actims[actimId].lastSeen < ACTIM_RETIRE_P
 
     def dies(self, actimId: int):
         if actimId in self.actims.keys():

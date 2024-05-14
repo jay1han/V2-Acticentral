@@ -121,13 +121,14 @@ class ActimHistory:
     def drawGraphMaybe(self):
         redraw = False
         if self.a.isDead > 0:
-            if NOW - self.a.lastDrawn > REDRAW_DEAD:
+            if NOW - self.a.lastSeen > ACTIM_RETIRE_P:
+                redraw = False
+            elif NOW - self.a.lastDrawn > REDRAW_DEAD:
                 redraw = True
         else:
             if NOW - self.a.lastDrawn > REDRAW_TIME:
                 redraw = True
-        if redraw:
-            self.drawGraph()
+        if redraw: self.drawGraph()
         return redraw
 
     def addFreqEvent(self, now, frequency):
