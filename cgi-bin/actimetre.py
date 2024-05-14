@@ -33,7 +33,7 @@ class Actimetre:
         self.graphSince = TIMEZERO
         self.reportStr  = ""
         self.remote     = 0
-        self.dirty      = True
+        self.dirty      = False
 
     def __str__(self):
         string = f'Actim{self.actimId:04d}'
@@ -92,8 +92,7 @@ class Actimetre:
             self.reportStr  = d['reportStr']
             if 'remote' in d.keys():
                 self.remote = int(d['remote'])
-
-        self.dirty = actual
+        else: self.dirty = True
         return self
 
     def update(self, newActim, actual=True):
