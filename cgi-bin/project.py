@@ -227,13 +227,6 @@ class ProjectsClass:
     def listIds(self):
         return sorted(self.projects.keys())
 
-    def htmlProjects(self, *, picker=None):
-        htmlString = ""
-        for projectId in sorted(self.projects.keys()):
-            if picker is None or picker(self.projects[projectId]):
-                htmlString += self.projects[projectId].html()
-        return htmlString
-
     def getName(self, projectId, withFormat=None):
         if projectId in self.projects:
             if withFormat is None:
