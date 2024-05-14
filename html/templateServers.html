@@ -31,7 +31,7 @@
            http.open("GET", page.ref, false);
            http.setRequestHeader("If-Modified-Since", date);
            http.send();
-           if (this.status == 200) {
+           if (this.status == 200 && http.responseText != "") {
                page.date = this.getResponseHeader("Last-Modified");
                document.getElementById(page.id).outerHTML = this.responseText;
            }

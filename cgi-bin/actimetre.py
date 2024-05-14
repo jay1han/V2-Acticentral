@@ -309,9 +309,7 @@ class Actimetre:
 
             with tag('td', klass='right'):
                 if self.hasData():
-                    text(f'{self.repoNums} files')
-                    doc.stag('br')
-                    text(printSize(self.repoSize))
+                    text(f'{self.repoNums} / {printSize(self.repoSize)}')
                     doc.asis(self.htmlButton("actim-remote-stop", "Stop"))
                     doc.asis(self.htmlButton("actim-remote-sync", "Sync"))
                 else:
