@@ -39,22 +39,17 @@
         }
 
         function checkAll() {
+            for (let page of allpages) {
+                checkOne(page);
+            }
             var http = new XMLHttpRequest();
             http.open("HEAD", document.URL, false);
             http.setRequestHeader("If-Modified-Since", date);
             http.send();
             if (http.status == 200) {
-                location.reload();
+                window.location.reload();
             }
-
-            for (let page of allpages) {
-                checkOne(page);
-            }
-            setTimeout(checkAll, 1000);
-        }
-
-        function setupCheck() {
-            setTimeout(checkAll, 1000);
+            setTimeout(checkAll, 2000);
         }
 
         function hide() {
@@ -68,8 +63,7 @@
             }
         }
 
-        window.addEventListener("load", hide);
-        window.addEventListener("load", setupCheck);
+        window.addEventListener("load", checkAll, {once: true});
     </script>
     <title>Actimetres Available</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">

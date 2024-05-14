@@ -40,25 +40,22 @@
       }
 
       function checkAll() {
+          for (let page of allpages) {
+              checkOne(page);
+          }
+
           var http = new XMLHttpRequest();
           http.open("HEAD", document.URL, false);
           http.setRequestHeader("If-Modified-Since", date);
           http.send();
           if (http.status == 200) {
-               location.reload();
+               window.location.reload();
           }
 
-          for (let page of allpages) {
-              checkOne(page);
-          }
-          setTimeout(checkAll, 1000);
+          setTimeout(checkAll, 2000);
       }
 
-      function setupCheck() {
-          setTimeout(checkAll, 1000);
-      }
-
-      window.addEventListener("load", setupCheck);
+      window.addEventListener("load", checkAll, {once: true});
     </script>
     
     <title>Actimetre Dashboard</title>
