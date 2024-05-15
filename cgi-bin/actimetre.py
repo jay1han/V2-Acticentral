@@ -236,8 +236,9 @@ class Actimetre:
     def hasData(self):
         return self.repoNums > 0 or self.repoSize > 0
 
-    def htmlButton(self, action, text):
-        return ('<form action="/bin/acticentral.py" method="get" style="padding:0;margin:0">' +
+    def htmlButton(self, action, text, hide=False):
+        if not hide:
+            return ('<form action="/bin/acticentral.py" method="get" style="padding:0;margin:0">' +
                 f'<input type="hidden" name="actimId" value="{self.actimId}"/>' +
                 f'<button type="submit" name="action" value="{action}">' +
                 f'{text}</button></form>\n')
@@ -254,7 +255,7 @@ class Actimetre:
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
                 if alive == 'up':
-                    doc.asis(self.htmlButton("actim-remote-restart", "Restart"))
+                    doc.asis(self.htmlButton("actim-remote-restart", "Restart", self.remote != 0))
                 elif alive == 'retire':
                     doc.asis(self.htmlButton("actim-retire", "Retire"))
             with tag('td', name='actimproject'):
@@ -276,7 +277,7 @@ class Actimetre:
             with tag('td', name="actimfree"):
                 doc.asis(self.frequencyText(self.sensorStr))
                 if alive == 'up':
-                    doc.asis(self.htmlButton("actim-remote-switch", "Switch"))
+                    doc.asis(self.htmlButton("actim-remote-switch", "Switch", self.remote != 0))
             if alive == 'up':
                 with tag('td', name="actimfree"):
                     doc.asis(htmlRssi(self.rssi))
@@ -310,8 +311,8 @@ class Actimetre:
             with tag('td', klass='right'):
                 if self.hasData():
                     text(f'{self.repoNums} / {printSize(self.repoSize)}')
-                    doc.asis(self.htmlButton("actim-remote-stop", "Stop"))
-                    doc.asis(self.htmlButton("actim-remote-sync", "Sync"))
+                    doc.asis(self.htmlButton("actim-remote-stop", "Stop", self.remote != 0))
+                    doc.asis(self.htmlButton("actim-remote-sync", "Sync", self.remote != 0))
                 else:
                     line('span', 'No data', name='actimfree')
                     doc.asis(self.htmlButton("actim-move", "Move"))
@@ -460,12 +461,6 @@ class ActimetresClass:
         if not actimId in self.actims: return ""
         return self.actims[actimId].name()
 
-    def addRemote(self, actimId, command):
-        if actimId in self.actims.keys():
-            printLog(f'addRemote: Actim{actimId:04d} command 0x{command:02X}')
-            self.actims[actimId].remote = command
-            self.actims[actimId].dirty = True
-
     def getRemotes(self, serverId):
         remotes = []
         for actim in self.actims.values():
@@ -525,13 +520,18 @@ class ActimetresClass:
 
         elif action.startswith('actim-remote-'):
             actimId = int(args['actimId'][0])
-            command = 0
-            if action   == 'actim-remote-switch' : command = 0x10
-            elif action == 'actim-remote-sync'   : command = 0x20
-            elif action == 'actim-remote-stop'   : command = 0x30
-            elif action == 'actim-remote-restart': command = 0xF0
-            self.addRemote(actimId, command)
-            print("Status: 205\n\n")
+            if actimId in self.actims.keys():
+                command = 0
+                if action   == 'actim-remote-switch' : command = REMOTE_SWITCH
+                elif action == 'actim-remote-sync'   : command = REMOTE_SYNC
+                elif action == 'actim-remote-stop'   : command = REMOTE_STOP
+                elif action == 'actim-remote-restart': command = REMOTE_RESTART
+                printLog(f'addRemote: Actim{actimId:04d} command 0x{command:02X}')
+                self.actims[actimId].remote = command
+                self.actims[actimId].dirty = True
+                print("Status: 205\n\n")
+            else:
+                print("Status: 204\n\n")
 
         elif action == 'actim-retire':
             # TODO

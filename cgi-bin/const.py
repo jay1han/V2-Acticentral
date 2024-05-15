@@ -4,7 +4,7 @@ import os, json, subprocess
 from datetime import datetime, timedelta, timezone
 from yattag import Doc
 
-VERSION_STR     = "v449"
+VERSION_STR     = "v450"
 FILE_ROOT       = "/etc/actimetre"
 HTML_ROOT       = "/var/www/html"
 
@@ -61,6 +61,11 @@ ACTIM_RETIRE_P  = timedelta(days=30)
 TIMEZERO        = datetime(year=2023, month=1, day=1, tzinfo=timezone.utc)
 NOW             = datetime.now(timezone.utc)
 LAST_UPDATED    = NOW.strftime(TIMEFORMAT_DISP)
+
+REMOTE_SWITCH   = 0x10
+REMOTE_SYNC     = 0x20
+REMOTE_STOP     = 0x30
+REMOTE_RESTART  = 0xF0
 
 def printLog(text=''):
     try:
