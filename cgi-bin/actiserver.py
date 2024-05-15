@@ -35,7 +35,6 @@ class Actiserver:
         return string
 
     def toD(self):
-        Actimetres = actimetre.Actimetres
         return {'serverId'  : self.serverId,
                 'machine'   : self.machine,
                 'version'   : self.version,
@@ -47,7 +46,7 @@ class Actiserver:
                 'lastUpdate': self.lastUpdate.strftime(TIMEFORMAT_FN),
                 'dbTime'    : self.dbTime.strftime(TIMEFORMAT_FN),
                 'isDown'    : self.isDown,
-                'actimetreList': '[' + ','.join([Actimetres.dump(actimId) for actimId in self.actimetreList]) + ']',
+                'actimetreList': '[' + ','.join([str(actimId) for actimId in self.actimetreList]) + ']',
                 'cpuIdle'   : self.cpuIdle,
                 'memAvail'  : self.memAvail,
                 'diskTput'  : self.diskTput,
@@ -55,7 +54,6 @@ class Actiserver:
                 }
 
     def fromD(self, d, actual=False):
-        Actimetres = actimetre.Actimetres
         self.serverId   = int(d['serverId'])
         self.machine    = d['machine']
         self.version    = d['version']
@@ -70,11 +68,11 @@ class Actiserver:
         self.diskTput = float(d['diskTput'])
         self.diskUtil = float(d['diskUtil'])
 
+        Actimetres = actimetre.Actimetres
         if d['actimetreList'] != "[]":
             for actimData in json.loads(d['actimetreList']):
-                actimId = Actimetres.fromD(actimData, actual)
-                self.actimetreList.add(actimId)
-        Actimetres.checkOrphan(self.serverId, self.actimetreList)
+                if actual: actimData = Actimetres.fromD(actimData, actual)
+                self.actimetreList.add(actimData)
 
         if actual:
             self.lastUpdate = NOW
@@ -299,7 +297,6 @@ class ActiserversClass:
                     thisServer.diskLow = 0
         if not serverId in self.servers.keys():
             self.dirty = True
-        self.servers[serverId] = thisServer
         printLog(thisServer)
         return thisServer
 

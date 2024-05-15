@@ -258,7 +258,7 @@ class ProjectsClass:
                 p.dirty = True
                 self.dirty = True
 
-    def moveActim(self, actimId, oldProjectId, projectId):
+    def moveActim(self, actimId, projectId):
         self.removeActim(actimId)
         self.addActim(projectId, actimId)
 

@@ -16,13 +16,11 @@ class Actimetre:
         self.mac        = mac
         self.boardType  = boardType
         self.version    = version
-        self.serverId   = int(serverId)
         self.isDead     = isDead
         self.isStopped  = isStopped
         self.bootTime   = bootTime
         self.lastSeen   = lastSeen
         self.lastReport = lastReport
-        self.projectId  = projectId
         self.sensorStr  = sensorStr
         self.frequency  = frequency
         self.rating     = rating
@@ -34,6 +32,8 @@ class Actimetre:
         self.reportStr  = ""
         self.remote     = 0
         self.dirty      = False
+        self.serverId   = int(serverId)
+        self.projectId  = projectId
 
     def __str__(self):
         string = f'Actim{self.actimId:04d}'
@@ -48,13 +48,11 @@ class Actimetre:
                 'mac'       : self.mac,
                 'boardType' : self.boardType,
                 'version'   : self.version,
-                'serverId'  : self.serverId,
                 'isDead'    : int(self.isDead),
                 'isStopped' : str(self.isStopped).upper(),
                 'bootTime'  : self.bootTime.strftime(TIMEFORMAT_FN),
                 'lastSeen'  : self.lastSeen.strftime(TIMEFORMAT_FN),
                 'lastReport': self.lastReport.strftime(TIMEFORMAT_FN),
-                'projectId' : self.projectId,
                 'sensorStr' : self.sensorStr,
                 'frequency' : self.frequency,
                 'rating'    : self.rating,
@@ -72,7 +70,6 @@ class Actimetre:
         self.mac        = d['mac']
         self.boardType  = d['boardType']
         self.version    = d['version']
-        self.serverId   = int(d['serverId'])
         self.isDead     = int(d['isDead'])
         self.isStopped  = (str(d['isStopped']).strip().upper() == "TRUE")
         self.bootTime   = utcStrptime(d['bootTime'])
@@ -87,13 +84,13 @@ class Actimetre:
         self.repoSize   = int(d['repoSize'])
 
         if not actual:
-            self.projectId  = int(d['projectId'])
             self.lastDrawn  = utcStrptime(d['lastDrawn'])
             self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr  = d['reportStr']
             if 'remote' in d.keys():
                 self.remote = int(d['remote'])
-        else: self.dirty = True
+        else:
+            self.dirty = True
         return self
 
     def update(self, newActim, actual=True):
@@ -548,7 +545,7 @@ class ActimetresClass:
             oldProjectId = actim.projectId
             if oldProjectId == 0 or args['owner'][0] == Projects.getOwner(oldProjectId):
                 printLog(f"Changing {actim.name()} from Project{oldProjectId:02d} to Project{projectId:02d}")
-                Projects.moveActim(actim.actimId, oldProjectId, projectId)
+                Projects.moveActim(actim.actimId, projectId)
                 actim.projectId = projectId
                 actim.dirty = True
             print(f"Location:\\project{projectId:02d}.html\n\n")
