@@ -66,6 +66,7 @@ class Project:
 
     def htmlWrite(self):
         Actimetres = actimetre.Actimetres
+        Actiservers = actiserver.Actiservers
         projectActims = ""
         allPages = []
         for actimId in sorted(self.actimetreList):
@@ -76,7 +77,7 @@ class Project:
                             f'date: "{JS_TIMEZERO}"' + '}')
 
         serverList = set()
-        for serverId in map(Actimetres.getServerId, self.actimetreList):
+        for serverId in map(Actiservers.getServerId, self.actimetreList):
             if serverId != 0:
                 serverList.add(serverId)
 
