@@ -185,6 +185,7 @@ class ProjectsClass:
         if fileOlderThan(ACTIMS0_HTML, 3600):
             self.projects[0].dirty = True
         Actimetres = actimetre.Actimetres
+        Actiservers = actiserver.Actiservers
 
         allProjectsActimSet = set()
         for project in self.projects.values():
@@ -213,7 +214,8 @@ class ProjectsClass:
                     project.dirty = True
         for project in self.projects.values():
             for actimId in project.actimetreList:
-                project.serverList.add(Actimetres.getServerId(actimId))
+                serverId = Actiservers.getServerId(actimId)
+                if serverId != 0: project.serverList.add(serverId)
 
     def dump(self):
         string = ""
