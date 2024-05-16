@@ -78,7 +78,7 @@ class Actiserver:
                 for actimData in json.loads(d['actimetreList']):
                     if isinstance(actimData, int):
                         self.actimetreList.add(actimData)
-                    else: self.actimetreList.add(actimData.actimId)
+                    else: self.actimetreList.add(int(actimData['actimId']))
 
         if actual:
             self.lastUpdate = NOW
