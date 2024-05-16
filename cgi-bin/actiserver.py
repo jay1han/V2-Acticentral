@@ -283,9 +283,9 @@ class ActiserversClass:
         return ''
 
     def getRemotes(self, serverId):
-        Actimetres = actimetre.Actimetres
         remotes = []
         if serverId in self.servers.keys():
+            Actimetres = actimetre.Actimetres
             for actimId in self.servers[serverId].actimetreList:
                 command = Actimetres.getRemote(actimId)
                 if command != 0: remotes.append((actimId, command))
