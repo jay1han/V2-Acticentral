@@ -124,7 +124,7 @@ def processAction():
             if Registry.needUpdate(s.dbTime) or Projects.needUpdate(s.dbTime):
                 printLog(f'{s.dbTime} needs update')
                 print('!')
-            for actimId, command in Actimetres.getRemotes(serverId):
+            for actimId, command in Actiservers.getRemotes(serverId):
                 printLog(f'Send Actim{actimId:04d} command 0x{command:02X}')
                 print(f'+{actimId}:{command}')
 

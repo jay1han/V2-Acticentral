@@ -96,6 +96,8 @@ class Actiserver:
         if actimId in self.actimetreList:
             self.actimetreList.remove(actimId)
             self.dirty = True
+            return True
+        else: return False
 
     def alertContent(self):
         content = f'{self.name()}\n' + \
@@ -252,18 +254,36 @@ class ActiserversClass:
         self.servers[serverId].addActim(actimId)
 
     def removeActim(self, actimId):
+        serverId = 0
         for s in self.servers.values():
-            s.removeActim(actimId)
+            if s.removeActim(actimId): serverId = s.serverId
+        return serverId
 
-    def emailInfo(self, serverId):
-        s = self.servers[serverId]
-        return \
-            f'{s.name()}\n' + \
-            f'Hardware {s.machine}\nVersion {s.version}\n' + \
-            f'IP {s.ip}\nChannel {s.channel}\n' + \
-            f'Disk size {printSize(s.diskSize)}, free {printSize(s.diskFree)} ' + \
-            f'({100.0 * s.diskFree / s.diskSize :.1f}%)\n' + \
-            f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
+    def getServerId(self, actimId):
+        for s in self.servers.values():
+            if actimId in s.actimetreList:
+                return s.serverId
+        else: return 0
+
+    def serverInfo(self, actimId):
+        for s in self.servers.values():
+            if actimId in s.actimetreList: return \
+                f'{s.name()}\n' + \
+                f'Hardware {s.machine}\nVersion {s.version}\n' + \
+                f'IP {s.ip}\nChannel {s.channel}\n' + \
+                f'Disk size {printSize(s.diskSize)}, free {printSize(s.diskFree)} ' + \
+                f'({100.0 * s.diskFree / s.diskSize :.1f}%)\n' + \
+                f'Last seen {s.lastUpdate.strftime(TIMEFORMAT_DISP)}\n'
+        return ''
+
+    def getRemotes(self, serverId):
+        Actimetres = actimetre.Actimetres
+        remotes = []
+        if serverId in self.servers.keys():
+            for actimId in self.servers[serverId].actimetreList:
+                command = Actimetres.getRemote(actimId)
+                if command != 0: remotes.append((actimId, command))
+        return remotes
 
     def checkAlerts(self):
         for s in self.servers.values():

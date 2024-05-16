@@ -8,9 +8,9 @@ from actiserver import Actiservers
 
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='???', version='000',
-                 serverId=0, isDead=0, isStopped=False,
+                 isDead=0, isStopped=False,
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,
-                 projectId = 0, sensorStr="", frequency = 0, rating = 0.0, rssi = 0,
+                 sensorStr="", frequency = 0, rating = 0.0, rssi = 0,
                  repoNums = 0, repoSize = 0):
         self.actimId    = int(actimId)
         self.mac        = mac
@@ -32,14 +32,12 @@ class Actimetre:
         self.reportStr  = ""
         self.remote     = 0
         self.dirty      = False
-        self.serverId   = int(serverId)
-        self.projectId  = projectId
 
     def __str__(self):
         string = f'Actim{self.actimId:04d}'
         if self.isDead > 0: string += '(dead)'
         string += f' {self.sensorStr}@{self.frequency}'
-        string += f' Project{self.projectId:02d}'
+        string += f' Project{Projects.getProjectId(self.actimId):02d}'
         string += f' {self.repoNums}/{printSize(self.repoSize)}'
         return string
 
@@ -96,16 +94,6 @@ class Actimetre:
     def update(self, newActim, actual=True):
         redraw = False
         if actual:
-            if self.serverId != newActim.serverId:
-                Actiservers.removeActim(self.actimId)
-                if self.frequency > 0:
-                    if Actiservers[self.serverId]:
-                        self.addFreqEvent(Actiservers.getLastUpdate(self.serverId), 0)
-                    else:
-                        self.addFreqEvent(newActim.bootTime, 0)
-                    self.frequency = 0
-                redraw = True
-                Projects.actimIsStale(self.projectId, self.actimId, newActim.serverId, self.serverId)
             if self.bootTime != newActim.bootTime:
                 self.addFreqEvent(newActim.bootTime, 0)
                 self.frequency = 0
@@ -124,7 +112,6 @@ class Actimetre:
         if newActim.version != "":
             self.version    = newActim.version
         self.sensorStr  = newActim.sensorStr
-        self.serverId   = newActim.serverId
         self.bootTime   = newActim.bootTime
         self.lastSeen   = newActim.lastSeen
         self.lastReport = newActim.lastReport
@@ -174,22 +161,21 @@ class Actimetre:
         if subject is None:
             subject = f'{self.name()} unreachable since {self.lastSeen.strftime(TIMEFORMAT_ALERT)}'
         content = f'{self.name()}\n'
-        content += Projects.getName(self.projectId, 'Project "%s"\n')
+        content += Projects.getName(Projects.getProjectId(self.actimId), 'Project "%s"\n')
         content += f'Type {self.boardType}\nMAC {self.mac}\n' + \
                    f'Sensors {self.sensorStr}\n' + \
                    f'Last seen {self.lastSeen.strftime(TIMEFORMAT_DISP)}\n' + \
                    f'Total data {self.repoNums} files, size {printSize(self.repoSize)}\n'
-        content += Actiservers.emailInfo(self.serverId)
+        content += Actiservers.serverInfo(self.actimId)
 
-        sendEmail(Projects.getEmail(self.projectId), subject, content + info)
+        sendEmail(Projects.getEmail(Projects.getProjectId(self.actimId)), subject, content + info)
 
     def forgetData(self):
         self.isDead = 3
         self.repoNums = 0
         self.repoSize = 0
         Actiservers.removeActim(self.actimId)
-        Projects.actimIsStale(self.projectId, self.actimId, self.serverId, 0)
-        self.serverId = 0
+        Projects.actimIsStale(self.actimId)
         printLog(f"{self.name()} data forgotten")
         self.dirty = True
 
@@ -200,9 +186,8 @@ class Actimetre:
             self.isDead = 1
             self.addFreqEvent(NOW, 0)
             self.drawGraph()
-        printLog(f"Actim{self.actimId:04d} removed from Actis{self.serverId:03d}")
-        Actiservers.removeActim(self.actimId)
-        self.serverId = 0
+        serverId = Actiservers.removeActim(self.actimId)
+        printLog(f"Actim{self.actimId:04d} removed from Actis{serverId:03d}")
         self.repoSize = 0
         self.repoNums = 0
         self.dirty = True
@@ -248,6 +233,7 @@ class Actimetre:
                 alive = 'retire'
             elif self.frequency == 0 or self.isDead > 0:
                 alive = 'down'
+            serverId = Actiservers.getServerId(self.actimId)
 
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
@@ -256,19 +242,19 @@ class Actimetre:
                 elif alive == 'retire':
                     doc.asis(self.htmlButton("actim-retire", "Retire"))
             with tag('td', name='actimproject'):
-                if self.projectId == 0:
+                if Projects.getProjectId(self.actimId) == 0:
                     with tag('a', href="/actims-free.html"):
                         text('Available')
                 else:
-                    with tag('a', href=f'/project{self.projectId:02d}.html'):
-                        text(Projects.getName(self.projectId))
+                    with tag('a', href=f'/project{Projects.getProjectId(self.actimId):02d}.html'):
+                        text(Projects.getName(Projects.getProjectId(self.actimId)))
             with tag('td'):
                 text(self.boardType)
                 doc.asis('<br>')
                 text(f"v{self.version}")
-            if self.serverId != 0:
-                line('td', f"Actis{self.serverId:03d}", name="actimfree",
-                     klass="" if (Actiservers.isDown(self.serverId) == 0) else "down")
+            if serverId != 0:
+                line('td', f"Actis{serverId:03d}", name="actimfree",
+                     klass="" if (Actiservers.isDown(serverId) == 0) else "down")
             else:
                 line('td', "", name="actimfree")
             with tag('td', name="actimfree"):
@@ -313,7 +299,7 @@ class Actimetre:
                 else:
                     line('span', 'No data', name='actimfree')
                     doc.asis(self.htmlButton("actim-move", "Move"))
-                    if self.serverId != 0:
+                    if serverId != 0:
                         doc.asis(self.htmlButton("actim-remove", "Remove"))
             if self.reportStr != "":
                 with tag('td', klass="report"):
@@ -323,7 +309,7 @@ class Actimetre:
 
     def save(self):
         if self.dirty:
-            printLog(f'Actim{self.actimId:04d}[{self.projectId}] is dirty')
+            printLog(f'Actim{self.actimId:04d}[{Projects.getProjectId(self.actimId)}] is dirty')
             with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
             return True
@@ -342,15 +328,12 @@ class ActimetresClass:
         self.actims = {int(actimId):Actimetre().fromD(d) for actimId, d in loadData(ACTIMETRES).items()}
         for mac, actimId in Registry.macToId.items():
             if actimId not in self.actims.keys():
-                self.actims[actimId] = Actimetre(actimId, mac=mac, projectId=0)
+                self.actims[actimId] = Actimetre(actimId, mac=mac)
         for actim in self.actims.values():
             if fileNeedsUpdate(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', actim.lastReport):
                 actim.dirty = True
         if fileOlderThan(ACTIMS_HTML, 3600):
             self.dirty = True
-
-    def fromProject(self, projectId):
-        return [actimId for actimId in self.actims.keys() if self.actims[actimId].projectId == projectId]
 
     def str(self, actimId: int):
         if not actimId in self.actims.keys(): return ""
@@ -364,19 +347,11 @@ class ActimetresClass:
             self.actims[a.actimId] = a
         return a.actimId
 
-    def removeProject(self, actimId: int):
-        if actimId in self.actims:
-            self.actims[actimId].projectId = 0
-            self.actims[actimId].dirty = True
-
-    def checkOrphan(self, serverId: int, actimetreList):
-        for a in self.actims.values():
-            if a.serverId == serverId and not a.actimId in actimetreList:
-                printLog(f"Actim{a.actimId:04d} orphaned by Actis{serverId}")
-                a.forgetData()
-
     def dump(self, actimId: int):
         return json.dumps(self.actims[actimId].toD())
+
+    def allActimList(self):
+        return set(self.actims.keys())
 
     def html(self, actimId: int):
         if not actimId in self.actims.keys(): return ""
@@ -398,33 +373,18 @@ class ActimetresClass:
         if a.repoNums == 0:
             text('(No data)')
         else:
-            with tag('a', href=f'http://{ip}/Project{a.projectId:02d}/index{a.actimId:04d}.html'):
+            with tag('a', href=f'http://{ip}/Project{Projects.getProjectId(a.actimId):02d}/index{a.actimId:04d}.html'):
                 doc.asis(f'{a.repoNums}&nbsp;/&nbsp;{printSize(a.repoSize)}')
         return doc.getvalue()
 
-    def new(self, mac, boardType, version, serverId, bootTime=NOW):
+    def new(self, mac, boardType, version, bootTime=NOW):
         actimId = Registry.getId(mac)
         printLog(f"Actim{actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
-        self.actims[actimId] = Actimetre(actimId, mac, boardType, version, serverId, 0, bootTime, lastSeen=NOW, lastReport=NOW)
+        self.actims[actimId] = Actimetre(actimId, mac, boardType, version, 0, bootTime, lastSeen=NOW, lastReport=NOW)
 
     def forget(self, actimId: int):
         if actimId in self.actims.keys():
             self.actims[actimId].forgetData()
-
-    def setProjectId(self, actimId: int, projectId: int):
-        if self.actims[actimId].projectId != projectId:
-            self.actims[actimId].projectId = projectId
-            self.actims[actimId].dirty = True
-            return True
-        return False
-
-    def getProjectId(self, actimId: int):
-        if not actimId in self.actims.keys(): return 0
-        else: return self.actims[actimId].projectId
-
-    def getServerId(self, actimId: int):
-        if not actimId in self.actims.keys(): return 0
-        return self.actims[actimId].serverId
 
     def getLastSeen(self, actimId: int):
         if not actimId in self.actims.keys(): return TIMEZERO
@@ -458,14 +418,12 @@ class ActimetresClass:
         if not actimId in self.actims: return ""
         return self.actims[actimId].name()
 
-    def getRemotes(self, serverId):
-        remotes = []
-        for actim in self.actims.values():
-            if actim.remote != 0 and actim.serverId == serverId:
-                remotes.append((actim.actimId, actim.remote))
-                actim.remote = 0
-                actim.dirty = True
-        return remotes
+    def getRemote(self, actimId):
+        if actimId in  self.actims.keys():
+            actim = self.actims[actimId]
+            if actim.remote != 0:
+                return actimId, actim.remote
+        return None
 
     def processAction(self, action, args):
         actim = self.actims[int(args['actimId'][0])]
@@ -497,13 +455,13 @@ class ActimetresClass:
                 "{actimId}": str(actim.actimId),
                 "{actimName}": actim.name(),
                 "{actimInfo}": actim.htmlInfo(),
-                "{projectName}": Projects.getName(actim.projectId),
-                "{projectList}": Projects.htmlChoice(actim.projectId),
+                "{projectName}": Projects.getName(Projects.getProjectId(actim.actimId)),
+                "{projectList}": Projects.htmlChoice(Projects.getProjectId(actim.actimId)),
                 "{inputOwner}": '' \
-                    if (actim.projectId == 0) \
+                    if (Projects.getProjectId(actim.actimId) == 0) \
                     else '<p><input type="text" name="owner" value="" required></p>',
-                "{attached}" : 'hidden' if (actim.projectId == 0) else '',
-                "{notAttached}": 'hidden' if (actim.projectId > 0) else ''
+                "{attached}" : 'hidden' if (Projects.getProjectId(actim.actimId) == 0) else '',
+                "{notAttached}": 'hidden' if (Projects.getProjectId(actim.actimId) > 0) else ''
             })
 
         elif action == 'actim-remove':
@@ -512,7 +470,7 @@ class ActimetresClass:
                 "{actimId}": str(actim.actimId),
                 "{actimName}": actim.name(),
                 "{actimInfo}": actim.htmlInfo(),
-                "{projectName}": Projects.getName(actim.projectId),
+                "{projectName}": Projects.getName(Projects.getProjectId(actim.actimId)),
             })
 
         elif action.startswith('actim-remote-'):
@@ -542,19 +500,17 @@ class ActimetresClass:
 
         if formId == 'actim-move':
             projectId = int(args['projectId'][0])
-            oldProjectId = actim.projectId
+            oldProjectId = Projects.getProjectId(actim.actimId)
             if oldProjectId == 0 or args['owner'][0] == Projects.getOwner(oldProjectId):
                 printLog(f"Changing {actim.name()} from Project{oldProjectId:02d} to Project{projectId:02d}")
                 Projects.moveActim(actim.actimId, projectId)
-                actim.projectId = projectId
                 actim.dirty = True
             print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif formId == 'actim-remove':
-            projectId = actim.projectId
-            if args['owner'][0] == Projects.getOwner(actim.projectId):
+            projectId = Projects.getProjectId(actim.actimId)
+            if args['owner'][0] == Projects.getOwner(Projects.getProjectId(actim.actimId)):
                 Projects.removeActim(actim.actimId)
-                actim.projectId = 0
                 actim.dirty = True
             print(f"Location:\\project{projectId:02d}.html\n\n")
 

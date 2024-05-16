@@ -186,27 +186,25 @@ class ProjectsClass:
             self.projects[0].dirty = True
         Actimetres = actimetre.Actimetres
 
-        allActimId = set()
+        allProjectsActimSet = set()
         for project in self.projects.values():
             for actimId in project.actimetreList:
-                if actimId in allActimId:
+                if actimId in allProjectsActimSet:
                     printLog(f'Actim{actimId:04d}[{project.projectId}] in duplicate, removed')
                     project.actimetreList.remove(actimId)
                     project.dirty = True
                     self.dirty = True
                 else:
-                    allActimId.add(actimId)
-        for project in self.projects.values():
-            for actimId in Actimetres.fromProject(project.projectId):
-                if not actimId in allActimId:
-                    printLog(f'Actim{actimId:04d}[{project.projectId}] missing, added')
-                    project.actimetreList.add(actimId)
+                    allProjectsActimSet.add(actimId)
+        allActimSet = Actimetres.allActimList()
+        diff = allActimSet - allProjectsActimSet
+        for actimId in diff:
+            for project in self.projects.values():
+                if actimId in project.actimetreList:
+                    project.actimetreList.remove(actimId)
                     project.dirty = True
                     self.dirty = True
-                else:
-                    if Actimetres.setProjectId(actimId, project.projectId):
-                        printLog(f'Actim{actimId:04d}[{project.projectId}] reassigned')
-                        self.dirty = True
+
         for project in self.projects.values():
             if project.projectId != 0:
                 if fileOlderThan(f'{HTML_ROOT}/project{project.projectId:02d}.html', 3600) :
@@ -240,6 +238,11 @@ class ProjectsClass:
 
     def getEmail(self, projectId):
         return self.projects[projectId].email
+
+    def getProjectId(self, actimId):
+        for project in self.projects.values():
+            if actimId in project.actimetreList: return project.projectId
+        return 0
 
     def setInfo(self, projectId, title="Not assigned", owner="", email=""):
         if projectId not in self.projects:
@@ -387,11 +390,10 @@ class ProjectsClass:
         else:
             print("Status: 205\n\n")
 
-    def actimIsStale(self, projectId, actimId, oldServerId, newServerId):
-        if oldServerId != newServerId:
-            project = self.projects[projectId]
-            if actimId in project.actimetreList:
-                self.projects[projectId].stale = True
+    def actimIsStale(self, actimId):
+        for p in self.projects.values():
+            if actimId in p.actimetreList:
+                p.stale = True
 
     def needUpdate(self, serverTime):
         return self.fileTime > serverTime
