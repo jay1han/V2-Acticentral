@@ -70,9 +70,15 @@ class Actiserver:
 
         Actimetres = actimetre.Actimetres
         if d['actimetreList'] != "[]":
-            for actimData in json.loads(d['actimetreList']):
-                if actual: actimData = Actimetres.fromD(actimData, actual)
-                self.actimetreList.add(actimData)
+            if actual:
+                for actimData in json.loads(d['actimetreList']):
+                    actimId = Actimetres.fromD(actimData, actual)
+                    self.actimetreList.add(actimId)
+            else:
+                for actimData in json.loads(d['actimetreList']):
+                    if isinstance(actimData, int):
+                        self.actimetreList.add(actimData)
+                    else: self.actimetreList.add(actimData.actimId)
 
         if actual:
             self.lastUpdate = NOW
