@@ -69,11 +69,16 @@ class Project:
         Actiservers = actiserver.Actiservers
         projectActims = ""
         allPages = []
+        allImages = []
         for actimId in sorted(self.actimetreList):
             projectActims += f'<tr id="Actim{actimId:04d}"></tr>\n'
             allPages.append('{' +
                            f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
+                            f'date: "{JS_TIMEZERO}"' + '}')
+            allImages.append('{' +
+                            f'id: "Image{actimId:04d}", ' +
+                            f'ref: "/images/actim{actimId:04d}.svg", ' +
                             f'date: "{JS_TIMEZERO}"' + '}')
 
         serverList = set()
@@ -101,6 +106,7 @@ class Project:
                          "{projectServers}": projectServers,
                          "{projectId}"     : str(self.projectId),
                          "{allpages}"      : ',\n'.join(allPages),
+                         "{allimages}"     : ',\n'.join(allImages),
                          "{date}"          : JS_NOW_PLUS,
                          "{document}"      : f'/project{self.projectId:02d}.html',
                          })

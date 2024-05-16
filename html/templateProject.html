@@ -24,6 +24,7 @@
     </style>
     <script>
       const allpages = [{allpages}];
+      const allimages = [{allimages}];
       const date = "{date}";
 
       function checkPage(page) {
@@ -35,6 +36,17 @@
                page.date = http.getResponseHeader("Last-Modified");
                document.getElementById(page.id).outerHTML = http.responseText;
                hide();
+           }
+      }
+
+      function checkImage(image) {
+           const http = new XMLHttpRequest();
+           http.open("HEAD", image.ref, false);
+           http.setRequestHeader("If-Modified-Since", page.image);
+           http.send();
+           if (http.status == 200) {
+               image.date = http.getResponseHeader("Last-Modified");
+               document.getElementById(image.id).src = page.ref;
            }
       }
 
