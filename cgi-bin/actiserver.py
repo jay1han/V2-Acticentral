@@ -290,7 +290,7 @@ class ActiserversClass:
             for actimId in self.servers[serverId].actimetreList:
                 command = Actimetres.getRemote(actimId)
                 if command != 0:
-                    printLog(f'Remote Actim{actimId:04d}:{command:02X}')
+                    printLog(f'getRemote Actim{actimId:04d}:{command:02X}')
                     remotes.append((actimId, command))
         return remotes
 

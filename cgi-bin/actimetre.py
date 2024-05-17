@@ -419,8 +419,11 @@ class ActimetresClass:
 
     def getRemote(self, actimId):
         if actimId in self.actims.keys():
-            return self.actims[actimId]
-        else: return 0
+            command = self.actims[actimId].remote
+            if command != 0:
+                self.actims[actimId].remote = 0
+                return command
+        return 0
 
     def processAction(self, action, args):
         actim = self.actims[int(args['actimId'][0])]
