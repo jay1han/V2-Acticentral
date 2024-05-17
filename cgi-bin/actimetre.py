@@ -214,12 +214,13 @@ class Actimetre:
     def hasData(self):
         return self.repoNums > 0 or self.repoSize > 0
 
-    def htmlButton(self, action, text, hide=False):
+    def htmlButton(self, action, text, hide=False) -> str:
         if not hide:
             return ('<form action="/bin/acticentral.py" method="get" style="padding:0;margin:0">' +
                 f'<input type="hidden" name="actimId" value="{self.actimId}"/>' +
                 f'<button type="submit" name="action" value="{action}">' +
                 f'{text}</button></form>\n')
+        else: return ''
 
     def html(self):
         doc, tag, text, line = Doc().ttl()
