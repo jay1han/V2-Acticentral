@@ -257,7 +257,8 @@ class Actimetre:
             with tag('td', name="actimfree"):
                 doc.asis(self.frequencyText(self.sensorStr))
                 if alive == 'up':
-                    doc.asis(self.htmlButton("actim-remote-switch", "Switch", self.remote != 0))
+                    doc.asis(self.htmlButton("actim-remote-switch", "Switch",
+                                             (self.remote != 0 or self.isStopped)))
             if alive == 'up':
                 with tag('td', name="actimfree"):
                     doc.asis(htmlRssi(self.rssi))
@@ -291,13 +292,15 @@ class Actimetre:
             with tag('td', klass='right'):
                 if self.hasData():
                     text(f'{self.repoNums} / {printSize(self.repoSize)}')
-                    doc.asis(self.htmlButton("actim-remote-stop", "Stop", self.remote != 0))
-                    doc.asis(self.htmlButton("actim-remote-sync", "Sync", self.remote != 0))
+                    doc.asis(self.htmlButton("actim-remote-stop", "Stop",
+                                             (self.remote != 0 or self.isStopped)))
+                    doc.asis(self.htmlButton("actim-remote-sync", "Sync",
+                                             (self.remote != 0 or self.isStopped)))
                 else:
                     line('span', 'No data', name='actimfree')
-                    doc.asis(self.htmlButton("actim-move", "Move", self.isStopped))
+                    doc.asis(self.htmlButton("actim-move", "Move"))
                     if serverId != 0:
-                        doc.asis(self.htmlButton("actim-remove", "Remove", self.isStopped))
+                        doc.asis(self.htmlButton("actim-remove", "Remove"))
             if self.reportStr != "":
                 with tag('td', klass="report"):
                     text(self.reportStr)
