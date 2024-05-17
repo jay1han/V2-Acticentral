@@ -315,7 +315,8 @@ class Actimetre:
 class ActimetresClass:
     def __init__(self):
         self.actims: dict[int, Actimetre] = {}
-        self.dirty = False
+        self.dirty = False  # save data
+        self.stale = False  # write HTML
 
     def __getitem__(self, item: int):
         return item in self.actims
@@ -329,7 +330,7 @@ class ActimetresClass:
             if fileNeedsUpdate(f'{ACTIM_HTML_DIR}/actim{actim.actimId:04d}.html', actim.lastReport):
                 actim.dirty = True
         if fileOlderThan(ACTIMS_HTML, 3600):
-            self.dirty = True
+            self.stale = True
 
     def str(self, actimId: int):
         if not actimId in self.actims.keys(): return ""
@@ -377,6 +378,7 @@ class ActimetresClass:
         actimId = Registry.getId(mac)
         printLog(f"Actim{actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
         self.actims[actimId] = Actimetre(actimId, mac, boardType, version, 0, bootTime, lastSeen=NOW, lastReport=NOW)
+        self.stale = True
 
     def forget(self, actimId: int):
         if actimId in self.actims.keys():
@@ -520,11 +522,13 @@ class ActimetresClass:
         from history import REDRAW_TIME
         for actim in self.actims.values():
             if actim.save():
+                self.dirty = True
                 actim.drawGraphMaybe()
             if fileNeedsUpdate(f'{IMAGES_DIR}/actim{actim.actimId:04d}.svg', actim.lastReport, REDRAW_TIME):
                 actim.drawGraph()
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
+        if self.stale:
             allPages = []
             htmlAll = ""
             for actimId in sorted(self.actims.keys()):
