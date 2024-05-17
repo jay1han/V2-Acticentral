@@ -54,6 +54,9 @@
           for (let page of allpages) {
               checkPage(page);
           }
+          for (let image of allimages) {
+              checkImage(image);
+          }
 
           const http = new XMLHttpRequest();
           http.open("HEAD", document.URL, false);
