@@ -323,6 +323,8 @@ class ActiserversClass:
                     thisServer.diskLow = 0
         if not serverId in self.servers.keys():
             self.dirty = True
+        self.servers[serverId] = thisServer
+
         printLog(thisServer)
         return thisServer
 
