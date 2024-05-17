@@ -296,12 +296,10 @@ class ProjectsClass:
     def makeStaleMaybe(self, serverId):
         Actiservers = actiserver.Actiservers
         for project in self.projects.values():
-            serverSet = set()
             for actimId in project.actimetreList:
                 s = Actiservers.getServerId(actimId)
-                if s != 0: serverSet.add(s)
-            if not serverId in serverSet:
-                project.stale = True
+                if s != 0 and not s in project.serverList:
+                    project.stale = True
 
     def htmlChoice(self, projectId=0):
         htmlString = ""
