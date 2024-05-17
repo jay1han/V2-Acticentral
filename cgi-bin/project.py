@@ -207,6 +207,7 @@ class ProjectsClass:
         for actimId in diff:
             for project in self.projects.values():
                 if actimId in project.actimetreList:
+                    printLog(f'Actim{actimId:04d}[{project.projectId}] orphaned, removed')
                     project.actimetreList.remove(actimId)
                     project.dirty = True
                     self.dirty = True
