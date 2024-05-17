@@ -295,9 +295,9 @@ class Actimetre:
                     doc.asis(self.htmlButton("actim-remote-sync", "Sync", self.remote != 0))
                 else:
                     line('span', 'No data', name='actimfree')
-                    doc.asis(self.htmlButton("actim-move", "Move"))
+                    doc.asis(self.htmlButton("actim-move", "Move", self.isStopped))
                     if serverId != 0:
-                        doc.asis(self.htmlButton("actim-remove", "Remove"))
+                        doc.asis(self.htmlButton("actim-remove", "Remove", self.isStopped))
             if self.reportStr != "":
                 with tag('td', klass="report"):
                     text(self.reportStr)
