@@ -46,6 +46,9 @@
            http.send();
            if (http.status == 200) {
                image.date = http.getResponseHeader("Last-Modified");
+               if (document.getElementById(image.id) == null) {
+                   document.getElementById("log").innerHTML += `No element ${image.id} in page<br>`;
+               }
                document.getElementById(image.id).src = image.ref;
            }
       }
@@ -82,6 +85,7 @@
     <link rel="icon" type="image/svg" href="/actimetre.svg">
   </head>
   <body>
+     <p id="log"></p>
     <p><a href="/{Index}">Back to Main</a></p>
     <h1>Project <u>{projectTitle}</u></h1>
     {projectOwner}
