@@ -73,7 +73,7 @@ class Actiserver:
         if d['actimetreList'] != "[]":
             if actual:
                 for actimData in json.loads(d['actimetreList']):
-                    actimId = Actimetres.fromD(actimData, actual)
+                    actimId = Actimetres.fromDactual(actimData)
                     self.actimetreList.add(actimId)
             else:
                 for actimData in json.loads(d['actimetreList']):

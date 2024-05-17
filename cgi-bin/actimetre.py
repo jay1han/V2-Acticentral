@@ -335,10 +335,10 @@ class ActimetresClass:
         if not actimId in self.actims.keys(): return ""
         return str(self.actims[actimId])
 
-    def fromD(self, data, actual=True):
-        a = Actimetre().fromD(data, actual)
+    def fromDactual(self, data):
+        a = Actimetre().fromD(data, True)
         if a.actimId in self.actims:
-            self.actims[a.actimId].update(a, actual)
+            self.actims[a.actimId].update(a)
         else:
             self.actims[a.actimId] = a
         return a.actimId
