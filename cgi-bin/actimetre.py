@@ -502,19 +502,28 @@ class ActimetresClass:
         actim = self.actims[int(args['actimId'][0])]
 
         if formId == 'actim-move':
-            projectId = int(args['projectId'][0])
-            oldProjectId = Projects.getProjectId(actim.actimId)
-            if oldProjectId == 0 or args['owner'][0] == Projects.getOwner(oldProjectId):
-                printLog(f"Changing {actim.name()} from Project{oldProjectId:02d} to Project{projectId:02d}")
-                Projects.moveActim(actim.actimId, projectId)
-                actim.dirty = True
+            if actim.isDead == 0:
+                printLog(f"Can't move {actim.name()} because it's alive")
+                actim.reportStr = "Alive; can't move"
+                projectId = Projects.getProjectId(actim.actimId)
+            else:
+                projectId = int(args['projectId'][0])
+                oldProjectId = Projects.getProjectId(actim.actimId)
+                if oldProjectId == 0 or args['owner'][0] == Projects.getOwner(oldProjectId):
+                    printLog(f"Changing {actim.name()} from Project{oldProjectId:02d} to Project{projectId:02d}")
+                    Projects.moveActim(actim.actimId, projectId)
+                    actim.dirty = True
             print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif formId == 'actim-remove':
             projectId = Projects.getProjectId(actim.actimId)
-            if args['owner'][0] == Projects.getOwner(Projects.getProjectId(actim.actimId)):
-                Projects.removeActim(actim.actimId)
-                actim.dirty = True
+            if actim.isDead == 0:
+                printLog(f"Can't remove {actim.name()} because it's alive")
+                actim.reportStr = "Alive; can't remove"
+            else:
+                if args['owner'][0] == Projects.getOwner(Projects.getProjectId(actim.actimId)):
+                    Projects.removeActim(actim.actimId)
+                    actim.dirty = True
             print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif formId == 'actim-retire':
