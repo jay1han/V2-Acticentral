@@ -91,34 +91,30 @@ class Actimetre:
             self.dirty = True
         return self
 
-    def update(self, newActim, actual=True):
+    def update(self, newActim):
         redraw = False
-        if actual:
-            if self.bootTime != newActim.bootTime:
-                self.addFreqEvent(newActim.bootTime, 0)
-                self.frequency = 0
-                redraw = True
-            if self.frequency != newActim.frequency:
-                self.addFreqEvent(NOW, newActim.frequency)
-                self.frequency  = newActim.frequency
-                redraw = True
-            if newActim.isDead == 0:
-                self.isDead = 0
-            self.isStopped = newActim.isStopped
-            self.dirty = True
+        if self.bootTime != newActim.bootTime:
+            self.addFreqEvent(newActim.bootTime, 0)
+            self.bootTime = newActim.bootTime
+            redraw = True
+        if self.frequency != newActim.frequency:
+            self.addFreqEvent(NOW, newActim.frequency)
+            self.frequency  = newActim.frequency
+            redraw = True
+        if newActim.isDead == 0:
+            self.isDead = 0
 
-        if newActim.boardType != "":
-            self.boardType  = newActim.boardType
-        if newActim.version != "":
-            self.version    = newActim.version
+        self.isStopped  = newActim.isStopped
+        self.boardType  = newActim.boardType
+        self.version    = newActim.version
         self.sensorStr  = newActim.sensorStr
-        self.bootTime   = newActim.bootTime
         self.lastSeen   = newActim.lastSeen
         self.lastReport = newActim.lastReport
         self.rating     = newActim.rating
         self.rssi       = newActim.rssi
         self.repoNums   = newActim.repoNums
         self.repoSize   = newActim.repoSize
+        self.dirty = True
 
         if redraw: self.drawGraph()
 
