@@ -42,11 +42,11 @@
       function checkImage(image) {
            const http = new XMLHttpRequest();
            http.open("HEAD", image.ref, false);
-           http.setRequestHeader("If-Modified-Since", page.image);
+           http.setRequestHeader("If-Modified-Since", image.date);
            http.send();
            if (http.status == 200) {
                image.date = http.getResponseHeader("Last-Modified");
-               document.getElementById(image.id).src = page.ref;
+               document.getElementById(image.id).src = image.ref;
            }
       }
 
