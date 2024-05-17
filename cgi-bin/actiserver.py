@@ -1,5 +1,6 @@
 from const import *
 import actimetre
+import project
 
 class Actiserver:
     def __init__(self, serverId=0, machine="Unknown", version="000",
@@ -324,6 +325,11 @@ class ActiserversClass:
         if not serverId in self.servers.keys():
             self.dirty = True
         self.servers[serverId] = thisServer
+
+        Projects = project.Projects
+        for actimId in thisServer.actimetreList:
+            Projects.makeDirty(actimId)
+        Projects.makeStaleMaybe(serverId)
 
         printLog(thisServer)
         return thisServer

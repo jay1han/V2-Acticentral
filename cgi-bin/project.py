@@ -65,7 +65,6 @@ class Project:
         return f"{self.title} (#{self.projectId:02d})"
 
     def htmlWrite(self):
-        Actimetres = actimetre.Actimetres
         Actiservers = actiserver.Actiservers
         projectActims = ""
         allPages = []
@@ -288,6 +287,21 @@ class ProjectsClass:
         else:
             p = Project(projectId)
         if p.addActim(actimId): self.dirty = True
+
+    def makeDirty(self, actimId):
+        for project in self.projects.values():
+            if actimId in project.actimetreList:
+                project.dirty = True
+
+    def makeStaleMaybe(self, serverId):
+        Actiservers = actiserver.Actiservers
+        for project in self.projects.values():
+            serverSet = set()
+            for actimId in project.actimetreList:
+                s = Actiservers.getServerId(actimId)
+                if s != 0: serverSet.add(s)
+            if not serverId in serverSet:
+                project.stale = True
 
     def htmlChoice(self, projectId=0):
         htmlString = ""
