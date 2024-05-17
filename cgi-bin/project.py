@@ -66,6 +66,7 @@ class Project:
 
     def htmlWrite(self):
         Actiservers = actiserver.Actiservers
+        Actimetres = actimetre.Actimetres
         projectActims = ""
         allPages = []
         allImages = []
@@ -75,7 +76,8 @@ class Project:
                            f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
                             f'date: "{JS_TIMEZERO}"' + '}')
-            allImages.append('{' +
+            if Actimetres.hasGraph(actimId):
+                allImages.append('{' +
                             f'id: "Image{actimId:04d}", ' +
                             f'ref: "/images/actim{actimId:04d}.svg", ' +
                             f'date: "{JS_TIMEZERO}"' + '}')
