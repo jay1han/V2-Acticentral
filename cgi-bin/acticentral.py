@@ -124,11 +124,9 @@ def processAction():
             if Registry.needUpdate(s.dbTime) or Projects.needUpdate(s.dbTime):
                 printLog(f'{s.dbTime} needs update')
                 print('!')
-            remotes = Actiservers.getRemotes(serverId)
-            if len(remotes) != 0:
-                for (actimId, command) in remotes:
-                    printLog(f'Send Actim{actimId:04d} command 0x{command:02X}')
-                    print(f'+{actimId}:{command}')
+            for (actimId, command) in Actiservers.getRemotes(serverId):
+                printLog(f'Send Actim{actimId:04d} command 0x{command:02X}')
+                print(f'+{actimId}:{command}')
 
     elif action == 'registry':
         if not checkSecret(): return
