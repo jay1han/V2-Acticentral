@@ -4,7 +4,6 @@ cd /etc/actimetre
 
 echo > central.log
 echo > acticentral.lock
-echo > ./secrets
 echo {} > actiservers.data
 echo {} > actimetres.data
 

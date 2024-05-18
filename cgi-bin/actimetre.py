@@ -295,7 +295,7 @@ class Actimetre:
                     doc.asis(self.htmlButton("actim-remote-stop", "Stop",
                                              (self.remote != 0 or self.isStopped)))
                     doc.asis(self.htmlButton("actim-remote-sync", "Sync",
-                                             (self.remote != 0 or self.isStopped)))
+                                             (self.remote != 0)))
                 else:
                     line('span', 'No data', name='actimfree')
                     doc.asis(self.htmlButton("actim-move", "Move"))
