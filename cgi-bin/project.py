@@ -49,7 +49,7 @@ class Project:
     def addActim(self, actimId: int):
         if actimId not in self.actimetreList:
             self.actimetreList.add(actimId)
-            self.dirty = True
+            self.stale = True
             printLog(f'Added Actim{actimId:04d} to Project{self.projectId:02d}')
             return True
         else: return False
@@ -150,19 +150,19 @@ class Project:
         return doc.getvalue()
 
     def save(self):
+        if self.stale:
+            printLog(f'Project{self.projectId:02d} is stale')
+            self.htmlWrite()
+            self.dirty = True
         if self.dirty:
             printLog(f'Project{self.projectId:02d} is dirty')
             if self.projectId == 0:
                 printLog('Write free Actimetres list')
                 self.htmlWriteFree()
-                return True
             else:
                 with open(f'{PROJECT_DIR}/project{self.projectId:02d}.html', 'w') as html:
                     print(self.html(), file=html)
-        elif self.stale:
-            printLog(f'Project{self.projectId:02d} is stale')
-            self.htmlWrite()
-        return False
+        return self.dirty
 
 class ProjectsClass:
     def __init__(self):
@@ -268,7 +268,7 @@ class ProjectsClass:
         for p in self.projects.values():
             if actimId in p.actimetreList:
                 p.actimetreList.remove(actimId)
-                p.dirty = True
+                p.stale = True
                 self.dirty = True
 
     def moveActim(self, actimId, projectId):
