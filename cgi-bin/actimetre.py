@@ -425,6 +425,7 @@ class ActimetresClass:
             command = self.actims[actimId].remote
             if command != 0:
                 self.actims[actimId].remote = 0
+                self.actims[actimId].dirty = True
                 return command
         return 0
 
