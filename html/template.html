@@ -40,7 +40,7 @@
       }
 
       function checkAll() {
-          const now = Date().toUTCString();
+          const now = new Date().toUTCString();
           document.getElementById("now").innerHTML = now;
 
           const http = new XMLHttpRequest();
