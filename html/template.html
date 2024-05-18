@@ -29,7 +29,7 @@
       const date = "{date}";
 
       function checkOne(page) {
-           var http = new XMLHttpRequest();
+           const http = new XMLHttpRequest();
            http.open("GET", page.ref, false);
            http.setRequestHeader("If-Modified-Since", page.date);
            http.send();
@@ -40,7 +40,10 @@
       }
 
       function checkAll() {
-          var http = new XMLHttpRequest();
+          let now = Date.now();
+          document.getElementById("now").innerHTML = now.toUTCString();
+
+          const http = new XMLHttpRequest();
           http.open("HEAD", document.URL, false);
           http.setRequestHeader("If-Modified-Since", date);
           http.send();
@@ -101,8 +104,7 @@
 
     <hr width="100%">
     <div style="float:left">All times in UTC &ndash;
-      Last updated:
-      {Updated}
+      Last updated: <span id="now"></span>
     </div>
     <div style="float:right"><a href="/admin.html"><img height="20px" src="/actimetre.svg" style="vertical-align:middle"></a>
       <a href="/acknowledgments.html">Acticentral

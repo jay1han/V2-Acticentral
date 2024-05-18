@@ -39,6 +39,9 @@
         }
 
         function checkAll() {
+            let now = Date.now();
+            document.getElementById("now").innerHTML = now.toUTCString();
+
             const http = new XMLHttpRequest();
             http.open("HEAD", document.URL, false);
             http.setRequestHeader("If-Modified-Since", date);
@@ -87,8 +90,7 @@
 <hr width="100%">
 <p>
 <div style="float:left">All times in UTC &ndash;
-    Last updated:
-    {Updated}
+    Last updated: <span id="now"></span>
 </div>
 <div style="float:right"><a href="/admin.html"><img height="20px" src="/actimetre.svg" style="vertical-align:middle"></a>
     <a href="/acknowledgments.html">Acticentral
