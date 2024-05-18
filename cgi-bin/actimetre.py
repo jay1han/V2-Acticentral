@@ -438,11 +438,14 @@ class ActimetresClass:
             print("Status: 205\n\n")
 
         elif action == 'actim-report':
-            # check secret
-            message = sys.stdin.read()
-            actim.reportStr = message
-            actim.dirty = True
-            plain('OK')
+            from acticentral import checkSecret
+            if not checkSecret():
+                print("Status: 205\n\n")
+            else:
+                message = sys.stdin.read()
+                actim.reportStr = message
+                actim.dirty = True
+                plain('OK')
 
         elif action == 'actim-clear':
             actim.reportStr = ""
