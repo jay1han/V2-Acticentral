@@ -393,12 +393,10 @@ class ProjectsClass:
                 print(f"Location:\\{INDEX_NAME}\n\n")
 
         elif formId == 'project-add':
-            Actimetres = actimetre.Actimetres
             projectId = int(args['projectId'][0])
             actimetreList = args['actimId']
             for actimId in map(int, actimetreList):
                 self.projects[projectId].addActim(actimId)
-                Actimetres.setProjectId(actimId, projectId)
             print(f"Location:\\project{projectId:02d}.html\n\n")
 
         elif formId == 'project-delete':
