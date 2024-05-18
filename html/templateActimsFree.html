@@ -39,9 +39,6 @@
         }
 
         function checkAll() {
-            for (let page of allpages) {
-                checkOne(page);
-            }
             const http = new XMLHttpRequest();
             http.open("HEAD", document.URL, false);
             http.setRequestHeader("If-Modified-Since", date);
@@ -49,6 +46,11 @@
             if (http.status == 200) {
                 window.location.reload();
             }
+
+            for (let page of allpages) {
+                checkOne(page);
+            }
+
             setTimeout(checkAll, 2000);
         }
 
@@ -63,7 +65,7 @@
             }
         }
 
-        window.addEventListener("load", checkAll, {once: true});
+      window.addEventListener("load", function() {setTimeout(checkAll, 1000)}, {once: true});
     </script>
     <title>Actimetres Available</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
