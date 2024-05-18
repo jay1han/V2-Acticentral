@@ -207,13 +207,10 @@ class ProjectsClass:
                     allProjectsActimSet.add(actimId)
         allActimSet = Actimetres.allActimList()
         diff = allActimSet - allProjectsActimSet
+        project0 = self.projects[0]
         for actimId in diff:
-            for project in self.projects.values():
-                if actimId in project.actimetreList:
-                    printLog(f'Actim{actimId:04d}[{project.projectId}] orphaned, removed')
-                    project.actimetreList.remove(actimId)
-                    project.dirty = True
-                    self.dirty = True
+            project0.actimetreList.add(actimId)
+            project0.stale = True
 
         for project in self.projects.values():
             if project.projectId != 0:
