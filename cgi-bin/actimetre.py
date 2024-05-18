@@ -554,7 +554,7 @@ class ActimetresClass:
             writeTemplateSub(open(ACTIMS_HTML, "w"), ACTIMS_TEMPLATE, {
                 "{Actimetres}": htmlAll,
                 "{allpages}"  : ',\n'.join(allPages),
-                "{date}"      : JS_NOW_PLUS,
+                "{date}"      : jsDateString(now() + PROCESSING_TIME),
             })
 
 Actimetres = ActimetresClass()

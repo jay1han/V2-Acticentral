@@ -237,7 +237,7 @@ class ActiserversClass:
         writeTemplateSub(open(SERVERS_HTML, "w"), SERVERS_TEMPLATE, {
                          '{Actiservers}': allServers,
                          '{allpages}': ',\n'.join(allPages),
-                         '{date}': JS_NOW_PLUS,
+                         '{date}': jsDateString(now() + PROCESSING_TIME),
         })
 
     def listIds(self):

@@ -109,7 +109,7 @@ class Project:
                          "{ifempty}"       : 'hidden' if len(self.actimetreList) > 0 else '',
                          "{allpages}"      : ',\n'.join(allPages),
                          "{allimages}"     : ',\n'.join(allImages),
-                         "{date}"          : JS_NOW_PLUS,
+                         "{date}"          : jsDateString(now() + PROCESSING_TIME),
                          "{document}"      : f'/project{self.projectId:02d}.html',
                          })
 
@@ -128,7 +128,7 @@ class Project:
                          {
                              "{Actimetres}" : freeActims,
                              "{allpages}": ',\n'.join(allPages),
-                             "{date}": JS_NOW_PLUS,
+                             "{date}": jsDateString(now() + PROCESSING_TIME),
                          })
 
     def html(self):

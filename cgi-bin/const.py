@@ -4,7 +4,7 @@ import os, json, subprocess
 from datetime import datetime, timedelta, timezone
 from yattag import Doc
 
-VERSION_STR     = "v454"
+VERSION_STR     = "v455"
 FILE_ROOT       = "/etc/actimetre"
 HTML_ROOT       = "/var/www/html"
 
@@ -58,8 +58,11 @@ ACTIS_FAIL_TIME = timedelta(seconds=60)
 ACTIS_RETIRE_P  = timedelta(days=30)
 ACTIM_RETIRE_P  = timedelta(days=30)
 
+def now():
+    return datetime.now(timezone.utc)
+
 TIMEZERO        = datetime(year=2023, month=1, day=1, tzinfo=timezone.utc)
-NOW             = datetime.now(timezone.utc)
+NOW             = now()
 LAST_UPDATED    = NOW.strftime(TIMEFORMAT_DISP)
 
 REMOTE_SWITCH   = 0x10
@@ -226,4 +229,3 @@ def jsDateString(when: datetime) -> str:
     return (Weekday[when.weekday()] + when.strftime(", %d ") +
             Month[when.month - 1] + when.strftime(" %Y %H:%M:%S GMT"))
 JS_TIMEZERO = jsDateString(TIMEZERO)
-JS_NOW_PLUS = jsDateString(NOW + PROCESSING_TIME)
