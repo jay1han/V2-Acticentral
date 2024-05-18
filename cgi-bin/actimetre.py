@@ -522,7 +522,7 @@ class ActimetresClass:
                 actim.reportStr = "Alive; can't remove"
             else:
                 if args['owner'][0] == Projects.getOwner(Projects.getProjectId(actim.actimId)):
-                    Projects.removeActim(actim.actimId)
+                    Projects.moveActim(actim.actimId, 0)
                     actim.dirty = True
             print(f"Location:\\project{projectId:02d}.html\n\n")
 

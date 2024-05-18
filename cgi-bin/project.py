@@ -273,20 +273,11 @@ class ProjectsClass:
         return self[projectId]
 
     def moveActim(self, actimId, projectId):
-        self.removeActim(actimId)
-        self.addActim(projectId, actimId)
-
-    def removeActim(self, actimId):
         for p in self.projects.values():
             if actimId in p.actimetreList:
                 printLog(f'Removed Actim{actimId:04d} from Project{p.projectId:02d}')
                 p.actimetreList.remove(actimId)
                 p.stale = True
-        self.projects[0].actimetreList.add(actimId)
-        self.projects[0].stale = True
-        self.dirty = True
-
-    def addActim(self, projectId, actimId):
         if projectId in self.projects.keys():
             p = self.projects[projectId]
         else:
