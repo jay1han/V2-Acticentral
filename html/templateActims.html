@@ -38,8 +38,8 @@
         }
 
         function checkAll() {
-            let now = Date.now();
-            document.getElementById("now").innerHTML = now.toUTCString();
+            const now = Date().toUTCString();
+            document.getElementById("now").innerHTML = now;
 
             const http = new XMLHttpRequest();
             http.open("HEAD", document.URL, false)
