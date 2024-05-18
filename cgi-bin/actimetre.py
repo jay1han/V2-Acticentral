@@ -214,12 +214,13 @@ class Actimetre:
     def hasData(self):
         return self.repoNums > 0 or self.repoSize > 0
 
-    def htmlButton(self, action, text, hide=False) -> str:
+    def htmlButton(self, action, text, *, hide=False, name=None) -> str:
         if not hide:
-            return ('<form action="/bin/acticentral.py" method="get" style="padding:0;margin:0">' +
-                f'<input type="hidden" name="actimId" value="{self.actimId}"/>' +
-                f'<button type="submit" name="action" value="{action}">' +
-                f'{text}</button></form>\n')
+            return ('<form action="/bin/acticentral.py" method="get" style="padding:0;margin:0"' +
+                    (f' name="{name}"' if name is not None else '') +
+                    f'><input type="hidden" name="actimId" value="{self.actimId}"/>' +
+                    f'<button type="submit" name="action" value="{action}">' +
+                    f'{text}</button></form>\n')
         else: return ''
 
     def html(self):
@@ -235,7 +236,7 @@ class Actimetre:
             with tag('td', klass=alive):
                 doc.asis('Actim&shy;{:04d}'.format(self.actimId))
                 if alive == 'up':
-                    doc.asis(self.htmlButton("actim-remote-restart", "Restart", self.remote != 0))
+                    doc.asis(self.htmlButton("actim-remote-restart", "Restart", hide = (self.remote != 0)))
                 elif alive == 'retire':
                     doc.asis(self.htmlButton("actim-retire", "Retire"))
             with tag('td', name='actimproject'):
@@ -258,7 +259,7 @@ class Actimetre:
                 doc.asis(self.frequencyText(self.sensorStr))
                 if alive == 'up':
                     doc.asis(self.htmlButton("actim-remote-switch", "Switch",
-                                             (self.remote != 0 or self.isStopped)))
+                                             hide = (self.remote != 0 or self.isStopped)))
             if alive == 'up':
                 with tag('td', name="actimfree"):
                     doc.asis(htmlRssi(self.rssi))
@@ -293,13 +294,13 @@ class Actimetre:
                 if self.hasData():
                     text(f'{self.repoNums} / {printSize(self.repoSize)}')
                     doc.asis(self.htmlButton("actim-remote-stop", "Stop",
-                                             (self.remote != 0 or self.isStopped)))
+                                             hide = (self.remote != 0 or self.isStopped)))
                     doc.asis(self.htmlButton("actim-remote-sync", "Sync",
-                                             (self.remote != 0)))
+                                             hide = (self.remote != 0)))
                 else:
                     line('span', 'No data', name='actimfree')
                     doc.asis(self.htmlButton("actim-move", "Move"))
-                    doc.asis(self.htmlButton("actim-remove", "Remove"))
+                    doc.asis(self.htmlButton("actim-remove", "Remove", name='actimfree'))
             if self.reportStr != "":
                 with tag('td', klass="report"):
                     text(self.reportStr)
