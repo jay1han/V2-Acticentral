@@ -299,8 +299,7 @@ class Actimetre:
                 else:
                     line('span', 'No data', name='actimfree')
                     doc.asis(self.htmlButton("actim-move", "Move"))
-                    if serverId != 0:
-                        doc.asis(self.htmlButton("actim-remove", "Remove"))
+                    doc.asis(self.htmlButton("actim-remove", "Remove"))
             if self.reportStr != "":
                 with tag('td', klass="report"):
                     text(self.reportStr)

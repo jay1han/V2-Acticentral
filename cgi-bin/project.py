@@ -270,7 +270,9 @@ class ProjectsClass:
             if actimId in p.actimetreList:
                 p.actimetreList.remove(actimId)
                 p.stale = True
-                self.dirty = True
+        self.projects[0].actimetreList.add(actimId)
+        self.projects[0].stale = True
+        self.dirty = True
 
     def moveActim(self, actimId, projectId):
         self.removeActim(actimId)
