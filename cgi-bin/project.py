@@ -106,6 +106,7 @@ class Project:
                          "{projectActims}" : projectActims,
                          "{projectServers}": projectServers,
                          "{projectId}"     : str(self.projectId),
+                         "{ifempty}"       : 'hidden' if len(self.actimetreList) > 0 else '',
                          "{allpages}"      : ',\n'.join(allPages),
                          "{allimages}"     : ',\n'.join(allImages),
                          "{date}"          : JS_NOW_PLUS,

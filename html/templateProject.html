@@ -93,7 +93,7 @@
     <form action="/bin/acticentral.py" method="get">
       <input type="hidden" name="projectId" value="{projectId}" />
       <button type="submit" name="action" value="project-edit">Edit info</button>
-      <button type="submit" name="action" value="project-delete">Delete project</button>
+      <button type="submit" name="action" value="project-delete" {ifempty}>Delete project</button>
     </form>
 
     <h1>Actimetres</h1>
