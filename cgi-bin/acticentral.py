@@ -183,6 +183,12 @@ def processAction():
         printLog(f"Submitted form {formId}")
         processForm(formId)
 
+    elif action == "cancel":
+        if 'projectId' in args.keys():
+            print(f'Location:\\project{int(args["projectId"][0]):02d}.html\n\n')
+        else:
+            print(f'Location:\\{INDEX_NAME}\n\n')
+
     else: print("Status: 205\n\n")
 
 def saveAll():

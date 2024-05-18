@@ -402,13 +402,14 @@ class ProjectsClass:
         elif formId == 'project-delete':
             projectId = int(args['projectId'][0])
             if projectId in self.projects:
-                Actimetres = actimetre.Actimetres
-                for actimId in self.projects[projectId].actimetreList:
-                    Actimetres.removeProject(actimId)
-                    self.projects[projectId].removeActim(actimId)
-                del self.projects[projectId]
-                self.dirty = True
-            print(f"Location:\\{INDEX_NAME}\n\n")
+                if len(self.projects[projectId].actimetreList) == 0:
+                    del self.projects[projectId]
+                    self.dirty = True
+                    print(f"Location:\\{INDEX_NAME}\n\n")
+                else:
+                    print(f"Location:\\project{projectId:02d}.html\n\n")
+            else:
+                print(f"Location:\\{INDEX_NAME}\n\n")
 
         else:
             print("Status: 205\n\n")
