@@ -197,7 +197,7 @@ class ProjectsClass:
 
         allProjectsActimSet = set()
         for project in self.projects.values():
-            actimetreSet = project.actimetreList
+            actimetreSet = project.actimetreList.copy()
             for actimId in actimetreSet:
                 if actimId in allProjectsActimSet:
                     printLog(f'Actim{actimId:04d}[{project.projectId}] in duplicate, removed')
