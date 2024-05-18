@@ -254,6 +254,14 @@ class ProjectsClass:
             if actimId in project.actimetreList: return project.projectId
         return 0
 
+    def new(self, title, owner, email) -> int:
+        projectId = 1
+        while projectId in set(self.projects.keys()):
+            projectId += 1
+        self.projects[projectId] = Project(projectId, title, owner, email)
+        self.dirty = True
+        return projectId
+
     def setInfo(self, projectId, title="Not assigned", owner="", email=""):
         if projectId not in self.projects:
             self.projects[projectId] = Project(projectId, title, owner, email)
@@ -264,33 +272,28 @@ class ProjectsClass:
         self.dirty = True
         return self[projectId]
 
+    def moveActim(self, actimId, projectId):
+        self.removeActim(actimId)
+        self.addActim(projectId, actimId)
+
     def removeActim(self, actimId):
         for p in self.projects.values():
             if actimId in p.actimetreList:
+                printLog(f'Removed Actim{actimId:04d} from Project{p.projectId:02d}')
                 p.actimetreList.remove(actimId)
                 p.stale = True
         self.projects[0].actimetreList.add(actimId)
         self.projects[0].stale = True
         self.dirty = True
 
-    def moveActim(self, actimId, projectId):
-        self.removeActim(actimId)
-        self.addActim(projectId, actimId)
-
-    def new(self, title, owner, email) -> int:
-        projectId = 1
-        while projectId in set(self.projects.keys()):
-            projectId += 1
-        self.projects[projectId] = Project(projectId, title, owner, email)
-        self.dirty = True
-        return projectId
-
     def addActim(self, projectId, actimId):
         if projectId in self.projects.keys():
             p = self.projects[projectId]
         else:
             p = Project(projectId)
-        if p.addActim(actimId): self.dirty = True
+        if p.addActim(actimId):
+            printLog(f'Added Actim{actimId:04d} to Project{p.projectId:02d}')
+            self.dirty = True
 
     def makeDirty(self, actimId):
         for project in self.projects.values():
