@@ -503,8 +503,8 @@ class ActimetresClass:
         actim = self.actims[int(args['actimId'][0])]
 
         if formId == 'actim-move':
-            if actim.isDead == 0:
-                printLog(f"Can't move {actim.name()} because it's alive")
+            if actim.isDead == 0 and not actim.isStopped:
+                printLog(f"Can't move {actim.name()} because it's alive and not stopped")
                 actim.reportStr = "Alive; can't move"
                 projectId = Projects.getProjectId(actim.actimId)
             else:
@@ -518,8 +518,8 @@ class ActimetresClass:
 
         elif formId == 'actim-remove':
             projectId = Projects.getProjectId(actim.actimId)
-            if actim.isDead == 0:
-                printLog(f"Can't remove {actim.name()} because it's alive")
+            if actim.isDead == 0 and not actim.isStopped:
+                printLog(f"Can't remove {actim.name()} because it's alive and not stopped")
                 actim.reportStr = "Alive; can't remove"
             else:
                 if args['owner'][0] == Projects.getOwner(Projects.getProjectId(actim.actimId)):
