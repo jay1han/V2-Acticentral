@@ -146,7 +146,7 @@ class Project:
             else:
                 line('td', self.owner)
                 with tag('td', klass='left'):
-                    for actimId in self.actimetreList:
+                    for actimId in sorted(self.actimetreList):
                         doc.asis('<div>' + Actimetres.htmlCartouche(actimId) + '</div>')
         return doc.getvalue()
 
@@ -283,7 +283,6 @@ class ProjectsClass:
         else:
             p = Project(projectId)
         if p.addActim(actimId):
-            printLog(f'Added Actim{actimId:04d} to Project{p.projectId:02d}')
             self.dirty = True
 
     def makeDirty(self, actimId):
