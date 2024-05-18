@@ -197,7 +197,8 @@ class ProjectsClass:
 
         allProjectsActimSet = set()
         for project in self.projects.values():
-            for actimId in project.actimetreList:
+            actimetreSet = project.actimetreList
+            for actimId in actimetreSet:
                 if actimId in allProjectsActimSet:
                     printLog(f'Actim{actimId:04d}[{project.projectId}] in duplicate, removed')
                     project.actimetreList.remove(actimId)
@@ -209,6 +210,7 @@ class ProjectsClass:
         diff = allActimSet - allProjectsActimSet
         project0 = self.projects[0]
         for actimId in diff:
+            printLog(f'Orphaned Actim{actimId:04d} taken as free')
             project0.actimetreList.add(actimId)
             project0.stale = True
 
