@@ -331,7 +331,7 @@ class ActiserversClass:
         Projects = project.Projects
         for actimId in thisServer.actimetreList:
             Projects.makeDirty(actimId)
-        Projects.makeStaleMaybe(serverId)
+        Projects.makeStaleMaybe()
 
         printLog(thisServer)
         return thisServer
