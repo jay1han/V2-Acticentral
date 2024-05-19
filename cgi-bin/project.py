@@ -65,7 +65,6 @@ class Project:
         return f"{self.title} (#{self.projectId:02d})"
 
     def htmlWrite(self):
-        Actiservers = actiserver.Actiservers
         Actimetres = actimetre.Actimetres
         projectActims = ""
         allPages = []
@@ -82,13 +81,8 @@ class Project:
                             f'ref: "/images/actim{actimId:04d}.svg", ' +
                             f'date: "{JS_TIMEZERO}"' + '}')
 
-        serverList = set()
-        for serverId in map(Actiservers.getServerId, self.actimetreList):
-            if serverId != 0:
-                serverList.add(serverId)
-
         projectServers = ""
-        for serverId in sorted(serverList):
+        for serverId in sorted(self.serverList):
             projectServers += f'<tr id="Actis{serverId:03d}"></tr>\n'
             allPages.append('{' +
                             f'id: "Actis{serverId:03d}", ' +
@@ -290,7 +284,7 @@ class ProjectsClass:
             if actimId in project.actimetreList:
                 project.dirty = True
 
-    def makeStaleMaybe(self, serverId):
+    def makeStaleMaybe(self):
         Actiservers = actiserver.Actiservers
         for project in self.projects.values():
             for actimId in project.actimetreList:

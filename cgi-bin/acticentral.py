@@ -146,7 +146,7 @@ def processAction():
         version   = args['version'][0]
         bootTime  = utcStrptime(args['bootTime'][0])
 
-        actimId = Actimetres.new(mac, boardType, version, serverId, bootTime)
+        actimId = Actimetres.new(mac, boardType, version, bootTime)
         Actiservers.addActim(serverId, actimId)
         plain(str(actimId))
 

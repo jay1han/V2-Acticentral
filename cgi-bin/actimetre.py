@@ -135,9 +135,9 @@ class Actimetre:
     def htmlActimType(self):
         return f'{self.boardType}/v{self.version}'
 
-    def addFreqEvent(self, now, frequency):
+    def addFreqEvent(self, x, frequency):
         from history import ActimHistory
-        ActimHistory(self).addFreqEvent(now, frequency)
+        ActimHistory(self).addFreqEvent(x, frequency)
 
     def cutHistory(self, cutLength=None):
         from history import ActimHistory
