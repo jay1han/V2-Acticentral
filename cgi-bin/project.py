@@ -90,7 +90,7 @@ class Project:
                             f'date: "{JS_TIMEZERO}"' + '}')
 
         printLog(f'Write HTML Project{self.projectId:02d} = ' +
-                 ' '.join(map(lambda a: f'Actim{a:04d}', self.actimetreList)) +
+                 ' '.join(map(lambda a: f'Actim{a:04d}', self.actimetreList)) + ', ' +
                  ' '.join(map(lambda s: f'Actis{s:03d}', self.serverList)))
 
         projectOwner = f"<h3>Project Owner: {self.owner}</h3>"
