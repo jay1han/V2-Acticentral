@@ -141,6 +141,7 @@ class ActimHistory:
         return redraw
 
     def addFreqEvent(self, x, frequency):
+        result = False
         try:
             with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r+") as history:
                 time = TIMEZERO
@@ -152,11 +153,10 @@ class ActimHistory:
                 if x < time: x = time
                 if frequency != freq:
                     print(x.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
+                    result = True
         except FileNotFoundError:
             with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w") as history:
                 print(x.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
+                result = True
             self.a.graphSince = x
-            try:
-                os.chmod(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", 0o666)
-            except OSError:
-                pass
+        return result
