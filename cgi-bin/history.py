@@ -136,6 +136,7 @@ class ActimHistory:
             if NOW - self.a.lastDrawn > REDRAW_TIME:
                 redraw = True
         if redraw:
+            printLog(f'Actim{self.a.actimId:04d}.lastDrawn = {self.a.lastDrawn.strftime(TIMEFORMAT_DISP)} vs. {NOW.strftime(TIMEFORMAT_DISP)}')
             self.drawGraph()
         return redraw
 
