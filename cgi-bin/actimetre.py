@@ -270,9 +270,7 @@ class Actimetre:
                 line('td', "", name="actimfree")
 
             if alive == 'retire':
-                with tag('td', klass=f'health retire'):
-                    doc.asis(f'Last seen: {self.lastSeen.strftime(TIMEFORMAT_DISP)}' +
-                             f'<br>({printTimeAgo(self.lastSeen)} ago)'),
+                line('td', '', klass='health retire')
             else:
                 with tag('td', klass=f'health left'):
                     prelabel = '? '
@@ -315,7 +313,6 @@ class Actimetre:
             self.drawGraphMaybe()
             from history import REDRAW_TIME
             if fileNeedsUpdate(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg', self.lastReport, REDRAW_TIME):
-                printLog(f'Actim{self.actimId:04d}.lastReport = {self.lastReport.strftime(TIMEFORMAT_DISP)}')
                 self.drawGraph()
             return True
         else:
