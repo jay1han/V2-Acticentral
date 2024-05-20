@@ -29,7 +29,7 @@ class ActimHistory:
             cutLength = GRAPH_CULL
 
         printLog(f'Actim{self.a.actimId:04d} cut history to {(NOW - cutLength).strftime(TIMEFORMAT_DISP)}')
-        historyFile = f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist"
+        historyFile = f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist"
         freshLines = list()
         try:
             with open(historyFile, "r") as history:
@@ -43,7 +43,8 @@ class ActimHistory:
                         freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
                         freshLines.extend(history.readlines())
         except FileNotFoundError:
-            if self.a.isDead == 0:
+            pass
+        if len(freshLines) == 0 and self.a.isDead == 0:
                 if self.a.bootTime < NOW - cutLength:
                     time = NOW - cutLength
                 else:
@@ -67,12 +68,12 @@ class ActimHistory:
             self.cutHistory(GRAPH_CULL)
 
         try:
-            with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r") as history:
+            with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
                 self.a.graphSince = utcStrptime(history.readline().partition(':')[0])
         except (FileNotFoundError, ValueError):
 #            printLog(f'Actim{self.a.actimId:04d} no history to draw')
             self.cutHistory(GRAPH_CULL)
-            # with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w") as history:
+            # with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "w") as history:
             #     if not self.a.isDead:
             #         print(f"{self.a.bootTime.strftime(TIMEFORMAT_FN)}:{self.a.frequency}", file=history)
             # self.a.graphSince = self.a.bootTime
@@ -80,7 +81,7 @@ class ActimHistory:
 
         timeline = []
         frequencies = []
-        with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r") as history:
+        with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
             for line in history:
                 timeStr, part, freqStr = line.partition(':')
                 time = utcStrptime(timeStr.strip())
@@ -143,7 +144,7 @@ class ActimHistory:
     def addFreqEvent(self, x, frequency):
         result = False
         try:
-            with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r+") as history:
+            with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r+") as history:
                 time = TIMEZERO
                 freq = 0
                 for line in history:
@@ -155,7 +156,7 @@ class ActimHistory:
                     print(x.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
                     result = True
         except FileNotFoundError:
-            with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w") as history:
+            with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "w") as history:
                 print(x.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
                 result = True
             self.a.graphSince = x

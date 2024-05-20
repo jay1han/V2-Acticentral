@@ -93,16 +93,16 @@ class Actimetre:
 
     def update(self, newActim):
         redraw = False
-        if self.bootTime < newActim.bootTime:
-            if self.addFreqEvent(newActim.bootTime, 0): redraw = True
-            if self.addFreqEvent(newActim.bootTime, newActim.frequency): redraw = True
-            self.bootTime = newActim.bootTime
-            self.frequency  = newActim.frequency
-        if self.frequency != newActim.frequency:
-            if self.addFreqEvent(NOW, newActim.frequency): redraw = True
-            self.frequency  = newActim.frequency
         if newActim.isDead == 0:
             self.isDead = 0
+            if self.bootTime < newActim.bootTime:
+                if self.addFreqEvent(newActim.bootTime, 0): redraw = True
+                if self.addFreqEvent(newActim.bootTime, newActim.frequency): redraw = True
+                self.bootTime = newActim.bootTime
+                self.frequency  = newActim.frequency
+            elif self.frequency != newActim.frequency:
+                if self.addFreqEvent(NOW, newActim.frequency): redraw = True
+                self.frequency  = newActim.frequency
 
         self.isStopped  = newActim.isStopped
         self.boardType  = newActim.boardType
