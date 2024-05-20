@@ -4,7 +4,7 @@ import os, json, subprocess
 from datetime import datetime, timedelta, timezone
 from yattag import Doc
 
-VERSION_STR     = "v457"
+VERSION_STR     = "v458"
 FILE_ROOT       = "/etc/actimetre"
 HTML_ROOT       = "/var/www/html"
 

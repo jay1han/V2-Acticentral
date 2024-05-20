@@ -506,9 +506,10 @@ class ActimetresClass:
         actim = self.actims[int(args['actimId'][0])]
 
         if formId == 'actim-move':
-            if actim.isDead == 0 and not actim.isStopped:
+            if actim.isDead == 0 or actim.isStopped:
                 printLog(f"Can't move {actim.name()} because it's alive and not stopped")
                 actim.reportStr = "Alive; can't move"
+                actim.dirty = True
                 projectId = Projects.getProjectId(actim.actimId)
             else:
                 projectId = int(args['projectId'][0])

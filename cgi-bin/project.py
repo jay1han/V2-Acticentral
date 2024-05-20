@@ -211,6 +211,7 @@ class ProjectsClass:
             printLog(f'Orphaned Actim{actimId:04d} taken as free')
             project0.actimetreList.add(actimId)
             project0.stale = True
+            self.dirty = True
 
         for project in self.projects.values():
             if project.projectId != 0:
