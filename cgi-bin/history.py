@@ -41,17 +41,15 @@ class ActimHistory:
                         freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
                         freshLines.extend(history.readlines())
         except FileNotFoundError:
-            pass
-        else:
-            if len(freshLines) == 0:
+            if self.a.bootTime < NOW - cutLength:
                 time = NOW - cutLength
-                self.a.graphSince = time
-                freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.a.frequency}")
+            else:
+                time = self.a.bootTime
+            freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.a.frequency}")
 
-            os.truncate(historyFile, 0)
-            with open(historyFile, "r+") as history:
-                for line in freshLines:
-                    print(line.strip(), file=history)
+        with open(historyFile, "w") as history:
+            for line in freshLines:
+                print(line.strip(), file=history)
 
     def drawGraph(self):
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
