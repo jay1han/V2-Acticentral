@@ -28,7 +28,7 @@ class ActimHistory:
         if cutLength > GRAPH_SPAN:
             cutLength = GRAPH_CULL
 
-        printLog(f'Actim{self.a.actimId:04d} cut history to {self.a.bootTime.strftime(TIMEFORMAT_DISP)}')
+        printLog(f'Actim{self.a.actimId:04d} cut history to {NOW - cutLength}')
         historyFile = f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist"
         freshLines = list()
         try:
