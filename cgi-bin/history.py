@@ -25,6 +25,8 @@ class ActimHistory:
     def cutHistory(self, cutLength):
         if cutLength is None:
             cutLength = NOW - self.a.bootTime
+        if cutLength > GRAPH_SPAN:
+            cutLength = GRAPH_CULL
 
         printLog(f'Actim{self.a.actimId:04d} cut history to {self.a.bootTime.strftime(TIMEFORMAT_DISP)}')
         historyFile = f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist"
@@ -46,6 +48,7 @@ class ActimHistory:
             else:
                 time = self.a.bootTime
             freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.a.frequency}")
+            self.a.graphSince = time
 
         with open(historyFile, "w") as history:
             for line in freshLines:

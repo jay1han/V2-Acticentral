@@ -312,6 +312,10 @@ class Actimetre:
             printLog(f'Actim{self.actimId:04d}[{Projects.getProjectId(self.actimId)}] is dirty')
             with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
+            self.drawGraphMaybe()
+            from history import REDRAW_TIME
+            if fileNeedsUpdate(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg', self.lastReport, REDRAW_TIME):
+                self.drawGraph()
             return True
         else:
             return False
@@ -542,9 +546,6 @@ class ActimetresClass:
         for actim in self.actims.values():
             if actim.save():
                 self.dirty = True
-                actim.drawGraphMaybe()
-            if fileNeedsUpdate(f'{IMAGES_DIR}/actim{actim.actimId:04d}.svg', actim.lastReport, REDRAW_TIME):
-                actim.drawGraph()
         if self.dirty:
             dumpData(ACTIMETRES, {int(a.actimId):a.toD() for a in self.actims.values()})
         if self.stale:
