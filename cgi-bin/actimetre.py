@@ -293,8 +293,8 @@ class Actimetre:
                     text(f'{self.repoNums} / {printSize(self.repoSize)}')
                     doc.asis(self.htmlButton("actim-remote-stop", "Stop",
                                              hide = (self.remote != 0 or self.isStopped)))
-                    doc.asis(self.htmlButton("actim-remote-sync", "Sync",
-                                             hide = (self.remote != 0)))
+                    # doc.asis(self.htmlButton("actim-remote-sync", "Sync",
+                    #                          hide = (self.remote != 0)))
                 else:
                     line('span', 'No data', name='actimfree')
                     doc.asis(self.htmlButton("actim-move", "Move"))
