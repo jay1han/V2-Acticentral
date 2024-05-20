@@ -65,7 +65,9 @@ class ActimHistory:
             with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r") as history:
                 self.a.graphSince = utcStrptime(history.readline().partition(':')[0])
         except (FileNotFoundError, ValueError):
-            open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w").close()
+            with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w") as history:
+                if not self.a.isDead:
+                    print(f"{self.a.bootTime.strftime(TIMEFORMAT_FN)}:{self.a.frequency}", file=history)
             self.a.graphSince = self.a.bootTime
             self.a.dirty = True
 
