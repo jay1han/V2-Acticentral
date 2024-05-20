@@ -540,7 +540,6 @@ class ActimetresClass:
             print("Status: 205\n\n")
 
     def save(self):
-        from history import REDRAW_TIME
         for actim in self.actims.values():
             if actim.save():
                 self.dirty = True
