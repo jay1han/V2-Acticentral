@@ -79,6 +79,7 @@ class Actimetre:
         self.rssi       = int(d['rssi'])
         self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
+        self.isDead     = int(d['isDead'])
 
         if not actual:
             self.lastDrawn  = utcStrptime(d['lastDrawn'])
@@ -87,7 +88,6 @@ class Actimetre:
             if 'remote' in d.keys():
                 self.remote = int(d['remote'])
         else:
-            self.isDead     = int(d['isDead'])
             self.dirty = True
         return self
 
