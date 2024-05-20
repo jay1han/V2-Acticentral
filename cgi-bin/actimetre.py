@@ -8,7 +8,7 @@ from actiserver import Actiservers
 
 class Actimetre:
     def __init__(self, actimId=0, mac='.' * 12, boardType='???', version='000',
-                 isDead=0, isStopped=False,
+                 isDead=5, isStopped=False,
                  bootTime=TIMEZERO, lastSeen=TIMEZERO, lastReport=TIMEZERO,
                  sensorStr="", frequency = 0, rating = 0.0, rssi = 0,
                  repoNums = 0, repoSize = 0):
@@ -68,7 +68,6 @@ class Actimetre:
         self.mac        = d['mac']
         self.boardType  = d['boardType']
         self.version    = d['version']
-        self.isDead     = int(d['isDead'])
         self.isStopped  = (str(d['isStopped']).strip().upper() == "TRUE")
         self.bootTime   = utcStrptime(d['bootTime'])
         self.lastSeen   = utcStrptime(d['lastSeen'])
@@ -88,6 +87,7 @@ class Actimetre:
             if 'remote' in d.keys():
                 self.remote = int(d['remote'])
         else:
+            self.isDead     = int(d['isDead'])
             self.dirty = True
         return self
 
