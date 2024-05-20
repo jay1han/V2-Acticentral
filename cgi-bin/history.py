@@ -70,7 +70,7 @@ class ActimHistory:
             with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r") as history:
                 self.a.graphSince = utcStrptime(history.readline().partition(':')[0])
         except (FileNotFoundError, ValueError):
-            printLog(f'Actim{self.a.actimId:04d} no history to draw')
+#            printLog(f'Actim{self.a.actimId:04d} no history to draw')
             self.cutHistory(GRAPH_CULL)
             # with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w") as history:
             #     if not self.a.isDead:
