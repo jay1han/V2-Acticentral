@@ -43,12 +43,14 @@ class ActimHistory:
                         freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
                         freshLines.extend(history.readlines())
         except FileNotFoundError:
-            if self.a.bootTime < NOW - cutLength:
-                time = NOW - cutLength
-            else:
-                time = self.a.bootTime
-            freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.a.frequency}")
-            self.a.graphSince = time
+            if self.a.isDead == 0:
+                if self.a.bootTime < NOW - cutLength:
+                    time = NOW - cutLength
+                else:
+                    time = self.a.bootTime
+                freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.a.frequency}")
+                self.a.graphSince = time
+                self.a.dirty = True
 
         with open(historyFile, "w") as history:
             for line in freshLines:
@@ -65,11 +67,11 @@ class ActimHistory:
             with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r") as history:
                 self.a.graphSince = utcStrptime(history.readline().partition(':')[0])
         except (FileNotFoundError, ValueError):
-            with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w") as history:
-                if not self.a.isDead:
-                    print(f"{self.a.bootTime.strftime(TIMEFORMAT_FN)}:{self.a.frequency}", file=history)
-            self.a.graphSince = self.a.bootTime
-            self.a.dirty = True
+            # with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "w") as history:
+            #     if not self.a.isDead:
+            #         print(f"{self.a.bootTime.strftime(TIMEFORMAT_FN)}:{self.a.frequency}", file=history)
+            # self.a.graphSince = self.a.bootTime
+            # self.a.dirty = True
 
         timeline = []
         frequencies = []
