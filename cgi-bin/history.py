@@ -62,6 +62,7 @@ class ActimHistory:
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
         import matplotlib.pyplot as pyplot
 
+        printLog(f'Actim{self.a.actimId:04d}.lastDrawn = {self.a.lastDrawn.strftime(TIMEFORMAT_DISP)}')
         if NOW - self.a.graphSince >= GRAPH_SPAN:
             self.cutHistory(GRAPH_CULL)
 
@@ -122,6 +123,7 @@ class ActimHistory:
         except OSError:
             pass
         self.a.lastDrawn = NOW
+        self.a.dirty = True
 
     def drawGraphMaybe(self):
         redraw = False
@@ -133,7 +135,8 @@ class ActimHistory:
         else:
             if NOW - self.a.lastDrawn > REDRAW_TIME:
                 redraw = True
-        if redraw: self.drawGraph()
+        if redraw:
+            self.drawGraph()
         return redraw
 
     def addFreqEvent(self, x, frequency):
