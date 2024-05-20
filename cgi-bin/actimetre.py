@@ -317,6 +317,7 @@ class Actimetre:
             self.drawGraphMaybe()
             from history import REDRAW_TIME
             if fileNeedsUpdate(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg', self.lastReport, REDRAW_TIME):
+                printLog(f'Actim{self.actimId:04d}.lastReport = {self.lastReport.strftime(TIMEFORMAT_DISP)}')
                 self.drawGraph()
             return True
         else:
