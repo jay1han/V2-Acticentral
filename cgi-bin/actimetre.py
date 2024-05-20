@@ -93,7 +93,7 @@ class Actimetre:
 
     def update(self, newActim):
         redraw = False
-        if self.bootTime != newActim.bootTime:
+        if self.bootTime < newActim.bootTime:
             self.addFreqEvent(newActim.bootTime, 0)
             self.bootTime = newActim.bootTime
             redraw = True
