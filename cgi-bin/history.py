@@ -139,6 +139,7 @@ class ActimHistory:
         try:
             with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r+") as history:
                 time = TIMEZERO
+                freq = 0
                 for line in history:
                     timeStr, part, freqStr = line.partition(':')
                     time = utcStrptime(timeStr.strip())
