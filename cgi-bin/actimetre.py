@@ -96,15 +96,13 @@ class Actimetre:
         if newActim.isDead == 0:
             self.isDead = 0
             if self.bootTime < newActim.bootTime:
-                self.addFreqEvent(newActim.bootTime, 0)
-                self.addFreqEvent(newActim.bootTime, newActim.frequency)
+                if self.addFreqEvent(newActim.bootTime, 0): redraw = True
+                if self.addFreqEvent(newActim.bootTime, newActim.frequency): redraw = True
                 self.bootTime = newActim.bootTime
                 self.frequency  = newActim.frequency
-                redraw = True
             if self.frequency != newActim.frequency:
-                self.addFreqEvent(NOW, newActim.frequency)
+                if self.addFreqEvent(NOW, newActim.frequency): redraw = True
                 self.frequency  = newActim.frequency
-                redraw = True
 
         self.isStopped  = newActim.isStopped
         self.boardType  = newActim.boardType
@@ -139,7 +137,7 @@ class Actimetre:
 
     def addFreqEvent(self, x, frequency):
         from history import ActimHistory
-        ActimHistory(self).addFreqEvent(x, frequency)
+        return ActimHistory(self).addFreqEvent(x, frequency)
 
     def cutHistory(self, cutLength=None):
         from history import ActimHistory
