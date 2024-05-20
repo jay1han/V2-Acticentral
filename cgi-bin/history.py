@@ -69,6 +69,7 @@ class ActimHistory:
             with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
                 self.a.graphSince = utcStrptime(history.readline().partition(':')[0])
         except (FileNotFoundError, ValueError):
+            printLog(f'Actim{self.a.actimId:04d} has no history')
             return
 
         if NOW - self.a.graphSince >= GRAPH_SPAN:
