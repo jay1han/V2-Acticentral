@@ -53,6 +53,7 @@ class ActimHistory:
                 self.a.graphSince = time
                 self.a.dirty = True
 
+        printLog(f'Write {len(freshLines)} lines')
         with open(historyFile, "w") as history:
             for line in freshLines:
                 print(line.strip(), file=history)
