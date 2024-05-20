@@ -8,7 +8,7 @@ echo {} > actiservers.data
 echo {} > actimetres.data
 
 chmod 666 *.data *.log
-rm -f history/Actim*.hist
+rm -f history/actim*.hist
 
 cd /var/www/html
 
