@@ -73,13 +73,10 @@ class Actimetre:
         self.lastSeen   = utcStrptime(d['lastSeen'])
         self.lastReport = utcStrptime(d['lastReport'])
         self.sensorStr  = d['sensorStr']
-        if self.isDead == 0: self.frequency  = int(d['frequency'])
-        else:                self.frequency = 0
         self.rating     = float(d['rating'])
         self.rssi       = int(d['rssi'])
         self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
-        self.isDead     = int(d['isDead'])
 
         if not actual:
             self.lastDrawn  = utcStrptime(d['lastDrawn'])
@@ -88,7 +85,10 @@ class Actimetre:
             if 'remote' in d.keys():
                 self.remote = int(d['remote'])
         else:
+            self.isDead     = int(d['isDead'])
             self.dirty = True
+            if self.isDead == 0: self.frequency  = int(d['frequency'])
+            else:                self.frequency = 0
         return self
 
     def update(self, newActim):
