@@ -64,21 +64,15 @@ class ActimHistory:
         import matplotlib.pyplot as pyplot
 
         printLog(f'Actim{self.a.actimId:04d}.lastDrawn = {self.a.lastDrawn.strftime(TIMEFORMAT_DISP)}')
-        if NOW - self.a.graphSince >= GRAPH_SPAN:
-            self.cutHistory(GRAPH_CULL)
 
         try:
             with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
                 self.a.graphSince = utcStrptime(history.readline().partition(':')[0])
         except (FileNotFoundError, ValueError):
-#            printLog(f'Actim{self.a.actimId:04d} no history to draw')
-            self.cutHistory(GRAPH_CULL)
-            # with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "w") as history:
-            #     if not self.a.isDead:
-            #         print(f"{self.a.bootTime.strftime(TIMEFORMAT_FN)}:{self.a.frequency}", file=history)
-            # self.a.graphSince = self.a.bootTime
-            # self.a.dirty = True
+            return
 
+        if NOW - self.a.graphSince >= GRAPH_SPAN:
+            self.cutHistory(GRAPH_CULL)
         timeline = []
         frequencies = []
         with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
