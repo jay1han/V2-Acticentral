@@ -138,7 +138,7 @@ class ActimHistory:
 
     def addFreqEvent(self, x, frequency):
         try:
-            with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r") as history:
+            with open(f"{HISTORY_DIR}/Actim{self.a.actimId:04d}.hist", "r+") as history:
                 time = TIMEZERO
                 freq = 0
                 for line in history:
