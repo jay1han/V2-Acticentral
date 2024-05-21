@@ -34,7 +34,7 @@ def htmlIndex():
             allPages.append('{' +
                          f'id: "Project{projectId:02d}", ' +
                          f'ref: "/project/project{projectId:02d}.html", ' +
-                         f'date: "{JS_TIMEZERO}"' +
+                         f'date: "{JS_TIMEZERO}", ' +
                          'el: null, html: ""}')
             allProjects += f'<tr id="Project{projectId:02d}"></tr>\n'
     writeTemplateSub(open(INDEX_HTML, "w"), INDEX_TEMPLATE, {
