@@ -132,20 +132,20 @@ class Project:
     def html(self):
         Actimetres = actimetre.Actimetres
         doc, tag, text, line = Doc().ttl()
-        with tag('tr', id=f'Project{self.projectId:02d}'):
-            with tag('td', klass='left'):
+#        with tag('tr', id=f'Project{self.projectId:02d}'):
+        with tag('td', klass='left'):
+            with tag('a', href=f'/project{self.projectId:02d}.html'):
+                text(self.name())
+        if self.projectId == 0:
+            line('td', '')
+            with tag('td'):
                 with tag('a', href=f'/project{self.projectId:02d}.html'):
-                    text(self.name())
-            if self.projectId == 0:
-                line('td', '')
-                with tag('td'):
-                    with tag('a', href=f'/project{self.projectId:02d}.html'):
-                        text('List')
-            else:
-                line('td', self.owner)
-                with tag('td', klass='left'):
-                    for actimId in sorted(self.actimetreList):
-                        doc.asis('<div>' + Actimetres.htmlCartouche(actimId) + '</div>')
+                    text('List')
+        else:
+            line('td', self.owner)
+            with tag('td', klass='left'):
+                for actimId in sorted(self.actimetreList):
+                    doc.asis('<div>' + Actimetres.htmlCartouche(actimId) + '</div>')
         return doc.getvalue()
 
     def save(self):

@@ -136,68 +136,68 @@ class Actiserver:
         from actimetre import Actimetres
         doc, tag, text, line = Doc().ttl()
 
-        with tag('tr', id=f'Actis{self.serverId:03d}'):
-            if NOW - self.lastUpdate < ACTIS_FAIL_TIME:
-                alive = 'up'
-            elif NOW - self.lastUpdate > ACTIS_RETIRE_P:
-                alive = 'retire'
-            else:
-                alive = 'down'
+#        with tag('tr', id=f'Actis{self.serverId:03d}'):
+        if NOW - self.lastUpdate < ACTIS_FAIL_TIME:
+            alive = 'up'
+        elif NOW - self.lastUpdate > ACTIS_RETIRE_P:
+            alive = 'retire'
+        else:
+            alive = 'down'
 
-            with tag('td', klass=alive):
-                text(self.name())
-                if alive == 'retire':
-                    doc.asis('<br>')
-                    doc.asis(f'<form action="/bin/acticentral.py" method="get">')
-                    doc.asis(f'<input type="hidden" name="serverId" value="{self.serverId}" />')
-                    line('button', 'Retire', type='submit', name='action', value='server-retire')
-                    doc.asis('</form>')
-                else:
-                    doc.asis('<br>')
-                    line('span', self.ip, klass='small')
-            line('td', self.machine)
-            with tag('td'):
-                if alive == 'up':
-                    text(f"v{self.version}")
-                    doc.asis("<br>")
-                    if self.channel != 0:
-                        text(f"Ch. {self.channel}")
-            line('td', self.lastUpdate.strftime(TIMEFORMAT_DISP), klass=alive)
-            if alive != 'up':
-                with tag('td', klass=alive):
-                    text(f'Missing {printTimeAgo(self.lastUpdate)}')
-                line('td', '')
-                line('td', '')
-                line('td', '')
+        with tag('td', klass=alive):
+            text(self.name())
+            if alive == 'retire':
+                doc.asis('<br>')
+                doc.asis(f'<form action="/bin/acticentral.py" method="get">')
+                doc.asis(f'<input type="hidden" name="serverId" value="{self.serverId}" />')
+                line('button', 'Retire', type='submit', name='action', value='server-retire')
+                doc.asis('</form>')
             else:
-                with tag('td', klass='no-padding'):
-                    if self.version >= "370":
-                        with tag('table'):
-                            with tag('tr'):
-                                with tag('td', klass='left-tight'):
-                                    doc.asis('CPU<br>RAM<br>Disk')
-                                with tag('td', klass='left-tight'):
-                                    text(f'{self.cpuIdle:.1f}% idle')
-                                    doc.asis('<br>')
-                                    text(f'{self.memAvail:.1f}% avail.')
-                                    doc.asis('<br>')
-                                    text(f'{self.diskTput:.0f}kB/s({self.diskUtil:.1f}%)')
-                    else: text('')
-                with tag('td', klass='left'):
-                    for actimId in self.actimetreList:
-                        with tag('div'):
-                            doc.asis(Actimetres.htmlCartouche(actimId))
-                with tag('td', klass='right'):
-                    for actimId in self.actimetreList:
-                        with tag('div'):
-                            doc.asis(Actimetres.htmlRepo(actimId, self.ip))
-                if self.diskSize > 0:
-                    diskState = ''
-                    if self.diskFree < self.diskSize // 10:
-                        diskState = 'disk-low'
-                    line('td', f'{printSize(self.diskFree)} ({100.0*self.diskFree/self.diskSize:.1f}%)', klass=diskState)
-                else:
-                    line('td', '')
+                doc.asis('<br>')
+                line('span', self.ip, klass='small')
+        line('td', self.machine)
+        with tag('td'):
+            if alive == 'up':
+                text(f"v{self.version}")
+                doc.asis("<br>")
+                if self.channel != 0:
+                    text(f"Ch. {self.channel}")
+        line('td', self.lastUpdate.strftime(TIMEFORMAT_DISP), klass=alive)
+        if alive != 'up':
+            with tag('td', klass=alive):
+                text(f'Missing {printTimeAgo(self.lastUpdate)}')
+            line('td', '')
+            line('td', '')
+            line('td', '')
+        else:
+            with tag('td', klass='no-padding'):
+                if self.version >= "370":
+                    with tag('table'):
+                        with tag('tr'):
+                            with tag('td', klass='left-tight'):
+                                doc.asis('CPU<br>RAM<br>Disk')
+                            with tag('td', klass='left-tight'):
+                                text(f'{self.cpuIdle:.1f}% idle')
+                                doc.asis('<br>')
+                                text(f'{self.memAvail:.1f}% avail.')
+                                doc.asis('<br>')
+                                text(f'{self.diskTput:.0f}kB/s({self.diskUtil:.1f}%)')
+                else: text('')
+            with tag('td', klass='left'):
+                for actimId in self.actimetreList:
+                    with tag('div'):
+                        doc.asis(Actimetres.htmlCartouche(actimId))
+            with tag('td', klass='right'):
+                for actimId in self.actimetreList:
+                    with tag('div'):
+                        doc.asis(Actimetres.htmlRepo(actimId, self.ip))
+            if self.diskSize > 0:
+                diskState = ''
+                if self.diskFree < self.diskSize // 10:
+                    diskState = 'disk-low'
+                line('td', f'{printSize(self.diskFree)} ({100.0*self.diskFree/self.diskSize:.1f}%)', klass=diskState)
+            else:
+                line('td', '')
         return doc.getvalue()
 
     def save(self):

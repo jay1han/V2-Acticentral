@@ -32,7 +32,7 @@
              http.setRequestHeader("If-Modified-Since", page.date);
              http.send();
              if (http.status == 200 && http.responseText != "") {
-                 document.getElementById(page.id).outerHTML = http.responseText;
+                 document.getElementById(page.id).innerHTML = http.responseText;
                  page.date = http.getResponseHeader("Last-Modified");
              }
         }

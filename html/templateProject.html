@@ -34,7 +34,7 @@
            http.send();
            if (http.status == 200 && http.responseText != "") {
                page.date = http.getResponseHeader("Last-Modified");
-               document.getElementById(page.id).outerHTML = http.responseText;
+               document.getElementById(page.id).innerHTML = http.responseText;
                hide();
            }
       }
