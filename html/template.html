@@ -59,6 +59,7 @@
           for (let page of allpages) {
               if (page.html != "") {
                   document.getElementById(page.id).innerHTML = page.html;
+                  page.html = "";
               }
           }
 
