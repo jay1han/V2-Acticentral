@@ -35,8 +35,16 @@
            http.send();
            if (http.status == 200 && http.responseText != "") {
                page.date = http.getResponseHeader("Last-Modified");
-               document.getElementById(page.id).innerHTML = http.responseText;
+               page.el = document.getElementById(page.id);
+               page.html = http.responseText;
+           } else {
+               page.el = null;
            }
+      }
+
+      function writeOne(page) {
+          page.el.innerHTML = page.el.html;
+          page.el = null;
       }
 
       function checkAll() {
@@ -53,6 +61,9 @@
 
           for (let page of allpages) {
               checkOne(page);
+          }
+          for (let page of allpages) {
+              if (page.el != null) writeOne(page);
           }
 
           setTimeout(checkAll, 2000);
