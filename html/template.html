@@ -36,8 +36,6 @@
            if (http.status == 200 && http.responseText != "") {
                page.date = http.getResponseHeader("Last-Modified");
                page.html = http.responseText;
-           } else {
-               page.html = "";
            }
       }
 

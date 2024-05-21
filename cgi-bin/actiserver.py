@@ -232,12 +232,13 @@ class ActiserversClass:
                 allPages.append('{' +
                                 f'id: "Actis{serverId:03d}", ' +
                                 f'ref: "/actiserver/server{serverId:03d}.html", ' +
-                                f'date: "{JS_TIMEZERO}"' + '}')
+                                f'date: "{JS_TIMEZERO}", ' +
+                                'html: ""}')
                 allServers += f'<tr id="Actis{serverId:03d}"></tr>\n'
         writeTemplateSub(open(SERVERS_HTML, "w"), SERVERS_TEMPLATE, {
                          '{Actiservers}': allServers,
                          '{allpages}': ',\n'.join(allPages),
-                         '{date}': jsDateString(now() + PROCESSING_TIME),
+                         '{date}': jsDateString(now()),
         })
 
     def listIds(self):

@@ -74,12 +74,14 @@ class Project:
             allPages.append('{' +
                            f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                            f'date: "{JS_TIMEZERO}"' + '}')
+                            f'date: "{JS_TIMEZERO}", ' +
+                            'html: ""}')
             if Actimetres.hasGraph(actimId):
                 allImages.append('{' +
                             f'id: "Image{actimId:04d}", ' +
                             f'ref: "/images/actim{actimId:04d}.svg", ' +
-                            f'date: "{JS_TIMEZERO}"' + '}')
+                            f'date: "{JS_TIMEZERO}", ' +
+                            'up: false}')
 
         projectServers = ""
         for serverId in sorted(self.serverList):
@@ -87,7 +89,8 @@ class Project:
             allPages.append('{' +
                             f'id: "Actis{serverId:03d}", ' +
                             f'ref: "/actiserver/server{serverId:03d}.html", ' +
-                            f'date: "{JS_TIMEZERO}"' + '}')
+                            f'date: "{JS_TIMEZERO}", ' +
+                            'html: ""}')
 
         printLog(f'Write HTML Project{self.projectId:02d} = ' +
                  ' '.join(map(lambda a: f'Actim{a:04d}', self.actimetreList)) + ', ' +
@@ -107,7 +110,7 @@ class Project:
                          "{ifempty}"       : 'hidden' if len(self.actimetreList) > 0 else '',
                          "{allpages}"      : ',\n'.join(allPages),
                          "{allimages}"     : ',\n'.join(allImages),
-                         "{date}"          : jsDateString(now() + PROCESSING_TIME),
+                         "{date}"          : jsDateString(now()),
                          "{document}"      : f'/project{self.projectId:02d}.html',
                          })
 
@@ -119,14 +122,15 @@ class Project:
             allPages.append('{' +
                             f'id: "Actim{actimId:04d}", ' +
                             f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                            f'date: "{JS_TIMEZERO}"' + '}')
+                            f'date: "{JS_TIMEZERO}", ' +
+                            'html: ""}')
 
         writeTemplateSub(open(ACTIMS0_HTML, "w"),
                          ACTIMS0_TEMPLATE,
                          {
                              "{Actimetres}" : freeActims,
                              "{allpages}": ',\n'.join(allPages),
-                             "{date}": jsDateString(now() + PROCESSING_TIME),
+                             "{date}": jsDateString(now()),
                          })
 
     def html(self):

@@ -553,11 +553,12 @@ class ActimetresClass:
                 allPages.append('{' +
                                 f'id: "Actim{actimId:04d}", ' +
                                 f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                                f'date: "{JS_TIMEZERO}"' + '}')
+                                f'date: "{JS_TIMEZERO}", ' +
+                                'html: ""}')
             writeTemplateSub(open(ACTIMS_HTML, "w"), ACTIMS_TEMPLATE, {
                 "{Actimetres}": htmlAll,
                 "{allpages}"  : ',\n'.join(allPages),
-                "{date}"      : jsDateString(now() + PROCESSING_TIME),
+                "{date}"      : jsDateString(now()),
             })
 
 Actimetres = ActimetresClass()

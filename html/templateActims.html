@@ -32,8 +32,8 @@
              http.setRequestHeader("If-Modified-Since", page.date);
              http.send();
              if (http.status == 200 && http.responseText != "") {
-                 document.getElementById(page.id).innerHTML = http.responseText;
                  page.date = http.getResponseHeader("Last-Modified");
+                 page.html = http.responseText;
              }
         }
 
@@ -51,6 +51,12 @@
 
             for (let page of allpages) {
                 checkOne(page);
+            }
+            for (let page of allpages) {
+                if (page.html != "") {
+                    document.getElementById(page.id).innerHTML = page.html;
+                    page.html = "";
+                }
             }
 
             setTimeout(checkAll, 2000);
