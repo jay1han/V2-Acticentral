@@ -41,7 +41,7 @@ def htmlIndex():
         "{Projects}"   : allProjects,
         "{Actiservers}": allServers,
         "{allpages}"   : ',\n'.join(allPages),
-        "{date}"       : jsDateString(now() + PROCESSING_TIME),
+        "{date}"       : jsDateString(now()),
     })
 
 def checkAlerts():
