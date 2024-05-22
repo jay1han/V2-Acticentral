@@ -78,10 +78,11 @@ class ActimHistory:
                     if len(timeline) == 0 or freq != frequencies[-1]:
                         timeline.append(time)
                         frequencies.append(freq)
-            timeline.append(NOW)
-            frequencies.append(scaleFreq(self.a.frequency))
 
+        timeline.append(NOW)
+        frequencies.append(scaleFreq(self.a.frequency))
         freq = [scaleFreq(self.a.frequency) for _ in range(len(timeline))]
+
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
         ax.set_ylim(bottom=-1, top=12)
