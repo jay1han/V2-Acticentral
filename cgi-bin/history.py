@@ -2,10 +2,6 @@ from const import *
 
 from actimetre import Actimetre
 
-REDRAW_TIME  = timedelta(minutes=5)
-REDRAW_DEAD  = timedelta(minutes=30)
-GRAPH_SPAN   = timedelta(days=7)
-GRAPH_CULL   = timedelta(days=6)
 FSCALE       = {100:2, 1000:5, 4000:10}
 FSCALETAG    = {100:2, 1000:5, 4000:10}
 
@@ -21,74 +17,71 @@ def scaleFreq(origFreq):
 class ActimHistory:
     def __init__(self, actim):
         self.a: Actimetre = actim
+        self.dirty = False
+        self.histFile  = f'{HISTORY_DIR}/actim{self.a.actimId:04d}.hist'
+        self.imageFile = f'{IMAGES_DIR}/actim{self.a.actimId:04d}.svg'
+        if not os.path.isfile(self.histFile):
+            self.lastDrawn = TIMEZERO
+            self.graphSince = TIMEZERO
+        else:
+            self.lastDrawn = datetime.fromtimestamp(os.stat(self.histFile).st_mtime, timezone.utc)
+        try:
+            with open(self.histFile, "r") as history:
+                self.graphSince = utcStrptime(history.readline().partition(':')[0])
+        except FileNotFoundError:
+            self.graphSince = TIMEZERO
 
-    def cutHistory(self, cutLength):
-        if cutLength is None:
-            cutLength = NOW - self.a.bootTime
-        if cutLength > GRAPH_SPAN:
-            cutLength = GRAPH_CULL
-
-        printLog(f'Actim{self.a.actimId:04d} cut history to {(NOW - cutLength).strftime(TIMEFORMAT_DISP)}')
-        historyFile = f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist"
+    def cutHistory(self):
+        printLog(f'Actim{self.a.actimId:04d} cut history to {self.a.bootTime.strftime(TIMEFORMAT_DISP)}')
         freshLines = list()
         try:
-            with open(historyFile, "r") as history:
+            with open(self.histFile, "r") as history:
                 for line in history:
                     timeStr, part, freqStr = line.partition(':')
                     time = utcStrptime(timeStr.strip())
                     freq = int(freqStr)
-                    if NOW - time <= cutLength:
-                        time = NOW - cutLength
-                        self.a.graphSince = time
+                    if time >= self.a.bootTime:
                         freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{freq}")
                         freshLines.extend(history.readlines())
         except FileNotFoundError:
             pass
-        if len(freshLines) == 0 and self.a.isDead == 0:
-                if self.a.bootTime < NOW - cutLength:
-                    time = NOW - cutLength
-                else:
-                    time = self.a.bootTime
-                printLog(f'Actm{self.a.actimId:04d} history start {time.strftime(TIMEFORMAT_DISP)}')
-                freshLines.append(f"{time.strftime(TIMEFORMAT_FN)}:{self.a.frequency}")
-                self.a.graphSince = time
-                self.a.dirty = True
 
-        printLog(f'Write {len(freshLines)} lines')
-        with open(historyFile, "w") as history:
-            for line in freshLines:
-                print(line.strip(), file=history)
+        if len(freshLines) == 0:
+            printLog(f'Actm{self.a.actimId:04d} has no history')
+            os.remove(self.histFile)
+        else:
+            printLog(f'Write {len(freshLines)} lines')
+            with open(self.histFile, "w") as history:
+                for line in freshLines:
+                    print(line.strip(), file=history)
+        self.dirty = True
 
     def drawGraph(self):
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
         import matplotlib.pyplot as pyplot
 
-        printLog(f'Actim{self.a.actimId:04d}.lastDrawn = {self.a.lastDrawn.strftime(TIMEFORMAT_DISP)}')
+        printLog(f'Actim{self.a.actimId:04d}.lastDrawn = {self.lastDrawn.strftime(TIMEFORMAT_DISP)}')
 
-        try:
-            with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
-                self.a.graphSince = utcStrptime(history.readline().partition(':')[0])
-        except (FileNotFoundError, ValueError):
-            printLog(f'Actim{self.a.actimId:04d} has no history')
-            return
-
-        if NOW - self.a.graphSince >= GRAPH_SPAN:
-            self.cutHistory(GRAPH_CULL)
         timeline = []
         frequencies = []
-        with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
-            for line in history:
-                timeStr, part, freqStr = line.partition(':')
-                time = utcStrptime(timeStr.strip())
-                freq = scaleFreq(int(freqStr))
-                if len(timeline) == 0 or freq != frequencies[-1]:
-                    timeline.append(time)
-                    frequencies.append(freq)
+        if self.graphSince == TIMEZERO:
+            timeline.append(NOW)
+            timeline.append(now())
+            frequencies.append(0)
+            frequencies.append(0)
+        else:
+            with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
+                for line in history:
+                    timeStr, part, freqStr = line.partition(':')
+                    time = utcStrptime(timeStr.strip())
+                    freq = scaleFreq(int(freqStr))
+                    if len(timeline) == 0 or freq != frequencies[-1]:
+                        timeline.append(time)
+                        frequencies.append(freq)
+            timeline.append(NOW)
+            frequencies.append(scaleFreq(self.a.frequency))
 
-        timeline.append(NOW)
-        frequencies.append(scaleFreq(self.a.frequency))
         freq = [scaleFreq(self.a.frequency) for _ in range(len(timeline))]
-
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
         ax.set_ylim(bottom=-1, top=12)
@@ -118,26 +111,17 @@ class ActimHistory:
             os.chmod(f"{IMAGES_DIR}/actim{self.a.actimId:04d}.svg", 0o666)
         except OSError:
             pass
-        self.a.lastDrawn = NOW
+        self.lastDrawn = now()
         self.a.dirty = True
 
     def drawGraphMaybe(self):
-        redraw = False
-        if self.a.isDead > 0:
-            if NOW - self.a.lastSeen > ACTIM_RETIRE_P:
-                redraw = False
-            elif NOW - self.a.lastDrawn > REDRAW_DEAD:
-                redraw = True
-        else:
-            if NOW - self.a.lastDrawn > REDRAW_TIME:
-                redraw = True
-        if redraw:
-            printLog(f'Actim{self.a.actimId:04d}.lastDrawn = {self.a.lastDrawn.strftime(TIMEFORMAT_DISP)} vs. {NOW.strftime(TIMEFORMAT_DISP)}')
-            self.drawGraph()
-        return redraw
+        if NOW - self.a.lastSeen < ACTIM_RETIRE_P:
+            if (self.dirty or
+                fileNeedsUpdate(self.imageFile, self.a.bootTime, timedelta(minutes=5))):
+                printLog(f'Actim{self.a.actimId:04d}.lastDrawn = {self.lastDrawn.strftime(TIMEFORMAT_DISP)} vs. {NOW.strftime(TIMEFORMAT_DISP)}')
+                self.drawGraph()
 
     def addFreqEvent(self, x, frequency):
-        result = False
         try:
             with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r+") as history:
                 time = TIMEZERO
@@ -149,10 +133,9 @@ class ActimHistory:
                 if x < time: x = time
                 if frequency != freq:
                     print(x.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
-                    result = True
+                    self.dirty = True
         except FileNotFoundError:
             with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "w") as history:
                 print(x.strftime(TIMEFORMAT_FN), frequency, sep=":", file=history)
-                result = True
-            self.a.graphSince = x
-        return result
+                self.dirty = True
+        return self

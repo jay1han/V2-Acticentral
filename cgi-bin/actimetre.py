@@ -1,4 +1,3 @@
-import os.path
 import sys
 
 from const import *
@@ -27,8 +26,6 @@ class Actimetre:
         self.rssi       = rssi
         self.repoNums   = repoNums
         self.repoSize   = repoSize
-        self.lastDrawn  = TIMEZERO
-        self.graphSince = TIMEZERO
         self.reportStr  = ""
         self.remote     = 0
         self.dirty      = False
@@ -57,8 +54,6 @@ class Actimetre:
                 'rssi'      : str(self.rssi),
                 'repoNums'  : self.repoNums,
                 'repoSize'  : self.repoSize,
-                'lastDrawn' : self.lastDrawn.strftime(TIMEFORMAT_FN),
-                'graphSince': self.graphSince.strftime(TIMEFORMAT_FN),
                 'reportStr' : self.reportStr,
                 'remote'    : self.remote,
                 }
@@ -79,8 +74,6 @@ class Actimetre:
         self.repoSize   = int(d['repoSize'])
 
         if not actual:
-            self.lastDrawn  = utcStrptime(d['lastDrawn'])
-            self.graphSince = utcStrptime(d['graphSince'])
             self.reportStr  = d['reportStr']
             if 'remote' in d.keys():
                 self.remote = int(d['remote'])
@@ -92,16 +85,18 @@ class Actimetre:
         return self
 
     def update(self, newActim):
-        redraw = False
+        from history import ActimHistory
+        history = ActimHistory(self)
         if newActim.isDead == 0:
             self.isDead = 0
             if self.bootTime < newActim.bootTime:
-                if self.addFreqEvent(newActim.bootTime, 0): redraw = True
-                if self.addFreqEvent(newActim.bootTime, newActim.frequency): redraw = True
+                history \
+                    .addFreqEvent(newActim.bootTime, 0) \
+                    .addFreqEvent(newActim.bootTime, newActim.frequency)
                 self.bootTime = newActim.bootTime
                 self.frequency  = newActim.frequency
             if self.frequency != newActim.frequency:
-                if self.addFreqEvent(NOW, newActim.frequency): redraw = True
+                history.addFreqEvent(NOW, newActim.frequency)
                 self.frequency  = newActim.frequency
 
         self.isStopped  = newActim.isStopped
@@ -116,7 +111,7 @@ class Actimetre:
         self.repoSize   = newActim.repoSize
         self.dirty = True
 
-        if redraw: self.drawGraph()
+        history.drawGraphMaybe()
 
     def name(self):
         return f"Actim{self.actimId:04d}"
@@ -135,13 +130,9 @@ class Actimetre:
     def htmlActimType(self):
         return f'{self.boardType}/v{self.version}'
 
-    def addFreqEvent(self, x, frequency):
+    def cutHistory(self):
         from history import ActimHistory
-        return ActimHistory(self).addFreqEvent(x, frequency)
-
-    def cutHistory(self, cutLength=None):
-        from history import ActimHistory
-        ActimHistory(self).cutHistory(cutLength)
+        ActimHistory(self).cutHistory()
         self.dirty = True
 
     def drawGraph(self):
@@ -180,8 +171,8 @@ class Actimetre:
             printLog(f'{self.name()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
             self.frequency = 0
             self.isDead = 1
-            self.addFreqEvent(NOW, 0)
-            self.drawGraph()
+            from history import ActimHistory
+            ActimHistory(self).addFreqEvent(NOW, 0).drawGraph()
         serverId = Actiservers.removeActim(self.actimId)
         printLog(f"Actim{self.actimId:04d} removed from Actis{serverId:03d}")
         self.repoSize = 0
@@ -225,7 +216,7 @@ class Actimetre:
 
     def html(self):
         doc, tag, text, line = Doc().ttl()
-#        with tag('tr', id=f'Actim{self.actimId:04d}'):
+
         alive = 'up'
         if NOW - self.lastReport > ACTIM_RETIRE_P:
             alive = 'retire'
@@ -273,20 +264,19 @@ class Actimetre:
             line('td', '', klass='health retire')
         else:
             with tag('td', klass=f'health left'):
-                prelabel = '? '
-                if self.graphSince != TIMEZERO:
-                    prelabel = self.graphSince.strftime(TIMEFORMAT_DISP) + "\n"
-                postlabel = f'<span class="{alive}">{self.uptime()}</span>'
-                doc.asis(self.htmlButton("actim-cut-graph",
-                                         f'{prelabel}&#x2702;{postlabel}'))
-                if not os.path.isfile(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg'):
-                    self.cutHistory()
-                    self.dirty = True
-                with tag('div'):
-                    doc.stag('img',
-                             src=f'/images/actim{self.actimId:04d}.svg',
-                             klass='health',
-                             id=f'Image{self.actimId:04d}')
+                from history import ActimHistory
+                history = ActimHistory(self)
+                if history.graphSince != TIMEZERO:
+                    doc.asis(self.htmlButton("actim-cut-graph",
+                                             history.graphSince.strftime(TIMEFORMAT_DISP) +
+                                             '&#x2702;' +
+                                             f'<span class="{alive}">{self.uptime()}</span>\n'))
+                    history.drawGraphMaybe()
+                    with tag('div'):
+                        doc.stag('img',
+                                 src=f'/images/actim{self.actimId:04d}.svg',
+                                 klass='health',
+                                 id=f'Image{self.actimId:04d}')
 
         with tag('td', klass='right'):
             if self.hasData():
@@ -311,9 +301,6 @@ class Actimetre:
             with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
             self.drawGraphMaybe()
-            from history import REDRAW_TIME
-            if fileNeedsUpdate(f'{IMAGES_DIR}/actim{self.actimId:04d}.svg', self.lastReport, REDRAW_TIME):
-                self.drawGraph()
             return True
         else:
             return False
