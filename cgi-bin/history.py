@@ -64,12 +64,7 @@ class ActimHistory:
 
         timeline = []
         frequencies = []
-        if self.graphSince == TIMEZERO:
-            timeline.append(NOW)
-            timeline.append(now())
-            frequencies.append(0)
-            frequencies.append(0)
-        else:
+        try:
             with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
                 for line in history:
                     timeStr, part, freqStr = line.partition(':')
@@ -78,6 +73,9 @@ class ActimHistory:
                     if len(timeline) == 0 or freq != frequencies[-1]:
                         timeline.append(time)
                         frequencies.append(freq)
+        except FileNotFoundError:
+            timeline.append(TIMEZERO)
+            frequencies.append(scaleFreq(self.a.frequency))
 
         timeline.append(NOW)
         frequencies.append(scaleFreq(self.a.frequency))
