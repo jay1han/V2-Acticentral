@@ -50,7 +50,6 @@ class ActimHistory:
             printLog(f'Actm{self.a.actimId:04d} has no history')
             os.remove(self.histFile)
         else:
-            printLog(f'Write {len(freshLines)} lines')
             with open(self.histFile, "w") as history:
                 for line in freshLines:
                     print(line.strip(), file=history)
