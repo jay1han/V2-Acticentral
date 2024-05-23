@@ -171,16 +171,15 @@ class Actimetre:
         self.dirty = True
 
     def dies(self):
-        if self.isDead == 0:
-            printLog(f'{self.name()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
-            self.frequency = 0
-            self.isDead = 1
-            from history import ActimHistory
-            ActimHistory(self).addFreqEvent(NOW, 0).drawGraph()
-        serverId = Actiservers.removeActim(self.actimId)
-        printLog(f"Actim{self.actimId:04d} removed from Actis{serverId:03d}")
-        self.repoSize = 0
-        self.repoNums = 0
+        printLog(f'{self.name()} dies {NOW.strftime(TIMEFORMAT_DISP)}')
+        self.frequency = 0
+        self.isDead = 1
+        from history import ActimHistory
+        ActimHistory(self).addFreqEvent(NOW, 0).drawGraph()
+        # serverId = Actiservers.removeActim(self.actimId)
+        # printLog(f"Actim{self.actimId:04d} removed from Actis{serverId:03d}")
+        # self.repoSize = 0
+        # self.repoNums = 0
         self.dirty = True
 
     def frequencyText(self, sensorStr = None):
