@@ -52,7 +52,6 @@ class ActimHistory:
             with open(self.histFile, "w") as history:
                 for line in freshLines:
                     print(line.strip(), file=history)
-        self.dirty = True
 
     def drawGraph(self):
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
@@ -110,7 +109,6 @@ class ActimHistory:
         except OSError:
             pass
         self.lastDrawn = now()
-        self.a.dirty = True
 
     def drawGraphMaybe(self):
         if NOW - self.a.lastSeen < ACTIM_RETIRE_P:
