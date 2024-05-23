@@ -99,7 +99,7 @@ class ActimHistory:
             ax.text(NOW, drawn, real, family="sans-serif", stretch="condensed", ha="left", va="center", c=c, weight=w)
 
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
-        if self.a.isDead > 0 or self.a.frequency == 0:
+        if self.a.frequency == 0:
             ax.plot(timeline[-2:], rowFreqNow[-2:], ds="steps-post", c="red", lw=3.0)
         else:
             ax.plot(timeline[-2:], rowFreqNow[-2:], ds="steps-post", c="green", lw=3.0)
