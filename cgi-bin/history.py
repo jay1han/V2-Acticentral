@@ -11,8 +11,7 @@ def scaleFreq(origFreq):
     for limit, scale in FSCALE.items():
         if origFreq <= limit:
             return scale
-    else:
-        return origFreq // 10
+    return origFreq // 40
 
 class ActimHistory:
     def __init__(self, actim):
@@ -63,22 +62,21 @@ class ActimHistory:
 
         timeline = []
         frequencies = []
-        freqNow = 0
+        scaledFreqNow = 0
         try:
             with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
                 for line in history:
                     timeStr, part, freqStr = line.partition(':')
                     time = utcStrptime(timeStr.strip())
-                    freqNow = scaleFreq(int(freqStr))
-                    if len(timeline) == 0 or freqNow != frequencies[-1]:
+                    scaledFreqNow = scaleFreq(int(freqStr))
+                    if len(timeline) == 0 or scaledFreqNow != frequencies[-1]:
                         timeline.append(time)
-                        frequencies.append(freqNow)
+                        frequencies.append(scaledFreqNow)
         except FileNotFoundError:
             timeline.append(TIMEZERO)
             frequencies.append(scaleFreq(self.a.frequency))
 
         timeline.append(NOW)
-        scaledFreqNow = scaleFreq(freqNow)
         frequencies.append(scaledFreqNow)
         rowFreqNow = [scaledFreqNow for _ in range(len(timeline))]
 
