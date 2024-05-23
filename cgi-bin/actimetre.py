@@ -137,7 +137,6 @@ class Actimetre:
     def cutHistory(self):
         from history import ActimHistory
         ActimHistory(self).cutHistory()
-        self.dirty = True
 
     def drawGraph(self):
         from history import ActimHistory
