@@ -63,22 +63,24 @@ class ActimHistory:
 
         timeline = []
         frequencies = []
+        freqNow = 0
         try:
             with open(f"{HISTORY_DIR}/actim{self.a.actimId:04d}.hist", "r") as history:
                 for line in history:
                     timeStr, part, freqStr = line.partition(':')
                     time = utcStrptime(timeStr.strip())
-                    freq = scaleFreq(int(freqStr))
-                    if len(timeline) == 0 or freq != frequencies[-1]:
+                    freqNow = scaleFreq(int(freqStr))
+                    if len(timeline) == 0 or freqNow != frequencies[-1]:
                         timeline.append(time)
-                        frequencies.append(freq)
+                        frequencies.append(freqNow)
         except FileNotFoundError:
             timeline.append(TIMEZERO)
             frequencies.append(scaleFreq(self.a.frequency))
 
         timeline.append(NOW)
-        frequencies.append(scaleFreq(self.a.frequency))
-        freq = [scaleFreq(self.a.frequency) for _ in range(len(timeline))]
+        scaledFreqNow = scaleFreq(freqNow)
+        frequencies.append(scaledFreqNow)
+        rowFreqNow = [scaledFreqNow for _ in range(len(timeline))]
 
         fig, ax = pyplot.subplots(figsize=(5.0,1.0), dpi=50.0)
         ax.set_axis_off()
@@ -100,9 +102,9 @@ class ActimHistory:
 
         ax.plot(timeline, frequencies, ds="steps-post", c="black", lw=1.0, solid_joinstyle="miter")
         if self.a.isDead > 0 or self.a.frequency == 0:
-            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="red", lw=3.0)
+            ax.plot(timeline[-2:], rowFreqNow[-2:], ds="steps-post", c="red", lw=3.0)
         else:
-            ax.plot(timeline[-2:], freq[-2:], ds="steps-post", c="green", lw=3.0)
+            ax.plot(timeline[-2:], rowFreqNow[-2:], ds="steps-post", c="green", lw=3.0)
         pyplot.savefig(f"{IMAGES_DIR}/actim{self.a.actimId:04d}.svg", format='svg', bbox_inches="tight", pad_inches=0)
         pyplot.close()
         try:
