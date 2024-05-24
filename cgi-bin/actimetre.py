@@ -87,7 +87,6 @@ class Actimetre:
     def update(self, newActim):
         from history import ActimHistory
         history = ActimHistory(self)
-        save = False
         if newActim.isDead == 0:
             self.isDead = 0
             if self.bootTime < newActim.bootTime:
@@ -96,11 +95,9 @@ class Actimetre:
                     .addFreqEvent(newActim.bootTime, newActim.frequency)
                 self.bootTime = newActim.bootTime
                 self.frequency  = newActim.frequency
-                save = True
             if self.frequency != newActim.frequency:
                 history.addFreqEvent(NOW, newActim.frequency)
                 self.frequency  = newActim.frequency
-                save = True
 
         self.isStopped  = newActim.isStopped
         self.boardType  = newActim.boardType
@@ -113,9 +110,7 @@ class Actimetre:
         self.repoNums   = newActim.repoNums
         self.repoSize   = newActim.repoSize
         self.dirty = True
-
         history.drawGraphMaybe()
-        return save
 
     def name(self):
         return f"Actim{self.actimId:04d}"
@@ -334,10 +329,10 @@ class ActimetresClass:
     def fromDactual(self, data):
         a = Actimetre().fromD(data, True)
         if a.actimId in self.actims:
-            if self.actims[a.actimId].update(a):
-                self.dirty = True
+            self.actims[a.actimId].update(a)
         else:
             self.actims[a.actimId] = a
+        self.dirty = True
         return a.actimId
 
     def dump(self, actimId: int):
