@@ -29,7 +29,7 @@ class Actiserver:
 
     def __str__(self):
         Actimetres = actimetre.Actimetres
-        string = f'Actis{self.serverId:03d} '
+        string = f'Actis{self.serverId:03d}({self.cpuIdle :.1f}%) '
         string += self.lastUpdate.strftime(TIMEFORMAT_DISP)
         for actimId in self.actimetreList:
             string += f' - {Actimetres.str(actimId)}'
