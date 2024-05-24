@@ -7,27 +7,23 @@
     <link rel="icon" type="image/svg" href="/actimetre.svg">
   </head>
   <body>
-    <h1>Project <u>{projectTitle}</u></h1>
+    <h1>Project <u>{projectName}</u></h1>
     <p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
     
     <form action="/bin/acticentral.py" method="get" target="_parent">
       <input type="hidden" name="projectId" value="{projectId}" />
-      <input type="hidden" name="formId" value="{project-change-info}" />
+      <input type="hidden" name="formId" value="project-edit" />
 
       <h3>Project Title</h3>
-      <p><input id="title" type="text" name="title" value="{projectTitle}"></p>
+      <p><input id="title" type="text" name="title" value="{projectTitle}" required></p>
 	
       <h3>Project Owner</h3>
-      <p><input id="owner" type="text" name="owner" value="{projectOwner}"></p>
+      <p><input id="owner" type="text" name="owner" value="{projectOwner}" required></p>
 
       <h3>Owner Email</h3>
-      <p><input id="email" type="email" name="email" value=""></p>
-
-      <h3>System Password</h3>
-      <p><input id="password" type="password" name="password" value=""></p>
+      <p><input id="email" type="email" name="email" value="{projectEmail}" required></p>
 
       <button type="submit" name="action" value="submit">Submit</button>
-      <button type="submit" name="action" value="cancel">Cancel</button>
     </form>
   </body>
 </html>

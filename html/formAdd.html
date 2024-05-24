@@ -1,0 +1,27 @@
+<html>
+<head>
+    <style>
+        body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif;}
+        .small {font-size:80%;}
+        .dead {color:red;}
+    </style>
+    <title>{projectTitle}</title>
+    <link rel="icon" type="image/svg" href="/actimetre.svg">
+</head>
+<body>
+<h1>Add Actimetre to <u>{projectTitle}</u></h1>
+<p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
+<p>Please select the Actimetre(s) you wish to add to this project.</p>
+
+<form action="/bin/acticentral.py" method="get" target="_parent">
+    <input type="hidden" name="formId" value="project-add" />
+    <input type="hidden" name="projectId" value="{projectId}" />
+<p>
+    {actimetreList}
+</p>
+
+    <p><button type="submit" name="action" value="submit">Confirm</button></p>
+
+</form>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<html>
+  <head>
+    <style>
+      body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif;}
+      .small {font-size:80%;}
+      .dead {color:red;}
+    </style>
+    <title>Move {actimName}</title>
+    <link rel="icon" type="image/svg" href="/actimetre.svg">
+  </head>
+  <body>
+    <h1>Move {actimName} to another project</h1>
+    <p>The information below can be modified by anyone. Please be considerate and make sure you're entering information about your own project only.</p>
+    <p>The Actimetre named <b>{actimName}</b>&nbsp;<span class="small">{actimInfo}</span> is currently
+      <span {attached}>attached to the project {projectName}.</span>
+      <span {notAttached}>not attached to any project.</span>
+      Please select a project to assign to.</p>
+    
+    <form action="/bin/acticentral.py" method="get" target="_parent">
+      <input type="hidden" name="actimId" value="{actimId}" />
+      <input type="hidden" name="formId" value="actim-move" />
+      {projectList}
+
+      <h3 {attached}>To Confirm</h3>
+      <p {attached}>Enter the name of the current project owner below to confirm</p>
+      {inputOwner}
+
+      <p>
+      <button type="submit" name="action" value="submit">Confirm</button>
+      </p>
+      <p><button type="submit" name="action" value="project-create">Create a new Project</button></p>
+    </form>
+  </body>
+</html>

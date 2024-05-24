@@ -25,88 +25,46 @@
     </style>
 
     <script>
-      function checkPage() {
-          const DayOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-          const MonthName = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const allpages = [{allpages}];
+      const date = "{date}";
 
-          let refreshPromise = new Promise(
-              function(result, reject) {
-                  // This is really painful...
-                  // If-Modified-Since: <day-name>, <day> <month-name> <year> <hour>:<minute>:<second> GMT
-		  let docRequestedDate = new Date(document.lastModified);
-                  let docRequestedHTTPString =
-                      DayOfWeek[docRequestedDate.getUTCDay()] + ", " +
-                      docRequestedDate.getUTCDate().toString().padStart(2, "0") + " " +
-                      MonthName[docRequestedDate.getUTCMonth()] + " " +
-                      docRequestedDate.getUTCFullYear().toString() + " " +
-                      docRequestedDate.getUTCHours().toString().padStart(2, "0") + ":" +
-                      docRequestedDate.getUTCMinutes().toString().padStart(2, "0") + ":" +
-                      docRequestedDate.getUTCSeconds().toString().padStart(2, "0") + " GMT";
-
-                  var http = new XMLHttpRequest();
-                  http.open("HEAD", document.URL);
-                  http.setRequestHeader("If-Modified-Since", docRequestedHTTPString);
-                  http.onreadystatechange = function() {
-                      if (this.readyState == this.DONE) {
-                          result(this.status);
-                      }
-                  }
-                  http.send();
-              }
-          );
-
-          refreshPromise.then(
-              function(status) {
-                  if (status == 200) {
-                      location.reload(true);
-                  } else {
-                      setupPromise();
-                  }
-              }
-          );
+      function checkOne(page) {
+           const http = new XMLHttpRequest();
+           http.open("GET", page.ref, false);
+           http.setRequestHeader("If-Modified-Since", page.date);
+           http.send();
+           if (http.status == 200 && http.responseText != "") {
+               page.date = http.getResponseHeader("Last-Modified");
+               page.html = http.responseText;
+           }
       }
 
-      function setupPromise() {
-          setTimeout(checkPage, 1000);
-      }
+      function checkAll() {
+          const now = new Date().toUTCString();
+          document.getElementById("now").innerHTML = now;
 
-      function sortTable(n) {
-          var table, rows, switching, i, x, y, shouldSwitch;
-          table = document.getElementById("actimetres");
-          switching = true;
-          /*Make a loop that will continue until
-            no switching has been done:*/
-          while (switching) {
-              //start by saying: no switching is done:
-              switching = false;
-              rows = table.rows;
-              /*Loop through all table rows (except the
-                first, which contains table headers):*/
-              for (i = 1; i < (rows.length - 1); i++) {
-                  //start by saying there should be no switching:
-                  shouldSwitch = false;
-                  /*Get the two elements you want to compare,
-                    one from current row and one from the next:*/
-                  x = rows[i].getElementsByTagName("TD")[n];
-                  y = rows[i + 1].getElementsByTagName("TD")[n];
-                  /*check if the two rows should switch place */
-                  if (x.dataset.comparator > y.dataset.comparator) {
-                      //if so, mark as a switch and break the loop:
-                      shouldSwitch= true;
-                      break;
-                  }
-              }
-              if (shouldSwitch) {
-                  /*If a switch has been marked, make the switch
-                    and mark that a switch has been done:*/
-                  rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                  switching = true;
+          const http = new XMLHttpRequest();
+          http.open("HEAD", document.URL, false);
+          http.setRequestHeader("If-Modified-Since", date);
+          http.send();
+          if (http.status == 200) {
+               window.location.reload();
+          }
+
+          for (let page of allpages) {
+              checkOne(page);
+          }
+          for (let page of allpages) {
+              if (page.html != "") {
+                  document.getElementById(page.id).innerHTML = page.html;
+                  page.html = "";
               }
           }
-      }
-      
-      window.addEventListener("load", setupPromise);
 
+          setTimeout(checkAll, 2000);
+      }
+
+      window.addEventListener("load", checkAll, {once: true});
     </script>
     
     <title>Actimetre Dashboard</title>
@@ -125,8 +83,12 @@
       </tr>
       {Projects}
     </table>
-    
-    <h1>Servers</h1>
+    <form action="/bin/acticentral.py" method="get">
+      <p><button type="submit" name="action" value="project-create">Create a new project</button></p>
+    </form>
+
+
+    <h1>Active Servers</h1>
     <p><a href="/servers.html">Full list</a></p>
     <table>
       <tr>
@@ -142,15 +104,13 @@
       {Actiservers}
     </table>
     
-    <form action="/bin/{cgi-bin}" method="get">
-      <input type="hidden" name="secret" value="YouDontKnowThis">
-      <p><button type="submit" name="action" value="create-project">Create a new project</button></p>
-    </form>
-    
+    <h1>Actimetres</h1>
+    <p><a href="/actims-free.html">Available Actimetres</a> |
+        <a href="/actims.html">Full List</a></p>
+
     <hr width="100%">
     <div style="float:left">All times in UTC &ndash;
-      Last updated:
-      {Updated}
+      Last updated: <span id="now"></span>
     </div>
     <div style="float:right"><a href="/admin.html"><img height="20px" src="/actimetre.svg" style="vertical-align:middle"></a>
       <a href="/acknowledgments.html">Acticentral

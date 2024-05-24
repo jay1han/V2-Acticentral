@@ -4,16 +4,19 @@ cd /etc/actimetre
 
 echo > central.log
 echo > acticentral.lock
-echo > ./secrets
 echo {} > actiservers.data
 echo {} > actimetres.data
 
 chmod 666 *.data *.log
-rm -f history/Actim*.hist
+rm -f history/actim*.hist
 
-rm -f /var/www/html/images/*
-echo > /var/www/html/images/index.txt
-chmod 666 /var/www/html/images/index.txt
+cd /var/www/html
+
+rm -f images/*
+rm -f actimetre/*
+rm -f actiserver/*
+rm -f project/*
+rm -f actim*.html server*.html project*.html
 
 ls -lRA
 

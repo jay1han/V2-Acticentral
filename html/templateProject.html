@@ -1,6 +1,5 @@
 <html>
   <head>
-    <meta http-equiv="refresh" content="15" />
     <style>
       body {font-family:"Arial", "Helvetica", "Verdana", "Calibri", sans-serif; hyphens:manual;}
       table,th,tr,td {border:0; padding:0; margin:0; border-collapse:collapse; text-align:center; align:center}
@@ -11,8 +10,10 @@
       .good {background-color:grey}
       .best {background-color:green}
       .no-borders {border:0;}
+      .no-padding {padding:0;}
       .right {text-align:right;}
       .left {text-align:left;}
+      .left-tight {text-align:left;border:0;}
       .health {height:50px; width:250px; font-size:90%;}
       .report {font-size:80%;border:0;}
       .small {font-size:80%;}
@@ -21,23 +22,98 @@
       .up {color:green;}
       .retire {color:grey; font-style:italic}
     </style>
+    <script>
+      const allpages = [{allpages}];
+      const allimages = [{allimages}];
+      const date = "{date}";
+
+      function checkPage(page) {
+           const http = new XMLHttpRequest();
+           http.open("GET", page.ref, false);
+           http.setRequestHeader("If-Modified-Since", page.date);
+           http.send();
+           if (http.status == 200 && http.responseText != "") {
+               page.date = http.getResponseHeader("Last-Modified");
+               page.html = http.responseText;
+           }
+      }
+
+      function checkImage(image) {
+           const http = new XMLHttpRequest();
+           http.open("HEAD", image.ref, false);
+           http.setRequestHeader("If-Modified-Since", image.date);
+           http.send();
+           if (http.status == 200) {
+               image.date = http.getResponseHeader("Last-Modified");
+               image.up = true;
+           }
+      }
+
+      function checkAll() {
+          const now = new Date().toUTCString();
+          document.getElementById("now").innerHTML = now;
+
+          const http = new XMLHttpRequest();
+          http.open("HEAD", document.URL, false);
+          http.setRequestHeader("If-Modified-Since", date);
+          http.send();
+          if (http.status == 200) {
+              window.location.reload();
+          }
+
+          for (let page of allpages) {
+              checkPage(page);
+          }
+          for (let image of allimages) {
+              checkImage(image);
+          }
+
+          for (let page of allpages) {
+              if (page.html != "") {
+                  document.getElementById(page.id).innerHTML = page.html;
+                  page.html = "";
+              }
+          }
+          for (let image of allimages) {
+              if (image.up) {
+                  document.getElementById(image.id).src = image.ref;
+                  image.up = false;
+              }
+          }
+
+          hide();
+          setTimeout(checkAll, 2000);
+      }
+
+      function hide() {
+          const projectColumn = document.getElementsByName("actimproject");
+          for (let element of projectColumn) {
+              element.hidden = "hidden";
+          }
+      }
+
+      window.addEventListener("load", checkAll, {once: true});
+    </script>
     <title>{projectTitle}</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
   </head>
   <body>
-    <p><a href="/index.html">Back to Home</a></p>
+     <p id="log"></p>
+    <p><a href="/{Index}">Back to Main</a></p>
     <h1>Project <u>{projectTitle}</u></h1>
     {projectOwner}
     {projectEmail}
     <form action="/bin/acticentral.py" method="get">
       <input type="hidden" name="projectId" value="{projectId}" />
-      {buttons}
+      <button type="submit" name="action" value="project-edit">Edit info</button>
+      <button type="submit" name="action" value="project-delete" {ifempty}>Delete project</button>
     </form>
 
+    <h1>Actimetres</h1>
     <table>
       <tr>
 	<th>Name</th>
-	<th>Type<br>Version</th>
+        <th>Type<br>Version</th>
         <th>Server</th>
 	<th>Sensors</th>
 	<th>Signal<br>Rating</th>
@@ -45,14 +121,41 @@
 	<th>Local Files</th>
         <th class="no-borders"></th>
       </tr>
-
-      {projectActimHTML}
-
+      {projectActims}
     </table>
-    
-    <p style="float:left">All times in UTC &ndash;
-      Last updated:
-      {Updated}
-    </p>
+
+        <form action="/bin/acticentral.py" method="get">
+          <input type="hidden" name="projectId" value="{projectId}" />
+          <p>
+      <button type="submit" name="action" value="project-add">Add Actimetre</button>
+          </p>
+    </form>
+
+    <h1>Servers</h1>
+
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Hardware</th>
+        <th>Version<br>Channel</th>
+        <th>Last update</th>
+        <th>Stats</th>
+        <th>Actimetres</th>
+        <th>Local files</th>
+        <th>Disk space</th>
+      </tr>
+      {projectServers}
+    </table>
+
+    <hr width="100%">
+    <p>
+    <div style="float:left">All times in UTC &ndash;
+       Last updated: <span id="now"></span>
+    </div>
+    <div style="float:right"><a href="/admin.html"><img height="20px" src="/actimetre.svg" style="vertical-align:middle"></a>
+      <a href="/acknowledgments.html">Acticentral
+        {Version}
+      </a></div>
+
   </body>
 </html>

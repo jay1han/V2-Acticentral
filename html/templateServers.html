@@ -22,11 +22,53 @@
       .up {color:green;}
       .retire {color:grey; font-style:italic}
     </style>
+    <script>
+      const allpages = [{allpages}];
+      const date = "{date}"
+
+      function checkOne(page) {
+           const http = new XMLHttpRequest();
+           http.open("GET", page.ref, false);
+           http.setRequestHeader("If-Modified-Since", page.date);
+           http.send();
+           if (http.status == 200 && http.responseText != "") {
+               page.date = http.getResponseHeader("Last-Modified");
+               page.html = http.responseText;
+           }
+      }
+
+      function checkAll() {
+          const now = new Date().toUTCString();
+          document.getElementById("now").innerHTML = now;
+
+          const http = new XMLHttpRequest();
+          http.open("HEAD", "/servers.html", false);
+          http.setRequestHeader("If-Modified-Since", date);
+          http.send();
+           if (http.status == 200) {
+                window.location.reload();
+          }
+
+          for (let page of allpages) {
+              checkOne(page);
+          }
+          for (let page of allpages) {
+              if (page.html != "") {
+                  document.getElementById(page.id).innerHTML = page.html;
+                  page.html = "";
+              }
+          }
+
+          setTimeout(checkAll, 2000);
+      }
+
+      window.addEventListener("load", checkAll, {once: true});
+    </script>
     <title>Actiservers</title>
     <link rel="icon" type="image/svg" href="/actimetre.svg">
   </head>
   <body>
-    <p><a href="/index.html">Back to Home</a></p>
+    <p><a href="/{Index}">Back to Main</a></p>
 
     <table>
       <tr>
@@ -41,10 +83,16 @@
       </tr>
       {Actiservers}
     </table>
-    
-    <p style="float:left">All times in UTC &ndash;
-      Last updated:
-      {Updated}
-    </p>
+
+    <hr width="100%">
+    <p>
+    <div style="float:left">All times in UTC &ndash;
+        Last updated: <span id="now"></span>
+    </div>
+    <div style="float:right"><a href="/admin.html"><img height="20px" src="/actimetre.svg" style="vertical-align:middle"></a>
+        <a href="/acknowledgments.html">Acticentral
+            {Version}
+        </a></div>
+
   </body>
 </html>
