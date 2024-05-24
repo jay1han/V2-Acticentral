@@ -72,16 +72,16 @@ class Actimetre:
         self.rssi       = int(d['rssi'])
         self.repoNums   = int(d['repoNums'])
         self.repoSize   = int(d['repoSize'])
+        self.isDead     = int(d['isDead'])
+        if self.isDead == 0: self.frequency  = int(d['frequency'])
+        else:                self.frequency = 0
 
         if not actual:
             self.reportStr  = d['reportStr']
             if 'remote' in d.keys():
                 self.remote = int(d['remote'])
         else:
-            self.isDead     = int(d['isDead'])
             self.dirty = True
-            if self.isDead == 0: self.frequency  = int(d['frequency'])
-            else:                self.frequency = 0
         return self
 
     def update(self, newActim):
@@ -294,7 +294,7 @@ class Actimetre:
 
     def save(self):
         if self.dirty:
-            printLog(f'Actim{self.actimId:04d}[{Projects.getProjectId(self.actimId)}] is dirty')
+            printLog(f'Actim{self.actimId:04d}[{Projects.getProjectId(self.actimId)}]({self.isDead}) is dirty')
             with open(f'{ACTIM_HTML_DIR}/actim{self.actimId:04d}.html', "w") as html:
                 print(self.html(), file=html)
             self.drawGraphMaybe()
