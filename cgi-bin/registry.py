@@ -18,7 +18,7 @@ class RegistryClass:
             printLog(f"Found known Actim{actimId:04d} for {mac}")
             return actimId
         else:
-            actimList = self.macToId.values()
+            actimList = list(self.macToId.values())
             actimList.sort()
             actimId = len(actimList) + 1
             for newId in range(1, len(actimList) + 1):

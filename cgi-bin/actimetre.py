@@ -370,6 +370,7 @@ class ActimetresClass:
         printLog(f"Actim{actimId:04d} for {mac} is type {boardType} booted at {bootTime}")
         self.actims[actimId] = Actimetre(actimId, mac, boardType, version, 0, bootTime, lastSeen=NOW, lastReport=NOW)
         self.stale = True
+        return actimId
 
     def forget(self, actimId: int):
         if actimId in self.actims.keys():
@@ -493,7 +494,7 @@ class ActimetresClass:
         actim = self.actims[int(args['actimId'][0])]
 
         if formId == 'actim-move':
-            if actim.isDead == 0 or actim.isStopped:
+            if actim.isDead == 0 and not actim.isStopped:
                 printLog(f"Can't move {actim.name()} because it's alive and not stopped")
                 actim.reportStr = "Alive; can't move"
                 actim.dirty = True
