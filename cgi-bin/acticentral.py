@@ -73,15 +73,15 @@ def assignActim(data):
         alertText += f"Actis{serverId:03d} ({actisData.cpuIdle:.1f}% idle) at -{rssi}dB\n"
         index += 1
 
-    airNotRain = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 37 and actisInfo.cpuIdle >= 0.5]
+    airNotRain = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 37 and actisInfo.cpuIdle >= 50.0]
     if len(airNotRain) > 0:
         airNotRain.sort(key=lambda actis: actis.cpuIdle, reverse=True)
         return airNotRain[0].index
-    sunNotMud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 64 and actisInfo.cpuIdle >= 0.8]
+    sunNotMud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 73 and actisInfo.cpuIdle >= 80.0]
     if len(sunNotMud) > 0:
         sunNotMud.sort(key=lambda actis: actis.rssi)
         return sunNotMud[0].index
-    waterAndCloud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 64 and actisInfo.cpuIdle >= 0.5]
+    waterAndCloud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 73 and actisInfo.cpuIdle >= 50.0]
     if len(waterAndCloud) > 0:
         waterAndCloud.sort(key=lambda actis: actis.cpuIdle, reverse=True)
         return waterAndCloud[0].index
