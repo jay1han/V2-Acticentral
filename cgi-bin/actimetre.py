@@ -121,7 +121,10 @@ class Actimetre:
             subtext = f'<span class="down">(dead)</span>'
         elif self.isStopped:
             subtext = f'({self.sensorStr})'
-        return f'{self.boardType}:' + subtext
+        if self.boardType != "":
+            return f'{self.boardType}:' + subtext
+        else:
+            return subtext
 
     def htmlCartouche(self):
         return f'{self.name()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
