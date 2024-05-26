@@ -408,6 +408,10 @@ class ActimetresClass:
         if not actimId in self.actims: return ""
         return self.actims[actimId].name()
 
+    def isAlive(self, actimId: int):
+        if not actimId in self.actims: return False
+        return self.actims[actimId].isDead == 0
+
     def getRemote(self, actimId):
         if actimId in self.actims.keys():
             command = self.actims[actimId].remote
