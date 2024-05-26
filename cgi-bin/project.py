@@ -125,7 +125,7 @@ class Project:
             index = ('{' + f'id: "Actim{actimId:04d}", ' +
                      f'ref: "/actimetre/actim{actimId:04d}.html", ' +
                      f'date: "{JS_TIMEZERO}", ' + 'html: ""}')
-            if not Actimetres.isAlive(actimId):
+            if Actimetres.isAlive(actimId):
                 alive += inline
                 livePages.append(index)
             else:
