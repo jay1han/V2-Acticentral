@@ -73,20 +73,27 @@ def assignActim(data):
         alertText += f"Actis{serverId:03d} ({actisData.cpuIdle:.1f}% idle) at -{rssi}dB\n"
         index += 1
 
-    airNotRain = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 37 and actisInfo.cpuIdle >= 50.0]
+    airNotRain = [actisInfo for actisInfo in actisList if (actisInfo.rssi <= 37 and actisInfo.cpuIdle >= 50.0)]
     if len(airNotRain) > 0:
         airNotRain.sort(key=lambda actis: actis.cpuIdle, reverse=True)
-        return airNotRain[0].index
-    sunNotMud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 73 and actisInfo.cpuIdle >= 80.0]
+        assigned = airNotRain[0]
+        printLog(f'Assign airy Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}) at -{assigned.rssi}dB')
+        return assigned.index
+    sunNotMud = [actisInfo for actisInfo in actisList if (actisInfo.rssi <= 73 and actisInfo.cpuIdle >= 80.0)]
     if len(sunNotMud) > 0:
         sunNotMud.sort(key=lambda actis: actis.rssi)
-        return sunNotMud[0].index
-    waterAndCloud = [actisInfo for actisInfo in actisList if actisInfo.rssi <= 73 and actisInfo.cpuIdle >= 50.0]
+        assigned = sunNotMud[0]
+        printLog(f'Assign sunny Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}) at -{assigned.rssi}dB')
+        return assigned.index
+    waterAndCloud = [actisInfo for actisInfo in actisList if (actisInfo.rssi <= 73 and actisInfo.cpuIdle >= 50.0)]
     if len(waterAndCloud) > 0:
         waterAndCloud.sort(key=lambda actis: actis.cpuIdle, reverse=True)
-        return waterAndCloud[0].index
+        assigned = waterAndCloud[0]
+        printLog(f'Assign watery and cloudy Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}) at -{assigned.rssi}dB')
+        return assigned.index
 
     actisList.sort(key=lambda actis: actis.rssi)
+    printLog(f"Can't assign Actimetre, all Rainy and Muddy")
     sendEmail("", "Rainy and Muddy",
               "An Actimetre is trying to connect, only sees these Servers:\n" +
               alertText +
