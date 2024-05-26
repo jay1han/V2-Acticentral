@@ -116,12 +116,12 @@ class Actimetre:
         return f"Actim{self.actimId:04d}"
 
     def htmlInfo(self):
+        subtext = f'{self.sensorStr}@{self.frequencyText()}'
         if self.isDead > 0 or self.frequency == 0:
-            return f'<span class="down">(dead)</span>'
+            subtext = f'<span class="down">(dead)</span>'
         elif self.isStopped:
-            return f'({self.sensorStr})'
-        else:
-            return f'{self.sensorStr}@{self.frequencyText()}'
+            subtext = f'({self.sensorStr})'
+        return f'{self.boardType}:' + subtext
 
     def htmlCartouche(self):
         return f'{self.name()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
