@@ -77,19 +77,19 @@ def assignActim(data):
     if len(airNotRain) > 0:
         airNotRain.sort(key=lambda actis: actis.cpuIdle, reverse=True)
         assigned = airNotRain[0]
-        printLog(f'Assign airy Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}) at -{assigned.rssi}dB')
+        printLog(f'Assign airy Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}%) at -{assigned.rssi}dB')
         return assigned.index
     sunNotMud = [actisInfo for actisInfo in actisList if (actisInfo.rssi <= 73 and actisInfo.cpuIdle >= 80.0)]
     if len(sunNotMud) > 0:
         sunNotMud.sort(key=lambda actis: actis.rssi)
         assigned = sunNotMud[0]
-        printLog(f'Assign sunny Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}) at -{assigned.rssi}dB')
+        printLog(f'Assign sunny Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}%) at -{assigned.rssi}dB')
         return assigned.index
     waterAndCloud = [actisInfo for actisInfo in actisList if (actisInfo.rssi <= 73 and actisInfo.cpuIdle >= 50.0)]
     if len(waterAndCloud) > 0:
         waterAndCloud.sort(key=lambda actis: actis.cpuIdle, reverse=True)
         assigned = waterAndCloud[0]
-        printLog(f'Assign watery and cloudy Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}) at -{assigned.rssi}dB')
+        printLog(f'Assign watery and cloudy Actis{assigned.serverId:03d} ({assigned.cpuIdle:.1f}%) at -{assigned.rssi}dB')
         return assigned.index
 
     actisList.sort(key=lambda actis: actis.rssi)
