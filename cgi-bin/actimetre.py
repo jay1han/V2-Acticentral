@@ -547,7 +547,7 @@ class ActimetresClass:
                 "{date}"      : jsDateString(now()),
             })
 
-Actimetres = ActimetresClass()
+Actimetres: ActimetresClass = ActimetresClass()
 def initActimetres() -> ActimetresClass:
     Actimetres.init()
     return Actimetres

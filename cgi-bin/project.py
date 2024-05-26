@@ -115,22 +115,39 @@ class Project:
                          })
 
     def htmlWriteFree(self):
-        freeActims = ""
-        allPages = []
+        from actimetre import Actimetres
+        free = ""
+        alive = ""
+        freePages = []
+        livePages = []
         for actimId in sorted(self.actimetreList):
-            freeActims += f'<tr id="Actim{actimId:04d}"></tr>\n'
-            allPages.append('{' +
-                            f'id: "Actim{actimId:04d}", ' +
-                            f'ref: "/actimetre/actim{actimId:04d}.html", ' +
-                            f'date: "{JS_TIMEZERO}", ' +
-                            'html: ""}')
+            inline = f'<tr id="Actim{actimId:04d}"></tr>\n'
+            index = ('{' + f'id: "Actim{actimId:04d}", ' +
+                     f'ref: "/actimetre/actim{actimId:04d}.html", ' +
+                     f'date: "{JS_TIMEZERO}", ' + 'html: ""}')
+            if not Actimetres.isAlive(actimId):
+                alive += inline
+                livePages.append(index)
+            else:
+                free += inline
+                freePages.append(index)
 
         writeTemplateSub(open(ACTIMS0_HTML, "w"),
                          ACTIMS0_TEMPLATE,
                          {
-                             "{Actimetres}" : freeActims,
-                             "{allpages}": ',\n'.join(allPages),
-                             "{date}": jsDateString(now()),
+                             "{title}"      : 'available',
+                             "{Actimetres}" : free,
+                             "{allpages}"   : ',\n'.join(freePages),
+                             "{date}"       : jsDateString(now()),
+                         })
+
+        writeTemplateSub(open(ACTIMS_UN_HTML, "w"),
+                         ACTIMS0_TEMPLATE,
+                         {
+                             "{title}"      : 'to assign',
+                             "{Actimetres}" : alive,
+                             "{allpages}"   : ',\n'.join(livePages),
+                             "{date}"       : jsDateString(now()),
                          })
 
     def html(self):
@@ -192,7 +209,7 @@ class ProjectsClass:
             self.projects[0] = Project(0, "Not assigned", "No owner")
             self.dirty = True
         self.fileTime = datetime.fromtimestamp(os.stat(PROJECTS).st_mtime, tz=timezone.utc)
-        if fileOlderThan(ACTIMS0_HTML, 3600):
+        if fileOlderThan(ACTIMS0_HTML, 3600) or fileOlderThan(ACTIMS_UN_HTML, 3600):
             self.projects[0].dirty = True
         Actimetres = actimetre.Actimetres
         Actiservers = actiserver.Actiservers

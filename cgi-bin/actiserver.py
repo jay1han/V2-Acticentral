@@ -355,7 +355,7 @@ class ActiserversClass:
         if stale:
             dumpData(ACTISERVERS, {int(s.serverId):s.toD() for s in self.servers.values()})
 
-Actiservers = ActiserversClass()
+Actiservers: ActiserversClass = ActiserversClass()
 def initActiservers() -> ActiserversClass:
     Actiservers.init()
     return Actiservers
