@@ -216,13 +216,14 @@ class Actimetre:
 
     def html(self):
         doc, tag, text, line = Doc().ttl()
+        serverId = Actiservers.getServerId(self.actimId)
+        projectId = Projects.getProjectId(self.actimId)
 
         alive = 'up'
         if NOW - self.lastReport > ACTIM_RETIRE_P:
             alive = 'retire'
         elif self.frequency == 0 or self.isDead > 0:
             alive = 'down'
-        serverId = Actiservers.getServerId(self.actimId)
 
         with tag('td', klass=alive):
             doc.asis('Actim&shy;{:04d}'.format(self.actimId))
@@ -231,12 +232,12 @@ class Actimetre:
             elif alive == 'retire':
                 doc.asis(self.htmlButton("actim-retire", "Retire"))
         with tag('td', name='actimproject'):
-            if Projects.getProjectId(self.actimId) == 0:
+            if projectId == 0:
                 with tag('a', href="/actims-free.html"):
                     text('Available')
             else:
-                with tag('a', href=f'/project{Projects.getProjectId(self.actimId):02d}.html'):
-                    text(Projects.getName(Projects.getProjectId(self.actimId)))
+                with tag('a', href=f'/project{projectId:02d}.html'):
+                    text(Projects.getName(projectId))
         with tag('td'):
             text(self.boardType)
             doc.asis('<br>')
@@ -288,7 +289,8 @@ class Actimetre:
             else:
                 line('span', 'No data', name='actimfree')
                 doc.asis(self.htmlButton("actim-move", "Move"))
-                doc.asis(self.htmlButton("actim-remove", "Remove", name='actimfree'))
+                if projectId != 0:
+                    doc.asis(self.htmlButton("actim-remove", "Remove", name='actimfree'))
         if self.reportStr != "":
             with tag('td', klass="report"):
                 text(self.reportStr)
