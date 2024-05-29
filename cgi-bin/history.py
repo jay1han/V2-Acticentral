@@ -47,11 +47,17 @@ class ActimHistory:
 
         if len(freshLines) == 0:
             printLog(f'Actm{self.a.actimId:04d} has no history')
-            os.remove(self.histFile)
+            try:
+                os.remove(self.histFile)
+            except FileNotFoundError:
+                pass
+            else:
+                self.a.dirty = True
         else:
             with open(self.histFile, "w") as history:
                 for line in freshLines:
                     print(line.strip(), file=history)
+            self.a.dirty = True
 
     def drawGraph(self):
         os.environ['MPLCONFIGDIR'] = "/etc/matplotlib"
