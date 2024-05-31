@@ -127,7 +127,9 @@ class Actimetre:
             return subtext
 
     def htmlCartouche(self):
-        return f'{self.name()}&nbsp;<span class="small">{self.htmlInfo()}</span> '
+        return (f'{self.name()}&nbsp;<span class="small">{self.htmlInfo()}' +
+                ('*' if self.reportStr != "" else '') +
+                '</span>\n')
 
     def htmlActimType(self):
         return f'{self.boardType}/v{self.version}'
