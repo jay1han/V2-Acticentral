@@ -69,13 +69,13 @@
           }
 
           for (let page of allpages) {
-              if (page.html != "") {
+              if (page.html != "" && document.getElementById(page.id) != null) {
                   document.getElementById(page.id).innerHTML = page.html;
                   page.html = "";
               }
           }
           for (let image of allimages) {
-              if (image.up) {
+              if (image.up && document.getElementById(image.id) != null) {
                   document.getElementById(image.id).src = image.ref;
                   image.up = false;
               }
